@@ -1,0 +1,50 @@
+type OracleData @entity {
+  # Address of the oracle
+  id: ID!
+  # Address of the oracle
+  oracle: String!
+  # Name of input token
+  tokenIn: String!
+  # Name of output token
+  tokenOut: String!
+  # Exchange rate
+  rateLower: BigInt!
+  # Exchange rate
+  rateUpper: BigInt!
+  # BlockNumber of last update
+  blockNumber: BigInt!
+  # Timestamp of last update
+  timestamp: BigInt!
+}
+
+type OracleAPRHistoricalData @entity {
+  # Address of the PerpetualManager + '_hour_' +timestamp
+  id: ID!
+  # Name of the stable assets
+  stableName: String
+  # Name of the collateral
+  collatName: String
+  # Estimated APR
+  apr: BigInt
+  # Exchange rate
+  rateLower: BigInt
+  # Exchange rate
+  rateUpper: BigInt
+  # BlockNumber of last update
+  blockNumber: BigInt!
+  # Timestamp of last update
+  timestamp: BigInt!
+}
+
+type Contracts @entity {
+  id: ID!
+}
+
+type bondingCurve @entity {
+  id: ID!
+  price: BigInt
+  toSell: BigInt
+  sold: BigInt
+  timestamp: BigInt
+  blockNumber: BigInt
+}

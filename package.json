@@ -1,0 +1,28 @@
+{
+  "name": "mainnet-subgraph",
+  "license": "UNLICENSED",
+  "scripts": {
+    "deploy:periphery": "cd angle-subgraph-periphery && yarn deploy",
+    "deploy:perpetual": "cd angle-subgraph-perpetual && yarn deploy",
+    "deploy:strategy": "cd angle-subgraph-strategy && yarn deploy",
+    "deploy:token": "cd angle-subgraph-token && yarn deploy",
+    "deploy:transaction": "cd angle-subgraph-transaction && yarn deploy",
+    "deploy:all": "yarn deploy:periphery && yarn deploy:perpetual && yarn deploy:strategy && yarn deploy:token && yarn deploy:transaction"
+  },
+  "dependencies": {
+    "@graphprotocol/graph-cli": "^0.22.4",
+    "@graphprotocol/graph-ts": "0.22.1",
+    "ethers": "^5.5.1",
+    "matchstick-as": "^0.2.0",
+    "mustache": "^4.2.0",
+    "tiny-invariant": "^1.1.0",
+    "web3": "^1.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^16.11.2",
+    "@typescript-eslint/eslint-plugin": "^5.1.0",
+    "@typescript-eslint/parser": "^5.1.0",
+    "eslint": "^8.0.0",
+    "typescript": "^4.4.3"
+  }
+}

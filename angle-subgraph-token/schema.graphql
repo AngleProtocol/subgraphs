@@ -1,0 +1,73 @@
+type ANGLE @entity {
+  # Address of the angle owner
+  id: ID!
+  # Balance
+  balance: BigInt!
+}
+
+type agToken @entity {
+  # Address of the owner + address of the token
+  id: ID!
+  owner: String!
+  token: String!
+  stableName: String
+  balance: BigInt!
+  staked: BigInt!
+}
+
+type sanToken @entity {
+  # Address of the owner + address of the token
+  id: ID!
+  owner: String!
+  token: String!
+  collatName: String
+  stableName: String
+  balance: BigInt!
+  staked: BigInt!
+}
+
+type CapitalGain @entity {
+  # Address
+  id: ID!
+  gains: BigInt!
+  lastPosition: BigInt!
+  lastStakedPosition: BigInt!
+}
+
+type Contracts @entity {
+  id: ID!
+}
+
+type StakingData @entity {
+  # Address of the staking contract
+  id: ID!
+  periodFinish: BigInt
+  rewardRate: BigInt
+  rewardsDuration: BigInt
+  totalSupply: BigInt
+  lastUpdateTime: BigInt
+  rewardPerTokenStored: BigInt
+  # Address of the rewardsDistributor
+  rewardsDistributor: ID!
+  # Timestamp of last update
+  timestamp: BigInt!
+}
+
+type StakingHistoricalData @entity {
+  # Address of the staking contract + timestamp
+  id: ID!
+  # Address of the staking contract
+  address: String
+  periodFinish: BigInt
+  rewardRate: BigInt
+  totalSupply: BigInt
+  rewardsDuration: BigInt
+  lastUpdateTime: BigInt
+  rewardPerTokenStored: BigInt
+  # Address of the rewardsDistributor
+  rewardsDistributor: ID!
+  # Block Number of last update
+  blockNumber: BigInt!
+  # Timestamp at the beginning of the period
+  timestamp: BigInt!
+}

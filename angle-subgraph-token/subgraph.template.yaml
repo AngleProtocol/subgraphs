@@ -1,0 +1,234 @@
+specVersion: 0.0.2
+description: Test of thegraph on {{network}}
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum/contract
+    name: Core
+    network: {{network}}
+    source:
+      address: '{{core}}'
+      abi: Core
+      startBlock: {{block}}
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - StableData
+        - StableHistoricalData
+        - StableHistoricalHourlyData
+      abis:
+        - name: Core
+          file: ../abis/Core.json
+        - name: StableMaster
+          file: ../abis/StableMasterFront.json
+        - name: ERC20
+          file: ../abis/ERC20.json
+      eventHandlers:
+        - event: StableMasterDeployed(indexed address,indexed address)
+          handler: handleStableMasterDeployed
+      file: ./src/mapping/core.ts
+  - kind: ethereum/contract
+    name: Angle
+    network: {{network}}
+    source:
+      address: '{{angle}}'
+      abi: ERC20Votes
+      startBlock: {{block}}
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - ANGLE
+      abis:
+        - name: ERC20Votes
+          file: ../abis/ERC20Votes.json
+      eventHandlers:
+        - event: Transfer(indexed address,indexed address,uint256)
+          handler: handleTransfer
+      file: ./src/mapping/angle.ts
+  - kind: ethereum/contract
+    name: RewardsDistributor
+    network: {{network}}
+    source:
+      address: '{{rewardsDistributor}}'
+      abi: RewardsDistributor
+      startBlock: {{block}}
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - RewardDistributorData
+      abis:
+        - name: RewardsDistributor
+          file: ../abis/RewardsDistributor.json
+        - name: StakingRewards
+          file: ../abis/StakingRewards.json
+        - name: PerpetualManagerFront
+          file: ../abis/PerpetualManagerFront.json
+      eventHandlers:
+        - event: NewStakingContract(indexed address)
+          handler: handleStakingContract
+        - event: DeletedStakingContract(indexed address)
+          handler: handleDeleteStakingContract
+      file: ./src/mapping/rewardsDistributor.ts
+templates:
+  - kind: ethereum/contract
+    name: AgTokenTemplate
+    network: {{network}}
+    source:
+      abi: AgToken
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - StableData
+        - StableHistoricalData
+        - StableHistoricalHourlyData
+      abis:
+        - name: AgToken
+          file: ../abis/AgToken.json
+        - name: PoolManager
+          file: ../abis/PoolManager.json
+        - name: ERC20
+          file: ../abis/ERC20.json
+        - name: Oracle
+          file: ../abis/OracleMulti.json
+        - name: StableMaster
+          file: ../abis/StableMasterFront.json
+        - name: PerpetualManagerFront
+          file: ../abis/PerpetualManagerFront.json
+        - name: SanToken
+          file: ../abis/SanToken.json
+      eventHandlers:
+        - event: Transfer(indexed address,indexed address,uint256)
+          handler: handleTransfer
+      file: ./src/mapping/agToken.ts
+  - kind: ethereum/contract
+    name: SanTokenTemplate
+    network: {{network}}
+    source:
+      abi: SanToken
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - StableData
+        - StableHistoricalData
+        - StableHistoricalHourlyData
+      abis:
+        - name: SanToken
+          file: ../abis/SanToken.json
+        - name: PoolManager
+          file: ../abis/PoolManager.json
+        - name: ERC20
+          file: ../abis/ERC20.json
+        - name: StableMaster
+          file: ../abis/StableMasterFront.json
+        - name: Oracle
+          file: ../abis/OracleMulti.json
+        - name: PerpetualManagerFront
+          file: ../abis/PerpetualManagerFront.json
+        - name: AgToken
+          file: ../abis/AgToken.json
+      eventHandlers:
+        - event: Transfer(indexed address,indexed address,uint256)
+          handler: handleTransfer
+      file: ./src/mapping/sanToken.ts
+  - kind: ethereum/contract
+    name: StableMasterTemplate
+    network: {{network}}
+    source:
+      abi: StableMaster
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - PauseData
+        - StableData
+        - StableHistoricalHourlyData
+      abis:
+        - name: StableMaster
+          file: ../abis/StableMasterFront.json
+        - name: PoolManager
+          file: ../abis/PoolManager.json
+        - name: ERC20
+          file: ../abis/ERC20.json
+        - name: Oracle
+          file: ../abis/OracleMulti.json
+        - name: PerpetualManagerFront
+          file: ../abis/PerpetualManagerFront.json
+        - name: SanToken
+          file: ../abis/SanToken.json
+        - name: AgToken
+          file: ../abis/AgToken.json
+      eventHandlers:
+        - event: CollateralDeployed(indexed address,indexed address,indexed address,address)
+          handler: handleCollateralDeployed
+      file: ./src/mapping/stableMaster.ts
+  - kind: ethereum/contract
+    name: StakingRewardsTemplate
+    network: {{network}}
+    source:
+      abi: StakingRewards
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - StakingData
+        - StakingHistoricalHourlyData
+      abis:
+        - name: StakingRewards
+          file: ../abis/StakingRewards.json
+        - name: PerpetualManagerFront
+          file: ../abis/PerpetualManagerFront.json
+        - name: StableMaster
+          file: ../abis/StableMasterFront.json
+        - name: PoolManager
+          file: ../abis/PoolManager.json
+        - name: ERC20
+          file: ../abis/ERC20.json
+        - name: AgToken
+          file: ../abis/AgToken.json
+        - name: SanToken
+          file: ../abis/SanToken.json
+      eventHandlers:
+        - event: RewardAdded(uint256)
+          handler: handleUpdateStaking
+        - event: Staked(indexed address,uint256)
+          handler: handleStaked
+        - event: Withdrawn(indexed address,uint256)
+          handler: handleWithdrawn
+      file: ./src/mapping/staking.ts
+  - kind: ethereum/contract
+    name: PerpetualStakingRewardsTemplate
+    network: {{network}}
+    source:
+      abi: PerpetualManagerFront
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - StakingData
+        - StakingHistoricalHourlyData
+      abis:
+        - name: PerpetualManagerFront
+          file: ../abis/PerpetualManagerFront.json
+      eventHandlers:
+        - event: RewardAdded(uint256)
+          handler: handleUpdatePerpStaking
+        - event: RewardsDistributionUpdated(indexed address)
+          handler: handleUpdatePerpStaking
+        - event: RewardsDistributionDurationUpdated(uint256,indexed address)
+          handler: handleUpdatePerpStaking
+        - event: Transfer(indexed address,indexed address,indexed uint256)
+          handler: handleUpdatePerpStaking
+      file: ./src/mapping/staking.ts

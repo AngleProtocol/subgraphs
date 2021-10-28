@@ -1,0 +1,148 @@
+specVersion: 0.0.2
+description: Test of thegraph on {{network}}
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum/contract
+    name: Core
+    network: {{network}}
+    source:
+      address: '{{core}}'
+      abi: Core
+      startBlock: {{block}}
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - StableData
+        - StableHistoricalData
+      abis:
+        - name: Core
+          file: ../abis/Core.json
+        - name: StableMaster
+          file: ../abis/StableMasterFront.json
+        - name: ERC20
+          file: ../abis/ERC20.json
+      eventHandlers:
+        - event: StableMasterDeployed(indexed address,indexed address)
+          handler: handleStableMasterDeployed
+      file: ./src/mapping/core.ts
+templates:
+  - kind: ethereum/contract
+    name: SanTokenTemplate
+    network: {{network}}
+    source:
+      abi: SanToken
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - StableData
+        - StableHistoricalData
+      abis:
+        - name: SanToken
+          file: ../abis/SanToken.json
+        - name: PoolManager
+          file: ../abis/PoolManager.json
+        - name: ERC20
+          file: ../abis/ERC20.json
+        - name: StableMaster
+          file: ../abis/StableMasterFront.json
+        - name: Oracle
+          file: ../abis/OracleMulti.json
+        - name: PerpetualManagerFront
+          file: ../abis/PerpetualManagerFront.json
+        - name: AgToken
+          file: ../abis/AgToken.json
+      eventHandlers:
+        - event: Transfer(indexed address,indexed address,uint256)
+          handler: handleTransfer
+      file: ./src/mapping/sanToken.ts
+  - kind: ethereum/contract
+    name: StableMasterTemplate
+    network: {{network}}
+    source:
+      abi: StableMaster
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - PauseData
+        - StableData
+        - StableHistoricalData
+      abis:
+        - name: StableMaster
+          file: ../abis/StableMasterFront.json
+        - name: PoolManager
+          file: ../abis/PoolManager.json
+        - name: ERC20
+          file: ../abis/ERC20.json
+        - name: Oracle
+          file: ../abis/OracleMulti.json
+        - name: PerpetualManagerFront
+          file: ../abis/PerpetualManagerFront.json
+        - name: SanToken
+          file: ../abis/SanToken.json
+        - name: AgToken
+          file: ../abis/AgToken.json
+      eventHandlers:
+        - event: CollateralDeployed(indexed address,indexed address,indexed address,address)
+          handler: handleCollateralDeployed
+        - event: MintedStablecoins(indexed address,uint256,uint256)
+          handler: handleMint
+        - event: BurntStablecoins(indexed address,uint256,uint256)
+          handler: handleBurn
+        - event: Paused(bytes32)
+          handler: handlePause
+        - event: Unpaused(bytes32)
+          handler: handleUnpause
+      file: ./src/mapping/stableMaster.ts
+  - kind: ethereum/contract
+    name: PerpetualManagerFrontTemplate
+    network: {{network}}
+    source:
+      abi: PerpetualManagerFront
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - Perpetual
+        - PauseData
+        - KeeperReward
+      abis:
+        - name: PerpetualManagerFront
+          file: ../abis/PerpetualManagerFront.json
+        - name: StableMaster
+          file: ../abis/StableMasterFront.json
+        - name: PoolManager
+          file: ../abis/PoolManager.json
+        - name: ERC20
+          file: ../abis/ERC20.json
+        - name: AgToken
+          file: ../abis/AgToken.json
+        - name: SanToken
+          file: ../abis/SanToken.json
+        - name: Oracle
+          file: ../abis/OracleMulti.json
+      eventHandlers:
+        - event: PerpetualUpdated(uint256,uint256)
+          handler: handleUpdatingPerpetual
+        - event: PerpetualOpened(uint256,uint256,uint256,uint256)
+          handler: handleOpeningPerpetual
+        - event: PerpetualClosed(uint256,uint256)
+          handler: handleClosingPerpetual
+        - event: PerpetualsForceClosed(uint256[],(address,uint256)[],address,uint256)
+          handler: handleForceClose
+        - event: KeeperTransferred(address,uint256)
+          handler: handleLiquidatePerpetuals
+        - event: Paused(address)
+          handler: handlePausePerp
+        - event: Unpaused(address)
+          handler: handlePausePerp
+        - event: Transfer(indexed address,indexed address,indexed uint256)
+          handler: handleTransfer
+      file: ./src/mapping/PerpetualManager.ts

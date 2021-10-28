@@ -1,0 +1,344 @@
+type StableData @entity {
+  # Address of the stableMaster
+  id: ID!
+  # Name of the stable asset
+  name: String!
+  # Number of collaterals
+  collaterals: [PoolData!]! @derivedFrom(field: "stableMaster")
+  # Collateral Ratio
+  collatRatio: BigInt!
+  # Total assets minted
+  totalMinted: BigInt!
+  # BlockNumber of last update
+  blockNumber: BigInt!
+  # Timestamp of last update
+  timestamp: BigInt!
+}
+
+type StableHistoricalData @entity {
+  # Address of the stableMaster + block number
+  id: ID!
+  # Name of the stable asset
+  name: String!
+  # tvl
+  tvl: BigInt!
+  # Collateral Ratio
+  collatRatio: BigInt!
+  # Total assets minted
+  totalMinted: BigInt!
+  # BlockNumber
+  blockNumber: BigInt!
+  # Timestamp of last update
+  timestamp: BigInt!
+}
+
+type PauseData @entity {
+  # id of the PoolData
+  id: ID!
+  # Pause possibilities
+  user: Boolean
+  slp: Boolean
+  ha: Boolean
+}
+
+type PoolData @entity {
+  # Address of the poolManager
+  id: ID!
+  # Address of the poolManager
+  poolManager: String
+  # Decimals of the underlying token
+  decimals: BigInt
+  # Address of the stableMaster
+  stableMaster: StableData
+  # Name of the stable assets
+  stableName: String
+  # Name of the collateral
+  collatName: String
+  # Total liquidity in the pool
+  totalAsset: BigInt
+  # Availbale liquidity in the pool
+  availableAsset: BigInt
+  # Stock brought by users
+  stockUser: BigInt
+  # Stock brought by SLPs
+  stockSLP: BigInt
+  # San Rate
+  sanRate: BigInt
+  # Last timestamp at which the `sanRate` has been updated for SLPs
+  lastBlockUpdated: BigInt
+  # Fees accumulated from previous blocks and to be distributed to SLPs
+  lockedInterests: BigInt
+  # Max interests used to update the `sanRate` in a single block
+  maxInterestsDistributed: BigInt
+  # Amount of fees left aside for SLPs
+  feesAside: BigInt
+  # Portion of the fees from users minting and burning that goes to SLPs
+  feesForSLPs: BigInt
+  # Portion of the interests from lending that goes to SLPs
+  interestsForSLPs: BigInt
+  # Estimated APR
+  apr: BigInt
+  # To compute utilization ratio
+  totalHedgeAmount: BigInt
+  # Total amount brought by HAs
+  totalMargin: BigInt
+  # Exchange rate
+  rateLower: BigInt
+  # Exchange rate
+  rateUpper: BigInt
+  # targetHAHedge
+  targetHAHedge: BigInt
+  # limitHAHedge
+  limitHAHedge: BigInt
+  # keeperFeesLiquidationCap
+  keeperFeesLiquidationCap: BigInt
+  # keeperFeesClosingCap
+  keeperFeesClosingCap: BigInt
+  # keeperFeesLiquidationRatio
+  keeperFeesLiquidationRatio: BigInt
+  # BlockNumber of last update
+  blockNumber: BigInt
+  # Timestamp of last update
+  timestamp: BigInt
+  # Pause data of the pool
+  pauseData: PauseData
+}
+
+type PoolHistoricalData @entity {
+  # Address of the PerpetualManager + block number
+  id: ID!
+  # Address of the poolManager
+  poolManager: String
+  # Decimals of the underlying token
+  decimals: BigInt
+  # Address of the stableMaster
+  stableMaster: StableData
+  # Name of the stable assets
+  stableName: String
+  # Name of the collateral
+  collatName: String
+  # Total liquidity in the pool
+  totalAsset: BigInt
+  # Availbale liquidity in the pool
+  availableAsset: BigInt
+  # Stock brought by users
+  stockUser: BigInt
+  # Stock brought by SLPs
+  stockSLP: BigInt
+  # San Rate
+  sanRate: BigInt
+  # Last timestamp at which the `sanRate` has been updated for SLPs
+  lastBlockUpdated: BigInt
+  # Fees accumulated from previous blocks and to be distributed to SLPs
+  lockedInterests: BigInt
+  # Max interests used to update the `sanRate` in a single block
+  maxInterestsDistributed: BigInt
+  # Amount of fees left aside for SLPs
+  feesAside: BigInt
+  # Portion of the fees from users minting and burning that goes to SLPs
+  feesForSLPs: BigInt
+  # Portion of the interests from lending that goes to SLPs
+  interestsForSLPs: BigInt
+  # Estimated APR
+  apr: BigInt
+  # To compute utilization ratio
+  totalHedgeAmount: BigInt
+  # Total amount brought by HAs
+  totalMargin: BigInt
+  # Exchange rate
+  rateLower: BigInt
+  # Exchange rate
+  rateUpper: BigInt
+  # targetHAHedge
+  targetHAHedge: BigInt
+  # limitHAHedge
+  limitHAHedge: BigInt
+  # keeperFeesLiquidationCap
+  keeperFeesLiquidationCap: BigInt
+  # keeperFeesClosingCap
+  keeperFeesClosingCap: BigInt
+  # keeperFeesLiquidationRatio
+  keeperFeesLiquidationRatio: BigInt
+  # BlockNumber of last update
+  blockNumber: BigInt
+  # Timestamp of last update
+  timestamp: BigInt
+  # Pause data of the pool
+  pauseData: PauseData
+}
+
+enum PerpetualStatus {
+  open
+  close
+  forceClose
+  liquidate
+}
+
+type Perpetual @entity {
+  # Address of the PerpetualManager + '_' + PerpetualID
+  id: ID!
+  # PerpetualID
+  perpetualID: BigInt
+  # Address of the perpetualManager
+  perpetualManager: String
+  # Decimals
+  decimals: BigInt
+  # Name of the stable assets
+  stableName: String
+  # Name of the collateral
+  collatName: String
+  # Address of the stable assets
+  stableAddress: String
+  # Address of the collateral
+  collatAddress: String
+  # address of the owner
+  owner: String
+  # address of the keeper who performed the action (if any)
+  keeperAddress: String
+  # Brought amount
+  margin: BigInt!
+  # Committed amount
+  committedAmount: BigInt
+  # Close amount (if any)
+  closeAmount: BigInt
+  # Rate of the last update of the Perpetual
+  entryRate: BigInt
+  # rate at which the perp can be liquidated
+  liquidationPrice: BigInt
+  # BlockNumber at opening
+  openingBlockNumber: BigInt!
+  # Timestamp at opening
+  openingTimestamp: BigInt!
+  # BlockNumber when last update
+  lastUpdateBlockNumber: BigInt!
+  # Timestamp of last update
+  lastUpdateTimestamp: BigInt!
+  status: PerpetualStatus
+}
+
+type Mint @entity {
+  # Tx hash
+  id: ID!
+  transactionId: String!
+  amount: BigInt
+  minted: BigInt
+  sender: String
+  recipient: String
+  collatName: String
+  stableName: String
+  timestamp: BigInt
+  blockNumber: BigInt
+}
+
+type Burn @entity {
+  # Tx hash
+  id: ID!
+  transactionId: String!
+  amount: BigInt
+  burned: BigInt
+  sender: String
+  recipient: String
+  collatName: String
+  stableName: String
+  timestamp: BigInt
+  blockNumber: BigInt
+}
+
+type Deposit @entity {
+  # Tx hash
+  id: ID!
+  transactionId: String!
+  amount: BigInt
+  minted: BigInt
+  sender: String
+  recipient: String
+  collatName: String
+  stableName: String
+  timestamp: BigInt
+  blockNumber: BigInt
+}
+
+type Withdraw @entity {
+  # Tx hash
+  id: ID!
+  transactionId: String!
+  amount: BigInt
+  burned: BigInt
+  sender: String
+  recipient: String
+  collatName: String
+  stableName: String
+  timestamp: BigInt
+  blockNumber: BigInt
+}
+
+type PerpetualOpen @entity {
+  # Tx hash
+  id: ID!
+  transactionId: String!
+  sender: String
+  perpetualID: BigInt
+  entryRate: BigInt
+  fees: BigInt
+  margin: BigInt
+  committedAmount: BigInt
+  collatName: String
+  stableName: String
+  timestamp: BigInt
+  blockNumber: BigInt
+}
+
+type PerpetualUpdate @entity {
+  # Tx hash
+  id: ID!
+  transactionId: String!
+  sender: String
+  perpetualID: BigInt
+  margin: BigInt
+  collatName: String
+  stableName: String
+  timestamp: BigInt
+  blockNumber: BigInt
+}
+
+type PerpetualClose @entity {
+  # Tx hash
+  id: ID!
+  transactionId: String!
+  sender: String
+  owner: String
+  perpetualID: BigInt
+  closeAmount: BigInt
+  margin: BigInt
+  collatName: String
+  stableName: String
+  timestamp: BigInt
+  blockNumber: BigInt
+  status: PerpetualStatus
+}
+
+type Stake @entity {
+  # Tx hash
+  id: ID!
+  transactionId: String!
+  amount: BigInt
+  sender: String
+  stakedToken: String
+  timestamp: BigInt
+  blockNumber: BigInt
+}
+
+type Unstake @entity {
+  # Tx hash
+  id: ID!
+  transactionId: String!
+  amount: BigInt
+  sender: String
+  stakedToken: String
+  timestamp: BigInt
+  blockNumber: BigInt
+}
+
+type Contracts @entity {
+  id: ID!
+}
