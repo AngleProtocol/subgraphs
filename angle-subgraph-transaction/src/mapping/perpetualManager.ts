@@ -172,7 +172,7 @@ export function handleTransfer(event: Transfer): void {
     txData.status = 'liquidate'
     txData.save()
 
-    updatePoolData(false, changetype<BigInt>(margin), poolManager, event.block)
+    updatePoolData(false, margin, poolManager, event.block)
   }
 
   // Case of a transfer or a mint

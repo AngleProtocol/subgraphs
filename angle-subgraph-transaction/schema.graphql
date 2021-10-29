@@ -81,7 +81,7 @@ type PoolData @entity {
   # To compute utilization ratio
   totalHedgeAmount: BigInt
   # Total amount brought by HAs
-  totalMargin: BigInt
+  totalMargin: BigInt!
   # Exchange rate
   rateLower: BigInt
   # Exchange rate
@@ -144,7 +144,7 @@ type PoolHistoricalData @entity {
   # To compute utilization ratio
   totalHedgeAmount: BigInt
   # Total amount brought by HAs
-  totalMargin: BigInt
+  totalMargin: BigInt!
   # Exchange rate
   rateLower: BigInt
   # Exchange rate

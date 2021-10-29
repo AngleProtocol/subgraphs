@@ -85,11 +85,8 @@ export function _updatePoolData(
   if (data == null) {
     data = new PoolData(id)
     totalMargin = BigInt.fromString('0')
-  } else {
-    totalMargin = add
-      ? changetype<BigInt>(data.totalMargin).plus(margin)
-      : changetype<BigInt>(data.totalMargin).minus(margin)
   }
+  totalMargin = add ? data.totalMargin.plus(margin) : data.totalMargin.minus(margin)
 
   data.poolManager = poolManager._address.toHexString()
 
