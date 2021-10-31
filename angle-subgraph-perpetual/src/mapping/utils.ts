@@ -201,7 +201,6 @@ export function _updatePoolData(
     dataHistorical.blockNumber = block.number
     dataHistorical.timestamp = roundedTimestamp
   }
-
   dataHistorical.save()
 
   return data
