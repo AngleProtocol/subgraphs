@@ -1,5 +1,5 @@
 {
-  "name": "mainnet-token",
+  "name": "token",
   "license": "UNLICENSED",
   "scripts": {
     "codegen": "yarn prepare && graph codegen",
@@ -16,5 +16,9 @@
     "prepare": "mustache ../config/mainnet.json subgraph.template.yaml > subgraph.yaml",
     "prepare:rinkeby": "mustache ../config/rinkeby.json subgraph.template.yaml > subgraph.yaml",
     "test": "graph test"
+  },
+  "dependencies": {
+    "@graphprotocol/graph-cli": "^0.22.4",
+    "mustache": "^4.2.0"
   }
 }

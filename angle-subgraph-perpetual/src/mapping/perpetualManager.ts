@@ -14,8 +14,8 @@ import { StableMaster } from '../../generated/templates/StableMasterTemplate/Sta
 import { Perpetual, PoolData, PauseData, KeeperReward, PerpetualClose } from '../../generated/schema'
 
 import { updateStableData, _updatePoolData } from './utils'
-import { BASE_PARAMS } from '../constants'
-import { MAINTENANCE_MARGIN } from '../constants'
+import { BASE_PARAMS } from '../../../constants'
+import { MAINTENANCE_MARGIN } from '../../../constants'
 
 function updatePoolData(poolManager: PoolManager, block: ethereum.Block, add: boolean, margin: BigInt): void {
   const data = _updatePoolData(poolManager, block, add, margin)

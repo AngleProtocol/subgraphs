@@ -7,7 +7,7 @@ import { StableMaster } from '../../generated/templates/StableMasterTemplate/Sta
 import { SanToken } from '../../generated/templates/SanTokenTemplate/SanToken'
 
 import { updateStableData, _updatePoolData } from './utils'
-import { BASE_PARAMS, BASE_TOKENS } from '../constants'
+import { BASE_PARAMS, BASE_TOKENS } from '../../../constants'
 
 function isBurn(event: Transfer): boolean {
   return event.params.to.equals(Address.fromString('0x0000000000000000000000000000000000000000'))

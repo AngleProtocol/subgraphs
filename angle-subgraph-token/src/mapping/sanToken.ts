@@ -6,7 +6,7 @@ import { ERC20 } from '../../generated/templates/SanTokenTemplate/ERC20'
 import { StableMaster } from '../../generated/templates/StableMasterTemplate/StableMaster'
 import { SanToken } from '../../generated/templates/SanTokenTemplate/SanToken'
 
-import { BASE_TOKENS } from '../constants'
+import { BASE_TOKENS } from '../../../constants'
 
 function isBurn(event: Transfer): boolean {
   return event.params.to.equals(Address.fromString('0x0000000000000000000000000000000000000000'))

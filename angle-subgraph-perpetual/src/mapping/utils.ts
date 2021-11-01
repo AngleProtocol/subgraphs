@@ -7,7 +7,7 @@ import { PoolManager } from '../../generated/templates/StableMasterTemplate/Pool
 import { PerpetualManagerFront } from '../../generated/templates/StableMasterTemplate/PerpetualManagerFront'
 import { Oracle } from '../../generated/templates/StableMasterTemplate/Oracle'
 import { PoolData, StableData, StableHistoricalData, PoolHistoricalData } from '../../generated/schema'
-import { ROUND_COEFF } from '../constants'
+import { ROUND_COEFF } from '../../../constants'
 
 export function historicalSlice(block: ethereum.Block): BigInt {
   const timestamp = block.timestamp
