@@ -51,9 +51,9 @@ export function handleCollateralDeployed(event: CollateralDeployed): void {
   data.save()
 }
 export function handlePause(event: Paused): void {
-  // const pausing = changetype<Bytes>(crypto.keccak256(ByteArray.fromUTF8('pause(bytes32,address)')).subarray(0, 4))
-  // const header = changetype<Bytes>(event.transaction.input.subarray(0, 4))
-  // if (header != pausing) return;
+  const pausing = changetype<Bytes>(crypto.keccak256(ByteArray.fromUTF8('pause(bytes32,address)')).subarray(0, 4))
+  const header = changetype<Bytes>(event.transaction.input.subarray(0, 4))
+  if (header != pausing) return
 
   const inputPool = changetype<Bytes>(event.transaction.input.subarray(48, 68))
   const poolManager = PoolManager.bind(Address.fromString(inputPool.toHexString()))
@@ -61,8 +61,6 @@ export function handlePause(event: Paused): void {
   const call = poolManager.try_stableMaster()
   if (call.reverted) return
   const stableMaster = StableMaster.bind(call.value)
-  const token = ERC20.bind(poolManager.token())
-  const agToken = AgTokenContract.bind(stableMaster.agToken())
   const collatData = stableMaster.collateralMap(poolManager._address)
   const perpetualManager = PerpetualManagerFront.bind(collatData.value2)
 
@@ -104,9 +102,9 @@ export function handlePause(event: Paused): void {
 }
 
 export function handleUnpause(event: Unpaused): void {
-  // const unpausing = changetype<Bytes>(crypto.keccak256(ByteArray.fromUTF8('unpause(bytes32,address)')).subarray(0, 4))
-  // const header = changetype<Bytes>(event.transaction.input.subarray(0, 4))
-  // if (header != unpausing) return;
+  const unpausing = changetype<Bytes>(crypto.keccak256(ByteArray.fromUTF8('unpause(bytes32,address)')).subarray(0, 4))
+  const header = changetype<Bytes>(event.transaction.input.subarray(0, 4))
+  if (header != unpausing) return
 
   const inputPool = changetype<Bytes>(event.transaction.input.subarray(48, 68))
   const poolManager = PoolManager.bind(Address.fromString(inputPool.toHexString()))
@@ -115,8 +113,6 @@ export function handleUnpause(event: Unpaused): void {
   if (call.reverted) return
 
   const stableMaster = StableMaster.bind(call.value)
-  const token = ERC20.bind(poolManager.token())
-  const agToken = AgTokenContract.bind(stableMaster.agToken())
   const collatData = stableMaster.collateralMap(poolManager._address)
   const perpetualManager = PerpetualManagerFront.bind(collatData.value2)
 
