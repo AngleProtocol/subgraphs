@@ -14,10 +14,10 @@ import { StableMaster } from '../../generated/templates/StableMasterTemplate/Sta
 import { Perpetual, PoolData, PauseData, KeeperReward, PerpetualClose } from '../../generated/schema'
 
 import { updateStableData, _updatePoolData } from './utils'
-import { BASE_PARAMS } from '../constants'
-import { MAINTENANCE_MARGIN } from '../constants'
+import { BASE_PARAMS } from '../../../constants'
+import { MAINTENANCE_MARGIN } from '../../../constants'
 
-function updatePoolData(add: boolean, margin: BigInt, poolManager: PoolManager, block: ethereum.Block): void {
+function updatePoolData(poolManager: PoolManager, block: ethereum.Block, add: boolean, margin: BigInt): void {
   const data = _updatePoolData(poolManager, block, add, margin)
   data.save()
 }
@@ -38,7 +38,7 @@ export function handleOpeningPerpetual(event: PerpetualOpened): void {
   data.status = 'open'
   data.save()
 
-  updatePoolData(true, event.params._margin, poolManager, event.block)
+  updatePoolData(poolManager, event.block, true, event.params._margin)
 }
 
 export function handleUpdatingPerpetual(event: PerpetualUpdated): void {
@@ -61,7 +61,7 @@ export function handleUpdatingPerpetual(event: PerpetualUpdated): void {
   const perp = PerpetualManagerFront.bind(event.address)
   const poolManager = PoolManager.bind(perp.poolManager())
 
-  updatePoolData(add, updateMargin, poolManager, event.block)
+  updatePoolData(poolManager, event.block, add, updateMargin)
 }
 
 export function handleClosingPerpetual(event: PerpetualClosed): void {
@@ -144,7 +144,7 @@ export function handleTransfer(event: Transfer): void {
     txData.status = 'liquidate'
     txData.save()
 
-    updatePoolData(false, changetype<BigInt>(margin), poolManager, event.block)
+    updatePoolData(poolManager, event.block, false, margin)
   }
 
   // Case of a transfer or a mint

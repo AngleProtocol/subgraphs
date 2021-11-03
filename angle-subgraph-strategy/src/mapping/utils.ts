@@ -1,5 +1,5 @@
 import { ethereum, BigInt } from '@graphprotocol/graph-ts'
-import { ROUND_COEFF } from '../constants'
+import { ROUND_COEFF } from '../../../constants'
 
 export function historicalSlice(block: ethereum.Block): BigInt {
   const timestamp = block.timestamp

@@ -7,7 +7,7 @@ import { PoolManager } from '../../generated/templates/StableMasterTemplate/Pool
 import { PerpetualManagerFront } from '../../generated/templates/StableMasterTemplate/PerpetualManagerFront'
 import { Oracle } from '../../generated/templates/StableMasterTemplate/Oracle'
 import { PoolData, StableData, StableHistoricalData, PoolHistoricalData } from '../../generated/schema'
-import { ROUND_COEFF } from '../constants'
+import { ROUND_COEFF } from '../../../constants'
 
 export function historicalSlice(block: ethereum.Block): BigInt {
   const timestamp = block.timestamp
@@ -85,11 +85,8 @@ export function _updatePoolData(
   if (data == null) {
     data = new PoolData(id)
     totalMargin = BigInt.fromString('0')
-  } else {
-    totalMargin = add
-      ? changetype<BigInt>(data.totalMargin).plus(margin)
-      : changetype<BigInt>(data.totalMargin).minus(margin)
   }
+  totalMargin = add ? data.totalMargin.plus(margin) : data.totalMargin.minus(margin)
 
   data.poolManager = poolManager._address.toHexString()
 
@@ -204,6 +201,7 @@ export function _updatePoolData(
     dataHistorical.blockNumber = block.number
     dataHistorical.timestamp = roundedTimestamp
   }
+  dataHistorical.save()
 
   return data
 }

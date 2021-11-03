@@ -7,7 +7,7 @@ import { PoolManager } from '../../generated/templates/StableMasterTemplate/Pool
 import { PerpetualManagerFront } from '../../generated/templates/StableMasterTemplate/PerpetualManagerFront'
 import { StableMaster } from '../../generated/templates/StakingRewardsTemplate/StableMaster'
 import { historicalSlice } from './utils'
-import { BASE_TOKENS } from '../constants'
+import { BASE_TOKENS } from '../../../constants'
 
 function updateStakingData(event: ethereum.Event): void {
   const stakingRewardsContract = StakingRewards.bind(event.address)

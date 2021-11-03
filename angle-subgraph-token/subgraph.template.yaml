@@ -1,5 +1,5 @@
 specVersion: 0.0.2
-description: Test of thegraph on {{network}}
+description: General pool, stable datas and all transactions on {{network}}.
 schema:
   file: ./schema.graphql
 dataSources:

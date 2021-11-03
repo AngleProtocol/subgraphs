@@ -1,5 +1,5 @@
 specVersion: 0.0.2
-description: Test of thegraph on {{network}}
+description: on {{network}}
 schema:
   file: ./schema.graphql
 dataSources:
@@ -137,8 +137,6 @@ templates:
           handler: handleClosingPerpetual
         - event: PerpetualsForceClosed(uint256[],(address,uint256)[],address,uint256)
           handler: handleForceClose
-        - event: KeeperTransferred(address,uint256)
-          handler: handleLiquidatePerpetuals
         - event: Paused(address)
           handler: handlePausePerp
         - event: Unpaused(address)

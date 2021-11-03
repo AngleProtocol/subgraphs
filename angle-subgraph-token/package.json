@@ -1,16 +1,20 @@
 {
-  "name": "mainnet-token",
+  "name": "token",
   "license": "UNLICENSED",
   "scripts": {
-    "codegen": "yarn prepare && graph codegen",
+    "codegen": "yarn prepare && yarn graph codegen",
+    "codegen:rinkeby": "yarn prepare:rinkeby && yarn graph codegen",
     "clean": "rm -rf build generated",
     "build": "yarn clean && yarn codegen && yarn graph build",
+    "build:rinkeby": "yarn clean && yarn codegen:rinkeby && yarn graph build",
     "lint": "eslint --ignore-path .gitignore --fix --max-warnings 10 'src/**/*.ts'",
     "deploy": "yarn build && yarn graph deploy --node https://api.thegraph.com/deploy/ --ipfs https://api.thegraph.com/ipfs/ picodes/token",
+    "deploy:rinkeby": "yarn build:rinkeby && yarn graph deploy --node https://api.thegraph.com/deploy/ --ipfs https://api.thegraph.com/ipfs/ picodes/rinkeby-token",
     "create-local": "graph create --node http://localhost:8020/ angle/sub",
     "remove-local": "graph remove --node http://localhost:8020/ angle/sub",
     "deploy-local": "yarn clean && yarn prepare && graph codegen && graph build && graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 angle/sub",
     "prepare": "mustache ../config/mainnet.json subgraph.template.yaml > subgraph.yaml",
-    "test": "graph test"
+    "prepare:rinkeby": "mustache ../config/rinkeby.json subgraph.template.yaml > subgraph.yaml",
+    "test": "yarn graph test"
   }
 }
