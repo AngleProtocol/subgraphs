@@ -15,6 +15,6 @@
     "deploy-local": "yarn clean && yarn prepare && graph codegen && graph build && graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 angle/sub",
     "prepare": "mustache ../config/mainnet.json subgraph.template.yaml > subgraph.yaml",
     "prepare:rinkeby": "mustache ../config/rinkeby.json subgraph.template.yaml > subgraph.yaml",
-    "test": "graph test"
+    "test": "yarn graph test"
   }
 }

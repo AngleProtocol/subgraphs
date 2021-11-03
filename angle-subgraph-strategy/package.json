@@ -2,8 +2,8 @@
   "name": "strategy",
   "license": "UNLICENSED",
   "scripts": {
-    "codegen": "yarn prepare && graph codegen",
-    "codegen:rinkeby": "yarn prepare:rinkeby && graph codegen",
+    "codegen": "yarn prepare && yarn graph codegen",
+    "codegen:rinkeby": "yarn prepare:rinkeby && yarn graph codegen",
     "clean": "rm -rf build generated",
     "build": "yarn clean && yarn codegen && yarn graph build",
     "build:rinkeby": "yarn clean && yarn codegen:rinkeby && yarn graph build",
@@ -15,10 +15,6 @@
     "deploy-local": "yarn clean && yarn prepare && graph codegen && graph build && graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 angle/sub",
     "prepare": "mustache ../config/mainnet.json subgraph.template.yaml > subgraph.yaml",
     "prepare:rinkeby": "mustache ../config/rinkeby.json subgraph.template.yaml > subgraph.yaml",
-    "test": "graph test"
-  },
-  "dependencies": {
-    "@graphprotocol/graph-cli": "^0.22.4",
-    "mustache": "^4.2.0"
+    "test": "yarn graph test"
   }
 }
