@@ -23,6 +23,7 @@ export function handleHarvest(event: ethereum.Event): void {
   // we round to the closest hour
   const roundedTimestamp = historicalSlice(event.block)
   const idHistorical = event.address.toHexString() + '_' + roundedTimestamp.toHexString()
+  const estimatedTotalAssets = strategy.estimatedTotalAssets()
 
   let data = StrategyData.load(id)
   if (data == null) {
@@ -45,7 +46,7 @@ export function handleHarvest(event: ethereum.Event): void {
     dataHistorical.stableName = stableName
     dataHistorical.collatName = collatName
     dataHistorical.decimals = BigInt.fromI32(token.decimals())
-    dataHistorical.totalDebt = strat.value1
+    dataHistorical.estimatedTotalAssets = estimatedTotalAssets
     dataHistorical.debtRatio = strat.value2
     dataHistorical.managerBalance = poolManager.getBalance()
     dataHistorical.totalAsset = poolManager.getTotalAsset()

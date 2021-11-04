@@ -12,7 +12,7 @@ type StrategyData @entity {
   # Lender data
   lenders: [LenderData!]! @derivedFrom(field: "strategy")
   # Total liquidity in the strategy
-  totalDebt: BigInt!
+  estimatedTotalAssets: BigInt!
   # DebtRatio the strategy
   debtRatio: BigInt!
   # Balance of the poolManager
@@ -37,7 +37,7 @@ type StrategyHistoricalData @entity {
   # Collateral Decimal
   decimals: BigInt!
   # Total liquidity in the strategy
-  totalDebt: BigInt!
+  estimatedTotalAssets: BigInt!
   # DebtRatio the strategy
   debtRatio: BigInt!
   # Balance of the poolManager
