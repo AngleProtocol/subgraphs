@@ -32,6 +32,7 @@ export function handleHarvest(event: ethereum.Event): void {
   data.poolManager = managerAddress
   data.stableName = stableName
   data.collatName = collatName
+  data.estimatedTotalAssets = estimatedTotalAssets
   data.decimals = BigInt.fromI32(token.decimals())
   data.debtRatio = strat.value2
   data.managerBalance = poolManager.getBalance()
