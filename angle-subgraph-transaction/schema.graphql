@@ -96,6 +96,8 @@ type PoolData @entity {
   keeperFeesClosingCap: BigInt
   # keeperFeesLiquidationRatio
   keeperFeesLiquidationRatio: BigInt
+  # maintenance margin
+  maintenanceMargin: BigInt
   # BlockNumber of last update
   blockNumber: BigInt
   # Timestamp of last update
@@ -159,6 +161,8 @@ type PoolHistoricalData @entity {
   keeperFeesClosingCap: BigInt
   # keeperFeesLiquidationRatio
   keeperFeesLiquidationRatio: BigInt
+  # maintenance margin
+  maintenanceMargin: BigInt
   # BlockNumber of last update
   blockNumber: BigInt
   # Timestamp of last update

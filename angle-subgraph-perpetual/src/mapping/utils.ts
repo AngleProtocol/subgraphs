@@ -165,6 +165,9 @@ export function _updatePoolData(
   const keeperFeesLiquidationRatio = perpetualManager.keeperFeesLiquidationRatio()
   data.keeperFeesLiquidationRatio = keeperFeesLiquidationRatio
 
+  const maintenanceMargin = perpetualManager.maintenanceMargin()
+  data.maintenanceMargin = maintenanceMargin
+
   data.blockNumber = block.number
 
   data.timestamp = block.timestamp
@@ -198,6 +201,7 @@ export function _updatePoolData(
     dataHistorical.limitHAHedge = limitHAHedge
     dataHistorical.keeperFeesClosingCap = keeperFeesClosingCap
     dataHistorical.keeperFeesLiquidationRatio = keeperFeesLiquidationRatio
+    dataHistorical.maintenanceMargin = maintenanceMargin
     dataHistorical.blockNumber = block.number
     dataHistorical.timestamp = roundedTimestamp
   }
