@@ -33,7 +33,11 @@ export function handleOpeningPerpetual(event: PerpetualOpened): void {
   data.entryRate = event.params._entryRate
   data.liquidationPrice = event.params._committedAmount
     .times(event.params._entryRate)
-    .div(event.params._margin.plus(event.params._committedAmount.times(BASE_PARAMS.minus(MAINTENANCE_MARGIN))))
+    .div(
+      event.params._margin.plus(
+        event.params._committedAmount.times(BASE_PARAMS.minus(MAINTENANCE_MARGIN)).div(BASE_PARAMS)
+      )
+    )
 
   data.status = 'open'
   data.save()
