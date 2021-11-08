@@ -59,7 +59,7 @@ export function handleUpdatingPerpetual(event: PerpetualUpdated): void {
   // entry rate should always be non null as the perp is already opened
   data.liquidationPrice = data
     .committedAmount!.times(data.entryRate!)
-    .div(event.params._margin.plus(data.committedAmount!.times(BASE_PARAMS.minus(MAINTENANCE_MARGIN))))
+    .div(event.params._margin.plus(data.committedAmount!.times(BASE_PARAMS.minus(MAINTENANCE_MARGIN)).div(BASE_PARAMS)))
   data.save()
 
   const perp = PerpetualManagerFront.bind(event.address)
