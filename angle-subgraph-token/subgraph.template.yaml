@@ -199,6 +199,8 @@ templates:
           file: ../abis/AgToken.json
         - name: SanToken
           file: ../abis/SanToken.json
+        - name: SushiLPToken
+          file: ../abis/SushiLPToken.json
       eventHandlers:
         - event: RewardAdded(uint256)
           handler: handleUpdateStaking

@@ -5,9 +5,7 @@ import {
   StableMaster,
   CollateralDeployed
 } from '../../generated/templates/StableMasterTemplate/StableMaster'
-import { ERC20 } from '../../generated/templates/StableMasterTemplate/ERC20'
 import { PoolManager } from '../../generated/templates/StableMasterTemplate/PoolManager'
-import { AgToken as AgTokenContract } from '../../generated/templates/StableMasterTemplate/AgToken'
 import { PerpetualManagerFront } from '../../generated/templates/StableMasterTemplate/PerpetualManagerFront'
 import { PerpetualManagerFrontTemplate } from '../../generated/templates'
 import { PauseData, PoolData, Contracts } from '../../generated/schema'

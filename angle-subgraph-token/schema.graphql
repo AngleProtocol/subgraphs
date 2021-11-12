@@ -26,6 +26,16 @@ type sanToken @entity {
   staked: BigInt!
 }
 
+type externalToken @entity {
+  # Address of the owner + address of the token
+  id: ID!
+  owner: String!
+  token: String!
+  name: String
+  balance: BigInt!
+  staked: BigInt!
+}
+
 type CapitalGain @entity {
   # Address
   id: ID!
