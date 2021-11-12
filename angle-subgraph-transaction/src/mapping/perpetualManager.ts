@@ -14,7 +14,6 @@ import { Perpetual, PerpetualOpen, PerpetualUpdate, PoolData, PauseData, Perpetu
 
 import { updateStableData, _updatePoolData } from './utils'
 import { BASE_PARAMS } from '../../../constants'
-import { MAINTENANCE_MARGIN } from '../../../constants'
 
 function updatePoolData(add: boolean, margin: BigInt, poolManager: PoolManager, block: ethereum.Block): void {
   const data = _updatePoolData(poolManager, block, add, margin)
@@ -24,6 +23,7 @@ function updatePoolData(add: boolean, margin: BigInt, poolManager: PoolManager, 
 export function handleOpeningPerpetual(event: PerpetualOpened): void {
   const perpetualManager = PerpetualManagerFront.bind(event.address)
   const poolManager = PoolManager.bind(perpetualManager.poolManager())
+  const maintenanceMargin = perpetualManager.maintenanceMargin()
 
   const id = event.address.toHexString() + '_' + event.params._perpetualID.toHexString()
   let data = Perpetual.load(id)!
@@ -32,8 +32,11 @@ export function handleOpeningPerpetual(event: PerpetualOpened): void {
   data.entryRate = event.params._entryRate
   data.liquidationPrice = event.params._committedAmount
     .times(event.params._entryRate)
-    .div(event.params._margin.plus(event.params._committedAmount.times(BASE_PARAMS.minus(MAINTENANCE_MARGIN))))
-
+    .div(
+      event.params._margin.plus(
+        event.params._committedAmount.times(BASE_PARAMS.minus(maintenanceMargin)).div(BASE_PARAMS)
+      )
+    )
   data.status = 'open'
   data.save()
 
@@ -63,6 +66,8 @@ export function handleOpeningPerpetual(event: PerpetualOpened): void {
 export function handleUpdatingPerpetual(event: PerpetualUpdated): void {
   const id = event.address.toHexString() + '_' + event.params._perpetualID.toHexString()
   const data = Perpetual.load(id)!
+  const perpetualManager = PerpetualManagerFront.bind(event.address)
+  const maintenanceMargin = perpetualManager.maintenanceMargin()
 
   // updat§e total margin accordingly
   const add = event.params._margin > data.margin
@@ -74,7 +79,8 @@ export function handleUpdatingPerpetual(event: PerpetualUpdated): void {
   // entry rate should always be non null as the perp is already opened
   data.liquidationPrice = data
     .committedAmount!.times(data.entryRate!)
-    .div(event.params._margin.plus(data.committedAmount!.times(BASE_PARAMS.minus(MAINTENANCE_MARGIN))))
+    .div(event.params._margin.plus(data.committedAmount!.times(BASE_PARAMS.minus(maintenanceMargin)).div(BASE_PARAMS)))
+
   data.save()
 
   const perp = PerpetualManagerFront.bind(event.address)
