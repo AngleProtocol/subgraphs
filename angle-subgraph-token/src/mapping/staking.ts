@@ -1,9 +1,17 @@
-import { CapitalGain, StakingData, StakingHistoricalData, agToken, sanToken } from '../../generated/schema'
+import {
+  CapitalGain,
+  StakingData,
+  StakingHistoricalData,
+  agToken,
+  sanToken,
+  externalToken
+} from '../../generated/schema'
 import { StakingRewards, Withdrawn, Staked } from '../../generated/RewardsDistributor/StakingRewards'
 import { ethereum, BigInt } from '@graphprotocol/graph-ts'
 import { SanToken } from '../../generated/templates/StakingRewardsTemplate/SanToken'
 import { ERC20 } from '../../generated/templates/StakingRewardsTemplate/ERC20'
 import { PoolManager } from '../../generated/templates/StableMasterTemplate/PoolManager'
+import { SushiLPToken } from '../../generated/templates/StakingRewardsTemplate/SushiLPToken'
 import { PerpetualManagerFront } from '../../generated/templates/StableMasterTemplate/PerpetualManagerFront'
 import { StableMaster } from '../../generated/templates/StakingRewardsTemplate/StableMaster'
 import { historicalSlice } from './utils'
@@ -157,22 +165,42 @@ export function handleStaked(event: Staked): void {
 
   const sanTokenContract = SanToken.bind(token)
   const result = sanTokenContract.try_poolManager()
-  const symbol = ERC20.bind(token).symbol()
+  let name = ERC20.bind(token).name()
 
   // In this case the staked token is a AgToken
   if (result.reverted) {
-    let data = agToken.load(tokenDataId)
-    if (data == null) {
-      data = new agToken(tokenDataId)
-      data.stableName = symbol
-      data.balance = BigInt.fromString('0')
-      data.owner = event.params.user.toHexString()
-      data.token = token.toHexString()
-      data.staked = event.params.amount
+    if (name.substr(0, 2) == 'ag') {
+      let data = agToken.load(tokenDataId)
+      if (data == null) {
+        data = new agToken(tokenDataId)
+        data.stableName = name
+        data.balance = BigInt.fromString('0')
+        data.owner = event.params.user.toHexString()
+        data.token = token.toHexString()
+        data.staked = event.params.amount
+      } else {
+        data.staked = data.staked.plus(event.params.amount)
+      }
+      data.save()
     } else {
-      data.staked = data.staked.plus(event.params.amount)
+      let data = externalToken.load(tokenDataId)
+      if (data == null) {
+        data = new externalToken(tokenDataId)
+        if (name.split(' ')[0] == 'SushiSwap') {
+          name = `${name} ${ERC20.bind(SushiLPToken.bind(token).token0()).name()}/${ERC20.bind(
+            SushiLPToken.bind(token).token1()
+          ).name()} `
+        }
+        data.name = name
+        data.balance = ERC20.bind(token).balanceOf(event.params.user)
+        data.owner = event.params.user.toHexString()
+        data.token = token.toHexString()
+        data.staked = event.params.amount
+      } else {
+        data.staked = data.staked.plus(event.params.amount)
+      }
+      data.save()
     }
-    data.save()
 
     // In this case the staked token is a SanToken
   } else {
@@ -228,11 +256,20 @@ export function handleWithdrawn(event: Withdrawn): void {
   const sanTokenContract = SanToken.bind(token)
   const result = sanTokenContract.try_poolManager()
 
+  const symbol = ERC20.bind(token).name()
+
   // In this case the staked token is a AgToken
   if (result.reverted) {
-    const data = agToken.load(tokenDataId)!
-    data.staked = data.staked.minus(event.params.amount)
-    data.save()
+    if (symbol.substr(0, 2) == 'ag') {
+      const data = agToken.load(tokenDataId)!
+      data.staked = data.staked.minus(event.params.amount)
+      data.save()
+    } else {
+      const data = externalToken.load(tokenDataId)!
+      data.balance = ERC20.bind(token).balanceOf(event.params.user)
+      data.staked = data.staked.minus(event.params.amount)
+      data.save()
+    }
   } else {
     // In this case the staked token is a SanToken
     const poolManager = PoolManager.bind(result.value)

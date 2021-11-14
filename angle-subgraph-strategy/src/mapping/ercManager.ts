@@ -21,6 +21,7 @@ export function handleStrategyAdded(event: StrategyAdded): void {
   }
 
   const managerAddress = strategy.poolManager().toHexString()
+  const estimatedTotalAssets = strategy.estimatedTotalAssets()
   stratData.poolManager = managerAddress
 
   const agToken = ERC20.bind(stableMaster.agToken())
@@ -31,7 +32,7 @@ export function handleStrategyAdded(event: StrategyAdded): void {
   stratData.stableName = stableName
   stratData.collatName = collatName
   stratData.decimals = BigInt.fromI32(token.decimals())
-  stratData.totalDebt = strat.value1
+  stratData.estimatedTotalAssets = estimatedTotalAssets
   stratData.debtRatio = strat.value2
   stratData.managerBalance = poolManager.getBalance()
   stratData.totalAsset = poolManager.getTotalAsset()
