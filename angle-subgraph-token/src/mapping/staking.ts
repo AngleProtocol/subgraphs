@@ -189,7 +189,7 @@ export function handleStaked(event: Staked): void {
         if (name.split(' ')[0] == 'SushiSwap' || name.split(' ')[0] == 'Uniswap V2') {
           name = `${name} ${ERC20.bind(SushiLPToken.bind(token).token0()).symbol()}/${ERC20.bind(
             SushiLPToken.bind(token).token1()
-          ).symbol()} `
+          ).symbol()}`
         }
         data.name = name
         data.balance = ERC20.bind(token).balanceOf(event.params.user)
