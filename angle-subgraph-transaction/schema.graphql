@@ -82,6 +82,8 @@ type PoolData @entity {
   totalHedgeAmount: BigInt
   # Total amount brought by HAs
   totalMargin: BigInt!
+  # Total fees taken by the protocol
+  totalFees: BigInt!
   # Exchange rate
   rateLower: BigInt
   # Exchange rate
@@ -147,6 +149,8 @@ type PoolHistoricalData @entity {
   totalHedgeAmount: BigInt
   # Total amount brought by HAs
   totalMargin: BigInt!
+  # Total fees taken by the protocol
+  totalFees: BigInt!
   # Exchange rate
   rateLower: BigInt
   # Exchange rate

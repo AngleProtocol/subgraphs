@@ -7,7 +7,8 @@ import { PoolManager } from '../../generated/templates/StableMasterTemplate/Pool
 import { PerpetualManagerFront } from '../../generated/templates/StableMasterTemplate/PerpetualManagerFront'
 import { Oracle } from '../../generated/templates/StableMasterTemplate/Oracle'
 import { PoolData, StableData, StableHistoricalData, PoolHistoricalData } from '../../generated/schema'
-import { ROUND_COEFF } from '../../../constants'
+import { BASE_PARAMS, ROUND_COEFF } from '../../../constants'
+import { StableMaster__collateralMapResultFeeDataStruct } from '../../../angle-subgraph-transaction/generated/Core/StableMaster'
 
 export function historicalSlice(block: ethereum.Block): BigInt {
   const timestamp = block.timestamp
@@ -66,6 +67,7 @@ export function updateStableData(stableMaster: StableMaster, block: ethereum.Blo
 export function _updatePoolData(
   poolManager: PoolManager,
   block: ethereum.Block,
+  fee: BigInt = BigInt.fromString('0'),
   add: boolean = true,
   margin: BigInt = BigInt.fromString('0')
 ): PoolData {
@@ -80,17 +82,23 @@ export function _updatePoolData(
   const roundedTimestamp = historicalSlice(block)
   const idHistorical = poolManager._address.toHexString() + '_hour_' + roundedTimestamp.toString()
 
+  const decimals = BigInt.fromI32(token.decimals())
+  const totalHedgeAmount = perpetualManager.totalHedgeAmount()
+
   let totalMargin: BigInt
+  let totalFees: BigInt
   let data = PoolData.load(id)
   if (data == null) {
     data = new PoolData(id)
     totalMargin = BigInt.fromString('0')
+    totalFees = BigInt.fromString('0')
   }
+
   totalMargin = add ? data.totalMargin.plus(margin) : data.totalMargin.minus(margin)
+  totalFees = data.totalFees.plus(fee)
 
   data.poolManager = poolManager._address.toHexString()
 
-  const decimals = BigInt.fromI32(token.decimals())
   data.decimals = decimals
 
   const stableMasterAddress = poolManager.stableMaster().toHexString()
@@ -141,10 +149,10 @@ export function _updatePoolData(
   const apr = poolManager.estimatedAPR()
   data.apr = apr
 
-  const totalHedgeAmount = perpetualManager.totalHedgeAmount()
   data.totalHedgeAmount = totalHedgeAmount
 
   data.totalMargin = totalMargin
+  data.totalFees = totalFees
 
   const rates = oracle.readAll()
   data.rateLower = rates.value0
@@ -194,6 +202,7 @@ export function _updatePoolData(
     dataHistorical.apr = apr
     dataHistorical.totalHedgeAmount = totalHedgeAmount
     dataHistorical.totalMargin = totalMargin
+    dataHistorical.totalFees = totalFees
     dataHistorical.rateLower = rates.value0
     dataHistorical.rateUpper = rates.value1
     dataHistorical.targetHAHedge = targetHAHedge
@@ -208,4 +217,164 @@ export function _updatePoolData(
   dataHistorical.save()
 
   return data
+}
+
+export function _piecewiseLinear(value: BigInt, xArray: BigInt[], yArray: BigInt[]): BigInt {
+  if (value.ge(xArray[xArray.length - 1])) {
+    return yArray[yArray.length - 1]
+  }
+  if (value.le(xArray[0])) {
+    return yArray[0]
+  }
+
+  let i = 0
+  while (value.ge(xArray[i + 1])) {
+    i += 1
+  }
+  const pct = value
+    .minus(xArray[i])
+    .times(BASE_PARAMS)
+    .div(xArray[i + 1].minus(xArray[i]))
+  const normalized = pct
+    .times(yArray[i + 1].minus(yArray[i]))
+    .div(BASE_PARAMS)
+    .plus(yArray[i])
+
+  return normalized
+}
+
+export function _computeHedgeRatio(
+  perpetualManager: PerpetualManagerFront,
+  stocksUsers: BigInt,
+  currentHedgeAmount: BigInt
+): BigInt {
+  const targetHAHedge = perpetualManager.targetHAHedge()
+  // Fetching info from the `StableMaster`: the amount to hedge is based on the `stocksUsers`
+  // of the given collateral
+  const targetHedgeAmount = stocksUsers.times(targetHAHedge).div(BASE_PARAMS)
+
+  let ratio
+  if (currentHedgeAmount.lt(targetHedgeAmount)) ratio = currentHedgeAmount.times(BASE_PARAMS).div(targetHedgeAmount)
+  else ratio = BASE_PARAMS
+
+  return ratio
+}
+
+export function _getMintFee(stableMaster: StableMaster, poolManager: PoolManager, amount: BigInt): BigInt {
+  const collatData = stableMaster.collateralMap(poolManager._address)
+  const oracle = Oracle.bind(collatData.value3)
+  const feeData = collatData.value8
+  const stocksUsers = collatData.value4
+  const perpetualManager = PerpetualManagerFront.bind(collatData.value2)
+  const totalHedgeAmount = perpetualManager.totalHedgeAmount()
+  const amountForUserInStable = oracle.readQuoteLower(amount)
+  const hedgeRatio = _computeHedgeRatio(perpetualManager, amount.plus(stocksUsers), totalHedgeAmount)
+  // Fees could in some occasions depend on other factors like collateral ratio
+  // Keepers are the ones updating this part of the fees
+  const feeMint = _getMintPercentageFees(feeData, hedgeRatio)
+  const fee = amountForUserInStable.times(feeMint).div(BASE_PARAMS)
+  return fee
+}
+
+export function _getBurnFee(stableMaster: StableMaster, poolManager: PoolManager, amount: BigInt): BigInt {
+  const collatData = stableMaster.collateralMap(poolManager._address)
+  const oracle = Oracle.bind(collatData.value3)
+  const feeData = collatData.value8
+  const stocksUsers = collatData.value4
+  const perpetualManager = PerpetualManagerFront.bind(collatData.value2)
+  const totalHedgeAmount = perpetualManager.totalHedgeAmount()
+  const hedgeRatio = _computeHedgeRatio(perpetualManager, stocksUsers.minus(amount), totalHedgeAmount)
+
+  // Getting the highest possible oracle value
+  const oracleValue = oracle.readUpper()
+
+  // Computing how much of collateral can be redeemed by the user after taking fees
+  // The value of the fees here is `_computeFeeBurn(amount,col)` (it is a proportion expressed in `BASE_PARAMS`)
+  // The real value of what can be redeemed by the user is `amountInC * (BASE_PARAMS - fees) / BASE_PARAMS`,
+  // but we prefer to avoid doing multiplications after divisions
+  const fee = amount
+    .times(_getBurnPercentageFees(feeData, hedgeRatio))
+    .times(collatData.value6)
+    .div(oracleValue.times(BASE_PARAMS))
+
+  return fee
+}
+
+export function _getMintPercentageFees(
+  feeData: StableMaster__collateralMapResultFeeDataStruct,
+  hedgeRatio: BigInt
+): BigInt {
+  const bonusMalusMint = feeData.bonusMalusMint
+  const xFeeMint = feeData.xFeeMint
+  const yFeeMint = feeData.yFeeMint
+  // Computing the net margin of HAs to store in the perpetual: it consists simply in deducing fees
+  // Those depend on how much is already hedged by HAs compared with what's to hedge
+  const feesPaid = bonusMalusMint.times(_piecewiseLinear(hedgeRatio, xFeeMint, yFeeMint)).div(BASE_PARAMS)
+  return feesPaid
+}
+
+export function _getBurnPercentageFees(
+  feeData: StableMaster__collateralMapResultFeeDataStruct,
+  hedgeRatio: BigInt
+): BigInt {
+  const bonusMalusBurn = feeData.bonusMalusBurn
+  const xFeeBurn = feeData.xFeeBurn
+  const yFeeBurn = feeData.yFeeBurn
+  // Computing the net margin of HAs to store in the perpetual: it consists simply in deducing fees
+  // Those depend on how much is already hedged by HAs compared with what's to hedge
+  const feesPaid = bonusMalusBurn.times(_piecewiseLinear(hedgeRatio, xFeeBurn, yFeeBurn)).div(BASE_PARAMS)
+  return feesPaid
+}
+
+export function _getDepositFees(perpetualManager: PerpetualManagerFront, hedgeRatio: BigInt): BigInt {
+  const haBonusMalusDeposit = perpetualManager.haBonusMalusDeposit()
+
+  const xHAFeesDeposit = []
+  const yHAFeesDeposit = []
+
+  let i = 0
+  let find = true
+  while (find) {
+    const result = perpetualManager.try_xHAFeesDeposit(BigInt.fromString(i.toString()))
+    if (result.reverted) {
+      find = false
+    } else {
+      xHAFeesDeposit.push(result.value)
+      xHAFeesDeposit.push(perpetualManager.yHAFeesDeposit(BigInt.fromString(i.toString())))
+      i = i + 1
+    }
+  }
+  // Computing the net margin of HAs to store in the perpetual: it consists simply in deducing fees
+  // Those depend on how much is already hedged by HAs compared with what's to hedge
+  const feesPaid = haBonusMalusDeposit
+    .times(_piecewiseLinear(hedgeRatio, xHAFeesDeposit, yHAFeesDeposit))
+    .div(BASE_PARAMS)
+
+  return feesPaid
+}
+
+export function _getWithdrawFees(perpetualManager: PerpetualManagerFront, hedgeRatio: BigInt): BigInt {
+  const haBonusMalusWithdraw = perpetualManager.haBonusMalusWithdraw()
+
+  const xHAFeesWithdraw = []
+  const yHAFeesWithdraw = []
+
+  let i = 0
+  let find = true
+  while (find) {
+    const result = perpetualManager.try_xHAFeesWithdraw(BigInt.fromString(i.toString()))
+    if (result.reverted) {
+      find = false
+    } else {
+      xHAFeesWithdraw.push(result.value)
+      xHAFeesWithdraw.push(perpetualManager.yHAFeesWithdraw(BigInt.fromString(i.toString())))
+      i = i + 1
+    }
+  }
+
+  const feesPaid = haBonusMalusWithdraw
+    .times(_piecewiseLinear(hedgeRatio, xHAFeesWithdraw, yHAFeesWithdraw))
+    .div(BASE_PARAMS)
+
+  return feesPaid
 }

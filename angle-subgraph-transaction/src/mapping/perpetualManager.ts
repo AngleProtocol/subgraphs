@@ -12,11 +12,17 @@ import { ERC20 } from '../../generated/templates/PerpetualManagerFrontTemplate/E
 import { StableMaster } from '../../generated/templates/StableMasterTemplate/StableMaster'
 import { Perpetual, PerpetualOpen, PerpetualUpdate, PoolData, PauseData, PerpetualClose } from '../../generated/schema'
 
-import { updateStableData, _updatePoolData } from './utils'
+import { updateStableData, _computeHedgeRatio, _getDepositFees, _updatePoolData } from './utils'
 import { BASE_PARAMS } from '../../../constants'
 
-function updatePoolData(add: boolean, margin: BigInt, poolManager: PoolManager, block: ethereum.Block): void {
-  const data = _updatePoolData(poolManager, block, add, margin)
+function updatePoolData(
+  poolManager: PoolManager,
+  block: ethereum.Block,
+  add: boolean,
+  margin: BigInt,
+  fee: BigInt = BigInt.fromString('0')
+): void {
+  const data = _updatePoolData(poolManager, block, fee, add, margin)
   data.save()
 }
 
@@ -24,6 +30,9 @@ export function handleOpeningPerpetual(event: PerpetualOpened): void {
   const perpetualManager = PerpetualManagerFront.bind(event.address)
   const poolManager = PoolManager.bind(perpetualManager.poolManager())
   const maintenanceMargin = perpetualManager.maintenanceMargin()
+  const stableMaster = StableMaster.bind(poolManager.stableMaster())
+  const token = ERC20.bind(poolManager.token())
+  const decimals = BigInt.fromI32(token.decimals())
 
   const id = event.address.toHexString() + '_' + event.params._perpetualID.toHexString()
   let data = Perpetual.load(id)!
@@ -39,6 +48,8 @@ export function handleOpeningPerpetual(event: PerpetualOpened): void {
     )
   data.status = 'open'
   data.save()
+
+  const addedHedgeAmount = event.params._committedAmount.times(event.params._entryRate)
 
   const txId =
     event.transaction.hash.toHexString() +
@@ -60,7 +71,21 @@ export function handleOpeningPerpetual(event: PerpetualOpened): void {
   txData.blockNumber = event.block.number
   txData.save()
 
-  updatePoolData(true, event.params._margin, poolManager, event.block)
+  const totalHedgeAmount = perpetualManager.totalHedgeAmount()
+  const totalHedgeAmountUpdate = event.params._committedAmount
+    .times(event.params._entryRate)
+    .div(BigInt.fromString('10').pow(decimals))
+  const collatData = stableMaster.collateralMap(poolManager._address)
+  const stocksUsers = collatData.value4
+
+  const hedgeRatio = _computeHedgeRatio(perpetualManager, stocksUsers, totalHedgeAmount.plus(totalHedgeAmountUpdate))
+  const haFeesDeposit = _getDepositFees(perpetualManager, hedgeRatio)
+  // Fees are rounded to the advantage of the protocol
+  const fee = event.params._committedAmount.minus(
+    event.params._committedAmount.times(BASE_PARAMS.minus(haFeesDeposit)).div(BASE_PARAMS)
+  )
+
+  updatePoolData(poolManager, event.block, true, event.params._margin, fee)
 }
 
 export function handleUpdatingPerpetual(event: PerpetualUpdated): void {
@@ -105,7 +130,7 @@ export function handleUpdatingPerpetual(event: PerpetualUpdated): void {
   txData.blockNumber = event.block.number
   txData.save()
 
-  updatePoolData(add, updateMargin, poolManager, event.block)
+  updatePoolData(poolManager, event.block, add, updateMargin)
 }
 
 export function handleClosingPerpetual(event: PerpetualClosed): void {
@@ -178,7 +203,23 @@ export function handleTransfer(event: Transfer): void {
     txData.status = 'liquidate'
     txData.save()
 
-    updatePoolData(false, margin, poolManager, event.block)
+    // const totalHedgeAmount = perpetualManager.totalHedgeAmount()
+    // const totalHedgeAmountUpdate = event.params._committedAmount
+    //   .times(event.params._entryRate)
+    //   .div(BigInt.fromString('10').pow(decimals))
+    // const collatRatio = _computeHedgeRatio(
+    //   stableMaster,
+    //   perpetualManager,
+    //   totalHedgeAmount.plus(totalHedgeAmountUpdate)
+    // )
+    // const haFeesDeposit = _getDepositFees(perpetualManager, collatRatio)
+    // // Fees are rounded to the advantage of the protocol
+    // const fee = event.params._committedAmount.minus(
+    //   event.params._committedAmount.times(BASE_PARAMS.minus(haFeesDeposit)).div(BASE_PARAMS)
+    // )
+    const fee = BigInt.fromString('0')
+
+    updatePoolData(poolManager, event.block, false, margin, fee)
   }
 
   // Case of a transfer or a mint
