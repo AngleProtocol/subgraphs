@@ -186,10 +186,10 @@ export function handleStaked(event: Staked): void {
       let data = externalToken.load(tokenDataId)
       if (data == null) {
         data = new externalToken(tokenDataId)
-        if (name.split(' ')[0] == 'SushiSwap') {
-          name = `${name} ${ERC20.bind(SushiLPToken.bind(token).token0()).name()}/${ERC20.bind(
+        if (name.split(' ')[0] == 'SushiSwap' || name.split(' ')[0] == 'Uniswap V2') {
+          name = `${name} ${ERC20.bind(SushiLPToken.bind(token).token0()).symbol()}/${ERC20.bind(
             SushiLPToken.bind(token).token1()
-          ).name()} `
+          ).symbol()} `
         }
         data.name = name
         data.balance = ERC20.bind(token).balanceOf(event.params.user)
