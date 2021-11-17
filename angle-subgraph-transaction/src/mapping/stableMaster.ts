@@ -14,10 +14,10 @@ import { PerpetualManagerFront } from '../../generated/templates/StableMasterTem
 import { PerpetualManagerFrontTemplate, SanTokenTemplate } from '../../generated/templates'
 import { PauseData, PoolData, Contracts, Mint, Burn } from '../../generated/schema'
 
-import { updateStableData, _updatePoolData } from './utils'
+import { updateStableData, _getBurnFee, _getMintFee, _updatePoolData } from './utils'
 
-function updatePoolData(poolManager: PoolManager, block: ethereum.Block): void {
-  const data = _updatePoolData(poolManager, block)
+function updatePoolData(poolManager: PoolManager, block: ethereum.Block, fee = BigInt.fromString('0')): void {
+  const data = _updatePoolData(poolManager, block, fee)
   data.save()
 }
 
@@ -176,8 +176,9 @@ export function handleMint(event: MintedStablecoins): void {
   const stableMaster = StableMaster.bind(poolManager.stableMaster())
   const stableName = ERC20.bind(stableMaster.agToken()).symbol()
 
+  const fee = _getMintFee(stableMaster, poolManager, event.params.amount)
   updateStableData(stableMaster, event.block)
-  updatePoolData(poolManager, event.block)
+  updatePoolData(poolManager, event.block, fee)
 
   const id =
     event.transaction.hash.toHexString() + '_' + event.address.toHexString() + '_' + event.params.amount.toString()
@@ -208,9 +209,11 @@ export function handleBurn(event: BurntStablecoins): void {
   const poolManager = PoolManager.bind(Address.fromString(inputPool.toHexString()))
   const stableMaster = StableMaster.bind(poolManager.stableMaster())
   const stableName = ERC20.bind(stableMaster.agToken()).symbol()
+
+  const fee = _getBurnFee(stableMaster, poolManager, event.params.amount)
   // update protocol data entities in case of a mint or a burn
   updateStableData(stableMaster, event.block)
-  updatePoolData(poolManager, event.block)
+  updatePoolData(poolManager, event.block, fee)
 
   const id =
     event.transaction.hash.toHexString() + '_' + event.address.toHexString() + '_' + event.params.amount.toString()
