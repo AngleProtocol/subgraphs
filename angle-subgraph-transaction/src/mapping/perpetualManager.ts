@@ -1,5 +1,6 @@
 import { ethereum, Address, BigInt } from '@graphprotocol/graph-ts'
 import {
+  KeeperTransferred,
   PerpetualClosed,
   PerpetualOpened,
   PerpetualsForceClosed,
@@ -12,25 +13,28 @@ import { ERC20 } from '../../generated/templates/PerpetualManagerFrontTemplate/E
 import { StableMaster } from '../../generated/templates/StableMasterTemplate/StableMaster'
 import { Perpetual, PerpetualOpen, PerpetualUpdate, PoolData, PauseData, PerpetualClose } from '../../generated/schema'
 
-import { updateStableData, _computeHedgeRatio, _getDepositFees, _updatePoolData } from './utils'
+import {
+  updateStableData,
+  _computeHedgeRatio,
+  _getDepositFees,
+  _updatePoolData,
+  _getFeesClosePerp,
+  _getFeesLiquidationPerp,
+  _getForceCloseFees,
+  _updateFeePoolData,
+  _getFeesOpenPerp
+} from './utils'
 import { BASE_PARAMS } from '../../../constants'
 import { MAINTENANCE_MARGIN } from '../../../constants'
 
-function updatePoolData(
-  poolManager: PoolManager,
-  block: ethereum.Block,
-  add: boolean,
-  margin: BigInt,
-  fee: BigInt = BigInt.fromString('0')
-): void {
-  const data = _updatePoolData(poolManager, block, fee, add, margin)
+function updatePoolData(poolManager: PoolManager, block: ethereum.Block, add: boolean, margin: BigInt): void {
+  const data = _updatePoolData(poolManager, block, add, margin)
   data.save()
 }
 
 export function handleOpeningPerpetual(event: PerpetualOpened): void {
   const perpetualManager = PerpetualManagerFront.bind(event.address)
   const poolManager = PoolManager.bind(perpetualManager.poolManager())
-  const stableMaster = StableMaster.bind(poolManager.stableMaster())
   const token = ERC20.bind(poolManager.token())
   const decimals = BigInt.fromI32(token.decimals())
 
@@ -45,8 +49,6 @@ export function handleOpeningPerpetual(event: PerpetualOpened): void {
 
   data.status = 'open'
   data.save()
-
-  const addedHedgeAmount = event.params._committedAmount.times(event.params._entryRate)
 
   const txId =
     event.transaction.hash.toHexString() +
@@ -68,21 +70,8 @@ export function handleOpeningPerpetual(event: PerpetualOpened): void {
   txData.blockNumber = event.block.number
   txData.save()
 
-  const totalHedgeAmount = perpetualManager.totalHedgeAmount()
-  const totalHedgeAmountUpdate = event.params._committedAmount
-    .times(event.params._entryRate)
-    .div(BigInt.fromString('10').pow(decimals))
-  const collatData = stableMaster.collateralMap(poolManager._address)
-  const stocksUsers = collatData.value4
-
-  const hedgeRatio = _computeHedgeRatio(perpetualManager, stocksUsers, totalHedgeAmount.plus(totalHedgeAmountUpdate))
-  const haFeesDeposit = _getDepositFees(perpetualManager, hedgeRatio)
-  // Fees are rounded to the advantage of the protocol
-  const fee = event.params._committedAmount.minus(
-    event.params._committedAmount.times(BASE_PARAMS.minus(haFeesDeposit)).div(BASE_PARAMS)
-  )
-
-  updatePoolData(poolManager, event.block, true, event.params._margin, fee)
+  const fee = _getFeesOpenPerp(perpetualManager, poolManager, decimals, event)
+  _updateFeePoolData(poolManager, event.block, fee)
 }
 
 export function handleUpdatingPerpetual(event: PerpetualUpdated): void {
@@ -128,6 +117,8 @@ export function handleUpdatingPerpetual(event: PerpetualUpdated): void {
 }
 
 export function handleClosingPerpetual(event: PerpetualClosed): void {
+  const perpetualManager = PerpetualManagerFront.bind(event.address)
+  const poolManager = PoolManager.bind(perpetualManager.poolManager())
   const id = event.address.toHexString() + '_' + event.params._perpetualID.toHexString()
 
   const data = Perpetual.load(id)!
@@ -140,9 +131,18 @@ export function handleClosingPerpetual(event: PerpetualClosed): void {
   txData.closeAmount = event.params._closeAmount
   txData.status = 'close'
   txData.save()
+
+  const fee = _getFeesClosePerp(perpetualManager, data)
+  _updateFeePoolData(poolManager, event.block, fee)
 }
 
 export function handleForceClose(event: PerpetualsForceClosed): void {
+  const perpetualManager = PerpetualManagerFront.bind(event.address)
+  const poolManager = PoolManager.bind(perpetualManager.poolManager())
+  const stableMaster = StableMaster.bind(poolManager.stableMaster())
+
+  let totalCloseFee
+  let totalLiquidationFee
   for (let i = 0; i < event.params.perpetualIDs.length; i++) {
     const id = event.address.toHexString() + '_' + event.params.perpetualIDs[i].toHexString()
     let data = Perpetual.load(id)!
@@ -160,9 +160,35 @@ export function handleForceClose(event: PerpetualsForceClosed): void {
       txData.closeAmount = event.params.ownerAndCashOut[i].netCashOutAmount
       txData.status = status
       txData.save()
+
+      if (event.params.ownerAndCashOut[i].netCashOutAmount.gt(BigInt.fromString('0'))) {
+        totalCloseFee = totalCloseFee.plus(_getFeesClosePerp(perpetualManager, data))
+      } else {
+        totalLiquidationFee = totalLiquidationFee.plus(_getFeesLiquidationPerp(perpetualManager, data))
+      }
     }
     data.save()
   }
+
+  const totalHedgeAmount = perpetualManager.totalHedgeAmount()
+  const collatData = stableMaster.collateralMap(poolManager._address)
+  const stocksUsers = collatData.value4
+  const hedgeRatio = _computeHedgeRatio(perpetualManager, stocksUsers, totalHedgeAmount)
+
+  const protocolCloseFee = _getForceCloseFees(perpetualManager, hedgeRatio, totalCloseFee)
+  _updateFeePoolData(poolManager, event.block, protocolCloseFee.plus(totalLiquidationFee))
+}
+
+export function handleLiquidatePerpetuals(event: KeeperTransferred): void {
+  const perpetualManager = PerpetualManagerFront.bind(event.address)
+  const poolManager = PoolManager.bind(perpetualManager.poolManager())
+  const keeperFeesLiquidationRatio = perpetualManager.keeperFeesLiquidationRatio()
+
+  const approxProtocolCloseFee = event.params.liquidationFees
+    .times(BASE_PARAMS.minus(keeperFeesLiquidationRatio))
+    .div(keeperFeesLiquidationRatio)
+
+  _updateFeePoolData(poolManager, event.block, approxProtocolCloseFee)
 }
 
 export function handleTransfer(event: Transfer): void {
@@ -197,23 +223,7 @@ export function handleTransfer(event: Transfer): void {
     txData.status = 'liquidate'
     txData.save()
 
-    // const totalHedgeAmount = perpetualManager.totalHedgeAmount()
-    // const totalHedgeAmountUpdate = event.params._committedAmount
-    //   .times(event.params._entryRate)
-    //   .div(BigInt.fromString('10').pow(decimals))
-    // const collatRatio = _computeHedgeRatio(
-    //   stableMaster,
-    //   perpetualManager,
-    //   totalHedgeAmount.plus(totalHedgeAmountUpdate)
-    // )
-    // const haFeesDeposit = _getDepositFees(perpetualManager, collatRatio)
-    // // Fees are rounded to the advantage of the protocol
-    // const fee = event.params._committedAmount.minus(
-    //   event.params._committedAmount.times(BASE_PARAMS.minus(haFeesDeposit)).div(BASE_PARAMS)
-    // )
-    const fee = BigInt.fromString('0')
-
-    updatePoolData(poolManager, event.block, false, margin, fee)
+    updatePoolData(poolManager, event.block, false, margin)
   }
 
   // Case of a transfer or a mint
