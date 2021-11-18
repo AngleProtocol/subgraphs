@@ -16,7 +16,7 @@ import { PauseData, PoolData, Contracts, Mint, Burn } from '../../generated/sche
 
 import { updateStableData, _getBurnFee, _getMintFee, _updateFeePoolData, _updatePoolData } from './utils'
 
-function updatePoolData(poolManager: PoolManager, block: ethereum.Block, fee = BigInt.fromString('0')): void {
+function updatePoolData(poolManager: PoolManager, block: ethereum.Block, fee: BigInt = BigInt.fromString('0')): void {
   const data = _updatePoolData(poolManager, block)
   data.save()
   _updateFeePoolData(poolManager, block, fee)

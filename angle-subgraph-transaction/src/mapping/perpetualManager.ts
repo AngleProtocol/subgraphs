@@ -86,9 +86,9 @@ export function handleUpdatingPerpetual(event: PerpetualUpdated): void {
   data.lastUpdateTimestamp = event.block.timestamp
   data.lastUpdateBlockNumber = event.block.number
   // entry rate should always be non null as the perp is already opened
-  data.liquidationPrice = data
-    .committedAmount!.times(data.entryRate!)
-    .div(event.params._margin.plus(data.committedAmount!.times(BASE_PARAMS.minus(MAINTENANCE_MARGIN))))
+  data.liquidationPrice = data.committedAmount
+    .times(data.entryRate)
+    .div(event.params._margin.plus(data.committedAmount.times(BASE_PARAMS.minus(MAINTENANCE_MARGIN))))
   data.save()
 
   const perp = PerpetualManagerFront.bind(event.address)
@@ -141,8 +141,8 @@ export function handleForceClose(event: PerpetualsForceClosed): void {
   const poolManager = PoolManager.bind(perpetualManager.poolManager())
   const stableMaster = StableMaster.bind(poolManager.stableMaster())
 
-  let totalCloseFee
-  let totalLiquidationFee
+  let totalCloseFee: BigInt
+  let totalLiquidationFee: BigInt
   for (let i = 0; i < event.params.perpetualIDs.length; i++) {
     const id = event.address.toHexString() + '_' + event.params.perpetualIDs[i].toHexString()
     let data = Perpetual.load(id)!

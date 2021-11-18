@@ -202,11 +202,11 @@ type Perpetual @entity {
   # Brought amount
   margin: BigInt!
   # Committed amount
-  committedAmount: BigInt
+  committedAmount: BigInt!
   # Close amount (if any)
   closeAmount: BigInt
   # Rate of the last update of the Perpetual
-  entryRate: BigInt
+  entryRate: BigInt!
   # rate at which the perp can be liquidated
   liquidationPrice: BigInt
   # BlockNumber at opening
