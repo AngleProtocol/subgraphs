@@ -1,4 +1,4 @@
-import { ethereum, BigInt } from '@graphprotocol/graph-ts'
+import { ethereum, BigInt, log } from '@graphprotocol/graph-ts'
 import { StableMaster } from '../../generated/templates/StableMasterTemplate/StableMaster'
 import { ERC20 } from '../../generated/templates/StableMasterTemplate/ERC20'
 import { SanToken } from '../../generated/templates/StableMasterTemplate/SanToken'
@@ -436,7 +436,7 @@ export function _getDepositFees(perpetualManager: PerpetualManagerFront, hedgeRa
       find = false
     } else {
       xHAFeesDeposit.push(result.value)
-      xHAFeesDeposit.push(perpetualManager.yHAFeesDeposit(BigInt.fromString(i.toString())))
+      yHAFeesDeposit.push(perpetualManager.yHAFeesDeposit(BigInt.fromString(i.toString())))
       i = i + 1
     }
   }
@@ -463,7 +463,7 @@ export function _getWithdrawFees(perpetualManager: PerpetualManagerFront, hedgeR
       find = false
     } else {
       xHAFeesWithdraw.push(result.value)
-      xHAFeesWithdraw.push(perpetualManager.yHAFeesWithdraw(BigInt.fromString(i.toString())))
+      yHAFeesWithdraw.push(perpetualManager.yHAFeesWithdraw(BigInt.fromString(i.toString())))
       i = i + 1
     }
   }
