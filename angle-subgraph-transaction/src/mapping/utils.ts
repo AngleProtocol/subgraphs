@@ -6,9 +6,10 @@ import { AgToken as AgTokenContract } from '../../generated/templates/StableMast
 import { PoolManager } from '../../generated/templates/StableMasterTemplate/PoolManager'
 import { PerpetualManagerFront } from '../../generated/templates/StableMasterTemplate/PerpetualManagerFront'
 import { Oracle } from '../../generated/templates/StableMasterTemplate/Oracle'
-import { PoolData, StableData, StableHistoricalData, PoolHistoricalData } from '../../generated/schema'
+import { PoolData, StableData, StableHistoricalData, PoolHistoricalData, Perpetual } from '../../generated/schema'
 import { BASE_PARAMS, ROUND_COEFF } from '../../../constants'
 import { StableMaster__collateralMapResultFeeDataStruct } from '../../../angle-subgraph-transaction/generated/Core/StableMaster'
+import { PerpetualOpened } from '../../generated/templates/PerpetualManagerFrontTemplate/PerpetualManagerFront'
 
 export function historicalSlice(block: ethereum.Block): BigInt {
   const timestamp = block.timestamp
@@ -64,10 +65,27 @@ export function updateStableData(stableMaster: StableMaster, block: ethereum.Blo
   dataHistoricalHour.save()
 }
 
+export function _updateFeePoolData(poolManager: PoolManager, block: ethereum.Block, fee: BigInt) {
+  const id = poolManager._address.toHexString()
+  const roundedTimestamp = historicalSlice(block)
+  const idHistorical = poolManager._address.toHexString() + '_hour_' + roundedTimestamp.toString()
+
+  let totalFees: BigInt
+  // always call after _updatePoolData
+  let data = PoolData.load(id)!
+  let dataHistorical = PoolHistoricalData.load(idHistorical)!
+
+  totalFees = data.totalFees.plus(fee)
+  data.totalFees = totalFees
+  dataHistorical.totalFees = totalFees
+
+  dataHistorical.save()
+  data.save()
+}
+
 export function _updatePoolData(
   poolManager: PoolManager,
   block: ethereum.Block,
-  fee: BigInt = BigInt.fromString('0'),
   add: boolean = true,
   margin: BigInt = BigInt.fromString('0')
 ): PoolData {
@@ -95,7 +113,7 @@ export function _updatePoolData(
   }
 
   totalMargin = add ? data.totalMargin.plus(margin) : data.totalMargin.minus(margin)
-  totalFees = data.totalFees.plus(fee)
+  totalFees = data.totalFees
 
   data.poolManager = poolManager._address.toHexString()
 
@@ -260,6 +278,79 @@ export function _computeHedgeRatio(
   return ratio
 }
 
+export function _getFeesOpenPerp(
+  perpetualManager: PerpetualManagerFront,
+  poolManager: PoolManager,
+  decimals: BigInt,
+  event: PerpetualOpened
+): BigInt {
+  const stableMaster = StableMaster.bind(poolManager.stableMaster())
+  const totalHedgeAmount = perpetualManager.totalHedgeAmount()
+  const totalHedgeAmountUpdate = event.params._committedAmount
+    .times(event.params._entryRate)
+    .div(BigInt.fromString('10').pow(decimals))
+  const collatData = stableMaster.collateralMap(poolManager._address)
+  const stocksUsers = collatData.value4
+
+  const hedgeRatio = _computeHedgeRatio(perpetualManager, stocksUsers, totalHedgeAmount.plus(totalHedgeAmountUpdate))
+  const haFeesDeposit = _getDepositFees(perpetualManager, hedgeRatio)
+  // Fees are rounded to the advantage of the protocol
+  const fee = event.params._committedAmount.minus(
+    event.params._committedAmount.times(BASE_PARAMS.minus(haFeesDeposit)).div(BASE_PARAMS)
+  )
+  return fee
+}
+
+export function _getCashOutAmount(perp: Perpetual, currentRate: BigInt): BigInt {
+  // All these computations are made just because we are working with uint and not int
+  // so we cannot do x-y if x<y
+  const newCommit = perp.committedAmount.times(perp.entryRate).div(currentRate)
+  // Checking if a liquidation is needed: for this to happen the `cashOutAmount` should be inferior
+  // to the maintenance margin of the perpetual
+  let cashOutAmount
+  if (newCommit.ge(perp.committedAmount.plus(perp.margin))) cashOutAmount = BigInt.fromString('0')
+  else {
+    // The definition of the margin ratio is `(margin + PnL) / committedAmount`
+    // where `PnL = commit * (1-entryRate/currentRate)`
+    // So here: `newCashOutAmount = margin + PnL`
+    cashOutAmount = perp.committedAmount.plus(perp.margin).minus(newCommit)
+  }
+  return cashOutAmount
+}
+
+export function _getFeesClosePerp(perpetualManager: PerpetualManagerFront, perp: Perpetual): BigInt {
+  const oracle = Oracle.bind(perpetualManager.oracle())
+  const currentRate = oracle.readLower()
+  const poolManager = PoolManager.bind(perpetualManager.poolManager())
+  const stableMaster = StableMaster.bind(poolManager.stableMaster())
+  const collatData = stableMaster.collateralMap(poolManager._address)
+  const stocksUsers = collatData.value4
+  const totalHedgeAmount = perpetualManager.totalHedgeAmount()
+  const cashOutAmount = _getCashOutAmount(perp, currentRate)
+  const hedgeRatio = _computeHedgeRatio(perpetualManager, stocksUsers, totalHedgeAmount)
+
+  const feeWithdraw = _getWithdrawFees(perpetualManager, hedgeRatio)
+  // Rounding the fees at the protocol's advantage
+  let feesPaid = perp.committedAmount.minus(perp.committedAmount.times(BASE_PARAMS.minus(feeWithdraw)).div(BASE_PARAMS))
+  if (feesPaid.ge(cashOutAmount)) {
+    feesPaid = cashOutAmount
+  }
+  return feesPaid
+}
+
+export function _getFeesLiquidationPerp(perpetualManager: PerpetualManagerFront, perp: Perpetual): BigInt {
+  const oracle = Oracle.bind(perpetualManager.oracle())
+  const currentRate = oracle.readLower()
+  const cashOutAmount = _getCashOutAmount(perp, currentRate)
+  const keeperFeesLiquidationRatio = perpetualManager.keeperFeesLiquidationRatio()
+  const keeperFeesLiquidationCap = perpetualManager.keeperFeesLiquidationCap()
+
+  let keeperFees = cashOutAmount.times(keeperFeesLiquidationRatio).div(BASE_PARAMS)
+  keeperFees = keeperFees.lt(keeperFeesLiquidationCap) ? keeperFees : keeperFeesLiquidationCap
+  const protocolFees = cashOutAmount.minus(keeperFees)
+  return protocolFees
+}
+
 export function _getMintFee(stableMaster: StableMaster, poolManager: PoolManager, amount: BigInt): BigInt {
   const collatData = stableMaster.collateralMap(poolManager._address)
   const oracle = Oracle.bind(collatData.value3)
@@ -377,4 +468,33 @@ export function _getWithdrawFees(perpetualManager: PerpetualManagerFront, hedgeR
     .div(BASE_PARAMS)
 
   return feesPaid
+}
+
+export function _getForceCloseFees(
+  perpetualManager: PerpetualManagerFront,
+  hedgeRatio: BigInt,
+  closeFee: BigInt
+): BigInt {
+  const keeperFeesClosingCap = perpetualManager.keeperFeesClosingCap()
+  const xKeeperFeesClosing = []
+  const yKeeperFeesClosing = []
+
+  let i = 0
+  let find = true
+  while (find) {
+    const result = perpetualManager.try_xKeeperFeesClosing(BigInt.fromString(i.toString()))
+    if (result.reverted) {
+      find = false
+    } else {
+      xKeeperFeesClosing.push(result.value)
+      yKeeperFeesClosing.push(perpetualManager.yKeeperFeesClosing(BigInt.fromString(i.toString())))
+      i = i + 1
+    }
+  }
+
+  let fee = closeFee.times(_piecewiseLinear(hedgeRatio, xKeeperFeesClosing, yKeeperFeesClosing)).div(BASE_PARAMS)
+  fee = fee.lt(keeperFeesClosingCap) ? fee : keeperFeesClosingCap
+  const protocolFee = closeFee.minus(fee)
+
+  return protocolFee
 }
