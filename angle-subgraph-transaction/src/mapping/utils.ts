@@ -8,7 +8,8 @@ import { PerpetualManagerFront } from '../../generated/templates/StableMasterTem
 import { Oracle } from '../../generated/templates/StableMasterTemplate/Oracle'
 import { PoolData, StableData, StableHistoricalData, PoolHistoricalData, Perpetual } from '../../generated/schema'
 import { BASE_PARAMS, ROUND_COEFF } from '../../../constants'
-import { StableMaster__collateralMapResultFeeDataStruct } from '../../../angle-subgraph-transaction/generated/Core/StableMaster'
+// import { StableMaster__collateralMapResultFeeDataStruct } from '../../generated/Core/StableMaster'
+import { StableMaster__collateralMapResultFeeDataStruct } from '../../generated/templates/StableMasterTemplate/StableMaster'
 import { PerpetualOpened } from '../../generated/templates/PerpetualManagerFrontTemplate/PerpetualManagerFront'
 
 export function historicalSlice(block: ethereum.Block): BigInt {
@@ -65,7 +66,7 @@ export function updateStableData(stableMaster: StableMaster, block: ethereum.Blo
   dataHistoricalHour.save()
 }
 
-export function _updateFeePoolData(poolManager: PoolManager, block: ethereum.Block, fee: BigInt) {
+export function _updateFeePoolData(poolManager: PoolManager, block: ethereum.Block, fee: BigInt): void {
   const id = poolManager._address.toHexString()
   const roundedTimestamp = historicalSlice(block)
   const idHistorical = poolManager._address.toHexString() + '_hour_' + roundedTimestamp.toString()
@@ -271,7 +272,7 @@ export function _computeHedgeRatio(
   // of the given collateral
   const targetHedgeAmount = stocksUsers.times(targetHAHedge).div(BASE_PARAMS)
 
-  let ratio
+  let ratio: BigInt
   if (currentHedgeAmount.lt(targetHedgeAmount)) ratio = currentHedgeAmount.times(BASE_PARAMS).div(targetHedgeAmount)
   else ratio = BASE_PARAMS
 
@@ -284,11 +285,15 @@ export function _getFeesOpenPerp(
   decimals: BigInt,
   event: PerpetualOpened
 ): BigInt {
+  // ugly but impossible to cast decimals to u8
+  let baseCollat = BigInt.fromString('10')
+  for (let i = 0; i < decimals.toI32(); i++) {
+    baseCollat = baseCollat.times(BigInt.fromString('10'))
+  }
+
   const stableMaster = StableMaster.bind(poolManager.stableMaster())
   const totalHedgeAmount = perpetualManager.totalHedgeAmount()
-  const totalHedgeAmountUpdate = event.params._committedAmount
-    .times(event.params._entryRate)
-    .div(BigInt.fromString('10').pow(decimals))
+  const totalHedgeAmountUpdate = event.params._committedAmount.times(event.params._entryRate).div(baseCollat)
   const collatData = stableMaster.collateralMap(poolManager._address)
   const stocksUsers = collatData.value4
 
@@ -307,7 +312,7 @@ export function _getCashOutAmount(perp: Perpetual, currentRate: BigInt): BigInt 
   const newCommit = perp.committedAmount.times(perp.entryRate).div(currentRate)
   // Checking if a liquidation is needed: for this to happen the `cashOutAmount` should be inferior
   // to the maintenance margin of the perpetual
-  let cashOutAmount
+  let cashOutAmount: BigInt
   if (newCommit.ge(perp.committedAmount.plus(perp.margin))) cashOutAmount = BigInt.fromString('0')
   else {
     // The definition of the margin ratio is `(margin + PnL) / committedAmount`
@@ -420,8 +425,8 @@ export function _getBurnPercentageFees(
 export function _getDepositFees(perpetualManager: PerpetualManagerFront, hedgeRatio: BigInt): BigInt {
   const haBonusMalusDeposit = perpetualManager.haBonusMalusDeposit()
 
-  const xHAFeesDeposit = []
-  const yHAFeesDeposit = []
+  const xHAFeesDeposit: BigInt[] = []
+  const yHAFeesDeposit: BigInt[] = []
 
   let i = 0
   let find = true
@@ -447,8 +452,8 @@ export function _getDepositFees(perpetualManager: PerpetualManagerFront, hedgeRa
 export function _getWithdrawFees(perpetualManager: PerpetualManagerFront, hedgeRatio: BigInt): BigInt {
   const haBonusMalusWithdraw = perpetualManager.haBonusMalusWithdraw()
 
-  const xHAFeesWithdraw = []
-  const yHAFeesWithdraw = []
+  const xHAFeesWithdraw: BigInt[] = []
+  const yHAFeesWithdraw: BigInt[] = []
 
   let i = 0
   let find = true
@@ -476,8 +481,8 @@ export function _getForceCloseFees(
   closeFee: BigInt
 ): BigInt {
   const keeperFeesClosingCap = perpetualManager.keeperFeesClosingCap()
-  const xKeeperFeesClosing = []
-  const yKeeperFeesClosing = []
+  const xKeeperFeesClosing: BigInt[] = []
+  const yKeeperFeesClosing: BigInt[] = []
 
   let i = 0
   let find = true

@@ -148,8 +148,8 @@ export function handleForceClose(event: PerpetualsForceClosed): void {
   const poolManager = PoolManager.bind(perpetualManager.poolManager())
   const stableMaster = StableMaster.bind(poolManager.stableMaster())
 
-  let totalCloseFee
-  let totalLiquidationFee
+  let totalCloseFee: BigInt
+  let totalLiquidationFee: BigInt
   for (let i = 0; i < event.params.perpetualIDs.length; i++) {
     const id = event.address.toHexString() + '_' + event.params.perpetualIDs[i].toHexString()
     let data = Perpetual.load(id)!
