@@ -35,7 +35,6 @@ export function handleOpeningPerpetual(event: PerpetualOpened): void {
   const perpetualManager = PerpetualManagerFront.bind(event.address)
   const poolManager = PoolManager.bind(perpetualManager.poolManager())
   const maintenanceMargin = perpetualManager.maintenanceMargin()
-  const stableMaster = StableMaster.bind(poolManager.stableMaster())
   const token = ERC20.bind(poolManager.token())
   const decimals = BigInt.fromI32(token.decimals())
 
@@ -92,9 +91,9 @@ export function handleUpdatingPerpetual(event: PerpetualUpdated): void {
   data.lastUpdateTimestamp = event.block.timestamp
   data.lastUpdateBlockNumber = event.block.number
   // entry rate should always be non null as the perp is already opened
-  data.liquidationPrice = data
-    .committedAmount!.times(data.entryRate!)
-    .div(event.params._margin.plus(data.committedAmount!.times(BASE_PARAMS.minus(maintenanceMargin)).div(BASE_PARAMS)))
+  data.liquidationPrice = data.committedAmount
+    .times(data.entryRate)
+    .div(event.params._margin.plus(data.committedAmount.times(BASE_PARAMS.minus(maintenanceMargin)).div(BASE_PARAMS)))
 
   data.save()
 
