@@ -83,7 +83,15 @@ type PoolData @entity {
   # Total amount brought by HAs
   totalMargin: BigInt!
   # Total fees taken by the protocol
-  totalFees: BigInt!
+  totalProtocolFees: BigInt!
+  # Total keeper fees
+  totalKeeperFees: BigInt!
+  # Total interests generated for the protocol
+  totalProtocolInterests: BigInt!
+  # Total interests distributed to the SLP
+  totalSLPInterests: BigInt!
+  # Total fees distributed to the SLP
+  totalSLPFees: BigInt!
   # Exchange rate
   rateLower: BigInt
   # Exchange rate
@@ -150,7 +158,15 @@ type PoolHistoricalData @entity {
   # Total amount brought by HAs
   totalMargin: BigInt!
   # Total fees taken by the protocol
-  totalFees: BigInt!
+  totalProtocolFees: BigInt!
+  # Total keeper fees
+  totalKeeperFees: BigInt!
+  # Total interests generated for the protocol
+  totalProtocolInterests: BigInt!
+  # Total interests distributed to the SLP
+  totalSLPInterests: BigInt!
+  # Total fees distributed to the SLP
+  totalSLPFees: BigInt!
   # Exchange rate
   rateLower: BigInt
   # Exchange rate

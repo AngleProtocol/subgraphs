@@ -14,12 +14,17 @@ import { PerpetualManagerFront } from '../../generated/templates/StableMasterTem
 import { PerpetualManagerFrontTemplate, SanTokenTemplate } from '../../generated/templates'
 import { PauseData, PoolData, Contracts, Mint, Burn } from '../../generated/schema'
 
-import { updateStableData, _getBurnFee, _getMintFee, _updateFeePoolData, _updatePoolData } from './utils'
+import { updateStableData, _getBurnFee, _getMintFee, _updateGainPoolData, _updatePoolData } from './utils'
 
-function updatePoolData(poolManager: PoolManager, block: ethereum.Block, fee: BigInt = BigInt.fromString('0')): void {
+function updatePoolData(
+  poolManager: PoolManager,
+  block: ethereum.Block,
+  protocolFees: BigInt = BigInt.fromString('0'),
+  SLPFees: BigInt = BigInt.fromString('0')
+): void {
   const data = _updatePoolData(poolManager, block)
   data.save()
-  _updateFeePoolData(poolManager, block, fee)
+  _updateGainPoolData(poolManager, block, protocolFees, BigInt.fromString('0'), SLPFees)
 }
 
 export function handleCollateralDeployed(event: CollateralDeployed): void {
@@ -177,9 +182,9 @@ export function handleMint(event: MintedStablecoins): void {
   const stableMaster = StableMaster.bind(poolManager.stableMaster())
   const stableName = ERC20.bind(stableMaster.agToken()).symbol()
 
-  const fee = _getMintFee(stableMaster, poolManager, event.params.amount)
+  const fees = _getMintFee(stableMaster, poolManager, event.params.amount)
   updateStableData(stableMaster, event.block)
-  updatePoolData(poolManager, event.block, fee)
+  updatePoolData(poolManager, event.block, fees[0], fees[1])
 
   const id =
     event.transaction.hash.toHexString() + '_' + event.address.toHexString() + '_' + event.params.amount.toString()
@@ -211,10 +216,9 @@ export function handleBurn(event: BurntStablecoins): void {
   const stableMaster = StableMaster.bind(poolManager.stableMaster())
   const stableName = ERC20.bind(stableMaster.agToken()).symbol()
 
-  const fee = _getBurnFee(stableMaster, poolManager, event.params.amount)
-  // update protocol data entities in case of a mint or a burn
+  const fees = _getBurnFee(stableMaster, poolManager, event.params.amount)
   updateStableData(stableMaster, event.block)
-  updatePoolData(poolManager, event.block, fee)
+  updatePoolData(poolManager, event.block, fees[0], fees[1])
 
   const id =
     event.transaction.hash.toHexString() + '_' + event.address.toHexString() + '_' + event.params.amount.toString()

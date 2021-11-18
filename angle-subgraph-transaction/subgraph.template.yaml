@@ -146,3 +146,29 @@ templates:
         - event: Transfer(indexed address,indexed address,indexed uint256)
           handler: handleTransfer
       file: ./src/mapping/PerpetualManager.ts
+  - kind: ethereum/contract
+    name: StrategyTemplate
+    network: {{network}}
+    source:
+      abi: Strategy
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - StrategyData, StrategyHistoricalData, LenderData
+      abis:
+        - name: StableMaster
+          file: ../abis/StableMasterFront.json
+        - name: PoolManager
+          file: ../abis/PoolManager.json
+        - name: Strategy
+          file: ../abis/Strategy.json
+        - name: Lender
+          file: ../abis/GenericLenderBase.json
+        - name: ERC20
+          file: ../abis/ERC20.json
+      eventHandlers:
+        - event: Harvested(uint256,uint256,uint256,uint256)
+          handler: handleHarvest
+      file: ./src/mapping/strategy.ts

@@ -21,7 +21,7 @@ import {
   _getFeesClosePerp,
   _getFeesLiquidationPerp,
   _getForceCloseFees,
-  _updateFeePoolData,
+  _updateGainPoolData,
   _getFeesOpenPerp
 } from './utils'
 import { BASE_PARAMS } from '../../../constants'
@@ -74,7 +74,7 @@ export function handleOpeningPerpetual(event: PerpetualOpened): void {
 
   updatePoolData(poolManager, event.block, true, event.params._margin)
   const fee = _getFeesOpenPerp(perpetualManager, poolManager, event)
-  _updateFeePoolData(poolManager, event.block, fee)
+  _updateGainPoolData(poolManager, event.block, fee)
 }
 
 export function handleUpdatingPerpetual(event: PerpetualUpdated): void {
@@ -139,7 +139,7 @@ export function handleClosingPerpetual(event: PerpetualClosed): void {
   txData.save()
 
   const fee = _getFeesClosePerp(perpetualManager, data)
-  _updateFeePoolData(poolManager, event.block, fee)
+  _updateGainPoolData(poolManager, event.block, fee)
 }
 
 export function handleForceClose(event: PerpetualsForceClosed): void {
@@ -147,8 +147,9 @@ export function handleForceClose(event: PerpetualsForceClosed): void {
   const poolManager = PoolManager.bind(perpetualManager.poolManager())
   const stableMaster = StableMaster.bind(poolManager.stableMaster())
 
-  let totalCloseFee: BigInt
-  let totalLiquidationFee: BigInt
+  let totalCloseFee = BigInt.fromString('0')
+  let totalKeeperLiquidationFee = BigInt.fromString('0')
+  let totalProtocolLiquidationFee = BigInt.fromString('0')
   for (let i = 0; i < event.params.perpetualIDs.length; i++) {
     const id = event.address.toHexString() + '_' + event.params.perpetualIDs[i].toHexString()
     let data = Perpetual.load(id)!
@@ -170,7 +171,9 @@ export function handleForceClose(event: PerpetualsForceClosed): void {
       if (event.params.ownerAndCashOut[i].netCashOutAmount.gt(BigInt.fromString('0'))) {
         totalCloseFee = totalCloseFee.plus(_getFeesClosePerp(perpetualManager, data))
       } else {
-        totalLiquidationFee = totalLiquidationFee.plus(_getFeesLiquidationPerp(perpetualManager, data))
+        const fees = _getFeesLiquidationPerp(perpetualManager, data)
+        totalKeeperLiquidationFee = totalKeeperLiquidationFee.plus(fees[1])
+        totalProtocolLiquidationFee = totalProtocolLiquidationFee.plus(fees[0])
       }
     }
     data.save()
@@ -181,8 +184,14 @@ export function handleForceClose(event: PerpetualsForceClosed): void {
   const stocksUsers = collatData.value4
   const hedgeRatio = _computeHedgeRatio(perpetualManager, stocksUsers, totalHedgeAmount)
 
-  const protocolCloseFee = _getForceCloseFees(perpetualManager, hedgeRatio, totalCloseFee)
-  _updateFeePoolData(poolManager, event.block, protocolCloseFee.plus(totalLiquidationFee))
+  const fees = _getForceCloseFees(perpetualManager, hedgeRatio, totalCloseFee)
+
+  _updateGainPoolData(
+    poolManager,
+    event.block,
+    fees[0].plus(totalProtocolLiquidationFee),
+    fees[1].plus(totalKeeperLiquidationFee)
+  )
 }
 
 export function handleLiquidatePerpetuals(event: KeeperTransferred): void {
@@ -190,11 +199,11 @@ export function handleLiquidatePerpetuals(event: KeeperTransferred): void {
   const poolManager = PoolManager.bind(perpetualManager.poolManager())
   const keeperFeesLiquidationRatio = perpetualManager.keeperFeesLiquidationRatio()
 
-  const approxProtocolCloseFee = event.params.liquidationFees
+  const approxProtocolLiquidateFee = event.params.liquidationFees
     .times(BASE_PARAMS.minus(keeperFeesLiquidationRatio))
     .div(keeperFeesLiquidationRatio)
 
-  _updateFeePoolData(poolManager, event.block, approxProtocolCloseFee)
+  _updateGainPoolData(poolManager, event.block, approxProtocolLiquidateFee, event.params.liquidationFees)
 }
 
 export function handleTransfer(event: Transfer): void {

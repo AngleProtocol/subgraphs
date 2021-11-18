@@ -66,19 +66,40 @@ export function updateStableData(stableMaster: StableMaster, block: ethereum.Blo
   dataHistoricalHour.save()
 }
 
-export function _updateFeePoolData(poolManager: PoolManager, block: ethereum.Block, fee: BigInt): void {
+export function _updateGainPoolData(
+  poolManager: PoolManager,
+  block: ethereum.Block,
+  totalProtocolFees: BigInt = BigInt.fromString('0'),
+  totalKeeperFees: BigInt = BigInt.fromString('0'),
+  totalSLPFees: BigInt = BigInt.fromString('0'),
+  totalProtocolInterests: BigInt = BigInt.fromString('0'),
+  totalSLPInterests: BigInt = BigInt.fromString('0')
+): void {
   const id = poolManager._address.toHexString()
   const roundedTimestamp = historicalSlice(block)
   const idHistorical = poolManager._address.toHexString() + '_hour_' + roundedTimestamp.toString()
 
-  let totalFees: BigInt
   // always call after _updatePoolData
   let data = PoolData.load(id)!
   let dataHistorical = PoolHistoricalData.load(idHistorical)!
 
-  totalFees = data.totalFees.plus(fee)
-  data.totalFees = totalFees
-  dataHistorical.totalFees = totalFees
+  let tmpTotalProtocolFees = data.totalProtocolFees.plus(totalProtocolFees)
+  let tmpTotalKeeperFees = data.totalKeeperFees.plus(totalKeeperFees)
+  let tmpTotalSLPFees = data.totalSLPFees.plus(totalSLPFees)
+  let tmpTotalProtocolInterests = data.totalProtocolInterests.plus(totalProtocolInterests)
+  let tmpTotalSLPInterests = data.totalSLPInterests.plus(totalSLPInterests)
+
+  data.totalSLPInterests = tmpTotalProtocolFees
+  data.totalSLPInterests = tmpTotalKeeperFees
+  data.totalSLPInterests = tmpTotalSLPFees
+  data.totalSLPInterests = tmpTotalProtocolInterests
+  data.totalSLPInterests = tmpTotalSLPInterests
+
+  dataHistorical.totalSLPInterests = tmpTotalProtocolFees
+  dataHistorical.totalSLPInterests = tmpTotalKeeperFees
+  dataHistorical.totalSLPInterests = tmpTotalSLPFees
+  dataHistorical.totalSLPInterests = tmpTotalProtocolInterests
+  dataHistorical.totalSLPInterests = tmpTotalSLPInterests
 
   dataHistorical.save()
   data.save()
@@ -105,16 +126,29 @@ export function _updatePoolData(
   const totalHedgeAmount = perpetualManager.totalHedgeAmount()
 
   let totalMargin: BigInt
-  let totalFees: BigInt
+  let totalProtocolFees: BigInt
+  let totalKeeperFees: BigInt
+  let totalSLPFees: BigInt
+  let totalProtocolInterests: BigInt
+  let totalSLPInterests: BigInt
+
   let data = PoolData.load(id)
   if (data == null) {
     data = new PoolData(id)
     totalMargin = BigInt.fromString('0')
-    totalFees = BigInt.fromString('0')
+    totalProtocolFees = BigInt.fromString('0')
+    totalKeeperFees = BigInt.fromString('0')
+    totalSLPFees = BigInt.fromString('0')
+    totalProtocolInterests = BigInt.fromString('0')
+    totalSLPInterests = BigInt.fromString('0')
   }
 
   totalMargin = add ? data.totalMargin.plus(margin) : data.totalMargin.minus(margin)
-  totalFees = data.totalFees
+  totalProtocolFees = data.totalProtocolFees
+  totalKeeperFees = data.totalKeeperFees
+  totalSLPFees = data.totalSLPFees
+  totalProtocolInterests = data.totalProtocolInterests
+  totalSLPInterests = data.totalSLPInterests
 
   data.poolManager = poolManager._address.toHexString()
 
@@ -171,7 +205,6 @@ export function _updatePoolData(
   data.totalHedgeAmount = totalHedgeAmount
 
   data.totalMargin = totalMargin
-  data.totalFees = totalFees
 
   const rates = oracle.readAll()
   data.rateLower = rates.value0
@@ -221,7 +254,11 @@ export function _updatePoolData(
     dataHistorical.apr = apr
     dataHistorical.totalHedgeAmount = totalHedgeAmount
     dataHistorical.totalMargin = totalMargin
-    dataHistorical.totalFees = totalFees
+    dataHistorical.totalProtocolFees = totalProtocolFees
+    dataHistorical.totalKeeperFees = totalKeeperFees
+    dataHistorical.totalSLPFees = totalSLPFees
+    dataHistorical.totalProtocolInterests = totalProtocolInterests
+    dataHistorical.totalSLPInterests = totalSLPInterests
     dataHistorical.rateLower = rates.value0
     dataHistorical.rateUpper = rates.value1
     dataHistorical.targetHAHedge = targetHAHedge
@@ -335,7 +372,7 @@ export function _getFeesClosePerp(perpetualManager: PerpetualManagerFront, perp:
   return feesPaid
 }
 
-export function _getFeesLiquidationPerp(perpetualManager: PerpetualManagerFront, perp: Perpetual): BigInt {
+export function _getFeesLiquidationPerp(perpetualManager: PerpetualManagerFront, perp: Perpetual): BigInt[] {
   const oracle = Oracle.bind(perpetualManager.oracle())
   const currentRate = oracle.readLower()
   const cashOutAmount = _getCashOutAmount(perp, currentRate)
@@ -345,10 +382,10 @@ export function _getFeesLiquidationPerp(perpetualManager: PerpetualManagerFront,
   let keeperFees = cashOutAmount.times(keeperFeesLiquidationRatio).div(BASE_PARAMS)
   keeperFees = keeperFees.lt(keeperFeesLiquidationCap) ? keeperFees : keeperFeesLiquidationCap
   const protocolFees = cashOutAmount.minus(keeperFees)
-  return protocolFees
+  return [protocolFees, keeperFees]
 }
 
-export function _getMintFee(stableMaster: StableMaster, poolManager: PoolManager, amount: BigInt): BigInt {
+export function _getMintFee(stableMaster: StableMaster, poolManager: PoolManager, amount: BigInt): BigInt[] {
   const collatData = stableMaster.collateralMap(poolManager._address)
   const oracle = Oracle.bind(collatData.value3)
   const feeData = collatData.value8
@@ -361,10 +398,12 @@ export function _getMintFee(stableMaster: StableMaster, poolManager: PoolManager
   // Keepers are the ones updating this part of the fees
   const feeMint = _getMintPercentageFees(feeData, hedgeRatio)
   const fee = amount.times(feeMint).div(BASE_PARAMS)
-  return fee
+  const percentFeesForSLPs = collatData.value7.feesForSLPs
+  const SLPFees = fee.times(percentFeesForSLPs)
+  return [fee.minus(SLPFees), SLPFees]
 }
 
-export function _getBurnFee(stableMaster: StableMaster, poolManager: PoolManager, amount: BigInt): BigInt {
+export function _getBurnFee(stableMaster: StableMaster, poolManager: PoolManager, amount: BigInt): BigInt[] {
   const collatData = stableMaster.collateralMap(poolManager._address)
   const oracle = Oracle.bind(collatData.value3)
   const feeData = collatData.value8
@@ -385,7 +424,9 @@ export function _getBurnFee(stableMaster: StableMaster, poolManager: PoolManager
     .times(collatData.value6)
     .div(oracleValue.times(BASE_PARAMS))
 
-  return fee
+  const percentFeesForSLPs = collatData.value7.feesForSLPs
+  const SLPFees = fee.times(percentFeesForSLPs)
+  return [fee.minus(SLPFees), SLPFees]
 }
 
 export function _getMintPercentageFees(
@@ -471,7 +512,7 @@ export function _getForceCloseFees(
   perpetualManager: PerpetualManagerFront,
   hedgeRatio: BigInt,
   closeFee: BigInt
-): BigInt {
+): BigInt[] {
   const keeperFeesClosingCap = perpetualManager.keeperFeesClosingCap()
   const xKeeperFeesClosing: BigInt[] = []
   const yKeeperFeesClosing: BigInt[] = []
@@ -489,9 +530,9 @@ export function _getForceCloseFees(
     }
   }
 
-  let fee = closeFee.times(_piecewiseLinear(hedgeRatio, xKeeperFeesClosing, yKeeperFeesClosing)).div(BASE_PARAMS)
-  fee = fee.lt(keeperFeesClosingCap) ? fee : keeperFeesClosingCap
-  const protocolFee = closeFee.minus(fee)
+  let keeperFees = closeFee.times(_piecewiseLinear(hedgeRatio, xKeeperFeesClosing, yKeeperFeesClosing)).div(BASE_PARAMS)
+  keeperFees = keeperFees.lt(keeperFeesClosingCap) ? keeperFees : keeperFeesClosingCap
+  const protocolFees = closeFee.minus(keeperFees)
 
-  return protocolFee
+  return [protocolFees, keeperFees]
 }
