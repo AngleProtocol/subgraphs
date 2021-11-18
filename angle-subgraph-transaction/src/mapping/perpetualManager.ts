@@ -36,7 +36,6 @@ export function handleOpeningPerpetual(event: PerpetualOpened): void {
   const poolManager = PoolManager.bind(perpetualManager.poolManager())
   const maintenanceMargin = perpetualManager.maintenanceMargin()
   const token = ERC20.bind(poolManager.token())
-  const decimals = BigInt.fromI32(token.decimals())
 
   const id = event.address.toHexString() + '_' + event.params._perpetualID.toHexString()
   let data = Perpetual.load(id)!
@@ -73,7 +72,8 @@ export function handleOpeningPerpetual(event: PerpetualOpened): void {
   txData.blockNumber = event.block.number
   txData.save()
 
-  const fee = _getFeesOpenPerp(perpetualManager, poolManager, decimals, event)
+  updatePoolData(poolManager, event.block, true, event.params._margin)
+  const fee = _getFeesOpenPerp(perpetualManager, poolManager, event)
   _updateFeePoolData(poolManager, event.block, fee)
 }
 

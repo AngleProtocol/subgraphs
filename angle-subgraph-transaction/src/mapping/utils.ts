@@ -282,27 +282,19 @@ export function _computeHedgeRatio(
 export function _getFeesOpenPerp(
   perpetualManager: PerpetualManagerFront,
   poolManager: PoolManager,
-  decimals: BigInt,
   event: PerpetualOpened
 ): BigInt {
-  // ugly but impossible to cast decimals to u8
-  let baseCollat = BigInt.fromString('10')
-  for (let i = 0; i < decimals.toI32(); i++) {
-    baseCollat = baseCollat.times(BigInt.fromString('10'))
-  }
-
   const stableMaster = StableMaster.bind(poolManager.stableMaster())
-  const totalHedgeAmount = perpetualManager.totalHedgeAmount()
-  const totalHedgeAmountUpdate = event.params._committedAmount.times(event.params._entryRate).div(baseCollat)
   const collatData = stableMaster.collateralMap(poolManager._address)
   const stocksUsers = collatData.value4
+  const baseCollat = collatData.value6
+  const totalHedgeAmount = perpetualManager.totalHedgeAmount()
+  const totalHedgeAmountUpdate = event.params._committedAmount.times(event.params._entryRate).div(baseCollat)
 
   const hedgeRatio = _computeHedgeRatio(perpetualManager, stocksUsers, totalHedgeAmount.plus(totalHedgeAmountUpdate))
   const haFeesDeposit = _getDepositFees(perpetualManager, hedgeRatio)
   // Fees are rounded to the advantage of the protocol
-  const fee = event.params._committedAmount.minus(
-    event.params._committedAmount.times(BASE_PARAMS.minus(haFeesDeposit)).div(BASE_PARAMS)
-  )
+  const fee = event.params._committedAmount.times(haFeesDeposit).div(BASE_PARAMS)
   return fee
 }
 
@@ -336,7 +328,7 @@ export function _getFeesClosePerp(perpetualManager: PerpetualManagerFront, perp:
 
   const feeWithdraw = _getWithdrawFees(perpetualManager, hedgeRatio)
   // Rounding the fees at the protocol's advantage
-  let feesPaid = perp.committedAmount.minus(perp.committedAmount.times(BASE_PARAMS.minus(feeWithdraw)).div(BASE_PARAMS))
+  let feesPaid = perp.committedAmount.times(feeWithdraw).div(BASE_PARAMS)
   if (feesPaid.ge(cashOutAmount)) {
     feesPaid = cashOutAmount
   }
@@ -364,11 +356,11 @@ export function _getMintFee(stableMaster: StableMaster, poolManager: PoolManager
   const perpetualManager = PerpetualManagerFront.bind(collatData.value2)
   const totalHedgeAmount = perpetualManager.totalHedgeAmount()
   const amountForUserInStable = oracle.readQuoteLower(amount)
-  const hedgeRatio = _computeHedgeRatio(perpetualManager, amount.plus(stocksUsers), totalHedgeAmount)
+  const hedgeRatio = _computeHedgeRatio(perpetualManager, amountForUserInStable.plus(stocksUsers), totalHedgeAmount)
   // Fees could in some occasions depend on other factors like collateral ratio
   // Keepers are the ones updating this part of the fees
   const feeMint = _getMintPercentageFees(feeData, hedgeRatio)
-  const fee = amountForUserInStable.times(feeMint).div(BASE_PARAMS)
+  const fee = amount.times(feeMint).div(BASE_PARAMS)
   return fee
 }
 
