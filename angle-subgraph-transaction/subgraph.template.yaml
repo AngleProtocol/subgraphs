@@ -178,12 +178,22 @@ templates:
       entities:
         - StrategyData, StrategyHistoricalData, LenderData
       abis:
+        - name: Strategy
+          file: ../abis/Strategy.json
+        - name: PerpetualManagerFront
+          file: ../abis/PerpetualManagerFront.json
         - name: StableMaster
           file: ../abis/StableMasterFront.json
         - name: PoolManager
           file: ../abis/PoolManager.json
-        - name: Strategy
-          file: ../abis/Strategy.json
+        - name: ERC20
+          file: ../abis/ERC20.json
+        - name: AgToken
+          file: ../abis/AgToken.json
+        - name: SanToken
+          file: ../abis/SanToken.json
+        - name: Oracle
+          file: ../abis/OracleMulti.json
       eventHandlers:
         - event: Harvested(uint256,uint256,uint256,uint256)
           handler: handleHarvest

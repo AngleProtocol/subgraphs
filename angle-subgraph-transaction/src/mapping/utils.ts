@@ -1,4 +1,4 @@
-import { ethereum, BigInt, log } from '@graphprotocol/graph-ts'
+import { ethereum, BigInt } from '@graphprotocol/graph-ts'
 import { StableMaster } from '../../generated/templates/StableMasterTemplate/StableMaster'
 import { ERC20 } from '../../generated/templates/StableMasterTemplate/ERC20'
 import { SanToken } from '../../generated/templates/StableMasterTemplate/SanToken'
@@ -89,16 +89,16 @@ export function _updateGainPoolData(
   let tmpTotalProtocolInterests = data.totalProtocolInterests.plus(totalProtocolInterests)
   let tmpTotalSLPInterests = data.totalSLPInterests.plus(totalSLPInterests)
 
-  data.totalSLPInterests = tmpTotalProtocolFees
-  data.totalSLPInterests = tmpTotalKeeperFees
-  data.totalSLPInterests = tmpTotalSLPFees
-  data.totalSLPInterests = tmpTotalProtocolInterests
+  data.totalProtocolFees = tmpTotalProtocolFees
+  data.totalKeeperFees = tmpTotalKeeperFees
+  data.totalSLPFees = tmpTotalSLPFees
+  data.totalProtocolInterests = tmpTotalProtocolInterests
   data.totalSLPInterests = tmpTotalSLPInterests
 
-  dataHistorical.totalSLPInterests = tmpTotalProtocolFees
-  dataHistorical.totalSLPInterests = tmpTotalKeeperFees
-  dataHistorical.totalSLPInterests = tmpTotalSLPFees
-  dataHistorical.totalSLPInterests = tmpTotalProtocolInterests
+  dataHistorical.totalProtocolFees = tmpTotalProtocolFees
+  dataHistorical.totalKeeperFees = tmpTotalKeeperFees
+  dataHistorical.totalSLPFees = tmpTotalSLPFees
+  dataHistorical.totalProtocolInterests = tmpTotalProtocolInterests
   dataHistorical.totalSLPInterests = tmpTotalSLPInterests
 
   dataHistorical.save()
@@ -144,11 +144,6 @@ export function _updatePoolData(
   }
 
   totalMargin = add ? data.totalMargin.plus(margin) : data.totalMargin.minus(margin)
-  totalProtocolFees = data.totalProtocolFees
-  totalKeeperFees = data.totalKeeperFees
-  totalSLPFees = data.totalSLPFees
-  totalProtocolInterests = data.totalProtocolInterests
-  totalSLPInterests = data.totalSLPInterests
 
   data.poolManager = poolManager._address.toHexString()
 
@@ -254,11 +249,6 @@ export function _updatePoolData(
     dataHistorical.apr = apr
     dataHistorical.totalHedgeAmount = totalHedgeAmount
     dataHistorical.totalMargin = totalMargin
-    dataHistorical.totalProtocolFees = totalProtocolFees
-    dataHistorical.totalKeeperFees = totalKeeperFees
-    dataHistorical.totalSLPFees = totalSLPFees
-    dataHistorical.totalProtocolInterests = totalProtocolInterests
-    dataHistorical.totalSLPInterests = totalSLPInterests
     dataHistorical.rateLower = rates.value0
     dataHistorical.rateUpper = rates.value1
     dataHistorical.targetHAHedge = targetHAHedge
