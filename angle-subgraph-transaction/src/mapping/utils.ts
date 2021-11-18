@@ -399,7 +399,7 @@ export function _getMintFee(stableMaster: StableMaster, poolManager: PoolManager
   const feeMint = _getMintPercentageFees(feeData, hedgeRatio)
   const fee = amount.times(feeMint).div(BASE_PARAMS)
   const percentFeesForSLPs = collatData.value7.feesForSLPs
-  const SLPFees = fee.times(percentFeesForSLPs)
+  const SLPFees = fee.times(percentFeesForSLPs).div(BASE_PARAMS)
   return [fee.minus(SLPFees), SLPFees]
 }
 
@@ -425,7 +425,7 @@ export function _getBurnFee(stableMaster: StableMaster, poolManager: PoolManager
     .div(oracleValue.times(BASE_PARAMS))
 
   const percentFeesForSLPs = collatData.value7.feesForSLPs
-  const SLPFees = fee.times(percentFeesForSLPs)
+  const SLPFees = fee.times(percentFeesForSLPs).div(BASE_PARAMS)
   return [fee.minus(SLPFees), SLPFees]
 }
 

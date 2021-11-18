@@ -15,6 +15,7 @@ import { PerpetualManagerFrontTemplate, SanTokenTemplate } from '../../generated
 import { PauseData, PoolData, Contracts, Mint, Burn } from '../../generated/schema'
 
 import { updateStableData, _getBurnFee, _getMintFee, _updateGainPoolData, _updatePoolData } from './utils'
+import { ERCManagerFrontTemplate } from '../../../angle-subgraph-transaction/generated/templates'
 
 function updatePoolData(
   poolManager: PoolManager,
@@ -30,6 +31,7 @@ function updatePoolData(
 export function handleCollateralDeployed(event: CollateralDeployed): void {
   // Start indexing and tracking new contracts
   PerpetualManagerFrontTemplate.create(event.params._perpetualManager)
+  ERCManagerFrontTemplate.create(event.params._poolManager)
   SanTokenTemplate.create(event.params._sanToken)
 
   let contractData = new Contracts(event.params._perpetualManager.toHexString())

@@ -1,13 +1,25 @@
-import { ethereum, BigInt } from '@graphprotocol/graph-ts'
+import { BigInt } from '@graphprotocol/graph-ts'
 import { PoolManager } from '../../generated/templates/StableMasterTemplate/PoolManager'
-import { ERC20 } from '../../generated/templates/StrategyTemplate/ERC20'
 import { Harvested, Strategy } from '../../generated/templates/StrategyTemplate/Strategy'
 import { StableMaster } from '../../generated/templates/StrategyTemplate/StableMaster'
+import { _updateGainPoolData } from './utils'
+import { BASE_PARAMS } from '../../../constants'
 
 export function handleHarvest(event: Harvested): void {
   const strategy = Strategy.bind(event.address)
   const poolManager = PoolManager.bind(strategy.poolManager())
   const stableMaster = StableMaster.bind(poolManager.stableMaster())
-  const agToken = ERC20.bind(stableMaster.agToken())
-  const token = ERC20.bind(poolManager.token())
+  const collatData = stableMaster.collateralMap(poolManager._address)
+  const percentInterestsForSLPs = collatData.value7.interestsForSLPs
+  const interestSLPs = event.params.profit.times(percentInterestsForSLPs).div(BASE_PARAMS)
+  const interestProtocol = event.params.profit.minus(interestSLPs)
+  _updateGainPoolData(
+    poolManager,
+    event.block,
+    BigInt.fromString('0'),
+    BigInt.fromString('0'),
+    BigInt.fromString('0'),
+    interestProtocol,
+    interestSLPs
+  )
 }
