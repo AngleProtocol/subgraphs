@@ -82,6 +82,16 @@ type PoolData @entity {
   totalHedgeAmount: BigInt
   # Total amount brought by HAs
   totalMargin: BigInt!
+  # Total fees taken by the protocol
+  totalProtocolFees: BigInt!
+  # Total keeper fees
+  totalKeeperFees: BigInt!
+  # Total interests generated for the protocol
+  totalProtocolInterests: BigInt!
+  # Total interests distributed to the SLP
+  totalSLPInterests: BigInt!
+  # Total fees distributed to the SLP
+  totalSLPFees: BigInt!
   # Exchange rate
   rateLower: BigInt
   # Exchange rate
@@ -147,6 +157,16 @@ type PoolHistoricalData @entity {
   totalHedgeAmount: BigInt
   # Total amount brought by HAs
   totalMargin: BigInt!
+  # Total fees taken by the protocol
+  totalProtocolFees: BigInt!
+  # Total keeper fees
+  totalKeeperFees: BigInt!
+  # Total interests generated for the protocol
+  totalProtocolInterests: BigInt!
+  # Total interests distributed to the SLP
+  totalSLPInterests: BigInt!
+  # Total fees distributed to the SLP
+  totalSLPFees: BigInt!
   # Exchange rate
   rateLower: BigInt
   # Exchange rate
@@ -202,11 +222,11 @@ type Perpetual @entity {
   # Brought amount
   margin: BigInt!
   # Committed amount
-  committedAmount: BigInt
+  committedAmount: BigInt!
   # Close amount (if any)
   closeAmount: BigInt
   # Rate of the last update of the Perpetual
-  entryRate: BigInt
+  entryRate: BigInt!
   # rate at which the perp can be liquidated
   liquidationPrice: BigInt
   # BlockNumber at opening

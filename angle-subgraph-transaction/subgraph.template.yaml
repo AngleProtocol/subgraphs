@@ -137,6 +137,8 @@ templates:
           handler: handleClosingPerpetual
         - event: PerpetualsForceClosed(uint256[],(address,uint256)[],address,uint256)
           handler: handleForceClose
+        - event: KeeperTransferred(address,uint256)
+          handler: handleLiquidatePerpetuals
         - event: Paused(address)
           handler: handlePausePerp
         - event: Unpaused(address)
@@ -144,3 +146,55 @@ templates:
         - event: Transfer(indexed address,indexed address,indexed uint256)
           handler: handleTransfer
       file: ./src/mapping/PerpetualManager.ts
+  - kind: ethereum/contract
+    name: ERCManagerFrontTemplate
+    network: {{network}}
+    source:
+      abi: PoolManager
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - PoolData
+      abis:
+        - name: PoolManager
+          file: ../abis/PoolManager.json
+        - name: Strategy
+          file: ../abis/Strategy.json
+      eventHandlers:
+        - event: StrategyAdded(indexed address,uint256)
+          handler: handleStrategyAdded
+      file: ./src/mapping/ercManager.ts
+  - kind: ethereum/contract
+    name: StrategyTemplate
+    network: {{network}}
+    source:
+      abi: Strategy
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - StrategyData, StrategyHistoricalData, LenderData
+      abis:
+        - name: Strategy
+          file: ../abis/Strategy.json
+        - name: PerpetualManagerFront
+          file: ../abis/PerpetualManagerFront.json
+        - name: StableMaster
+          file: ../abis/StableMasterFront.json
+        - name: PoolManager
+          file: ../abis/PoolManager.json
+        - name: ERC20
+          file: ../abis/ERC20.json
+        - name: AgToken
+          file: ../abis/AgToken.json
+        - name: SanToken
+          file: ../abis/SanToken.json
+        - name: Oracle
+          file: ../abis/OracleMulti.json
+      eventHandlers:
+        - event: Harvested(uint256,uint256,uint256,uint256)
+          handler: handleHarvest
+      file: ./src/mapping/strategy.ts
