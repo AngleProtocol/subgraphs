@@ -266,7 +266,9 @@ export function handleWithdrawn(event: Withdrawn): void {
       data.save()
     } else {
       const data = externalToken.load(tokenDataId)!
-      data.balance = ERC20.bind(token).balanceOf(event.params.user)
+      // For external tokens we don't want to track there actual balance but just the what is goingthrough on the protocol
+      // Otherwise this would asks to track all the other tokens when entering/exiting/transferring
+      data.balance = data.balance.minus(event.params.amount)
       data.staked = data.staked.minus(event.params.amount)
       data.save()
     }
