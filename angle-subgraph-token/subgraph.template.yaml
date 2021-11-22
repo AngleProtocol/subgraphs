@@ -231,6 +231,4 @@ templates:
           handler: handleUpdatePerpStaking
         - event: RewardsDistributionDurationUpdated(uint256,indexed address)
           handler: handleUpdatePerpStaking
-        - event: Transfer(indexed address,indexed address,indexed uint256)
-          handler: handleUpdatePerpStaking
       file: ./src/mapping/staking.ts

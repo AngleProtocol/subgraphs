@@ -348,6 +348,7 @@ type Stake @entity {
   amount: BigInt
   sender: String
   stakedToken: String
+  decimals: String
   timestamp: BigInt
   blockNumber: BigInt
 }
@@ -359,6 +360,7 @@ type Unstake @entity {
   amount: BigInt
   sender: String
   stakedToken: String
+  decimals: String
   timestamp: BigInt
   blockNumber: BigInt
 }
