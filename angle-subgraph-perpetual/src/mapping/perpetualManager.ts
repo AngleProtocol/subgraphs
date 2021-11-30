@@ -75,9 +75,15 @@ export function handleClosingPerpetual(event: PerpetualClosed): void {
   const id = event.address.toHexString() + '_' + event.params._perpetualID.toHexString()
 
   const data = Perpetual.load(id)!
+  let txData = PerpetualClose.load(id)!
+
   data.closeAmount = event.params._closeAmount
   data.status = 'close'
   data.save()
+
+  txData.closeAmount = event.params._closeAmount
+  txData.status = 'close'
+  txData.save()
 }
 
 export function handleForceClose(event: PerpetualsForceClosed): void {
