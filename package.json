@@ -17,7 +17,7 @@
     "deploy:rinkeby:all": "yarn deploy:rinkeby:periphery && yarn deploy:rinkeby:perpetual && yarn deploy:rinkeby:strategy && yarn deploy:rinkeby:token && yarn deploy:rinkeby:transaction"
   },
   "dependencies": {
-    "@graphprotocol/graph-cli": "^0.22.4",
+    "@graphprotocol/graph-cli": "^0.25.0",
     "@graphprotocol/graph-ts": "0.22.1",
     "ethers": "^5.5.1",
     "matchstick-as": "^0.2.0",
