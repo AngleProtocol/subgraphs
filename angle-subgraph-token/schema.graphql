@@ -5,6 +5,16 @@ type ANGLE @entity {
   balance: BigInt!
 }
 
+type veANGLE @entity {
+  # Address of the angle owner
+  id: ID!
+  bias: BigInt!
+  slope: BigInt!
+  lastUpdate: BigInt!
+  locked: BigInt!
+  amount: BigInt!
+}
+
 type agToken @entity {
   # Address of the owner + address of the token
   id: ID!

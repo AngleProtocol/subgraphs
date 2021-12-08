@@ -30,6 +30,26 @@ dataSources:
           handler: handleStableMasterDeployed
       file: ./src/mapping/core.ts
   - kind: ethereum/contract
+    name: veAngle
+    network: {{network}}
+    source:
+      address: '{{veAngle}}'
+      abi: veANGLE
+      startBlock: {{block}}
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - veANGLE
+      abis:
+        - name: veANGLE
+          file: ../abis/veANGLE.json
+      eventHandlers:
+        - event: Deposit(indexed address,uint256,indexed uint256,int128,uint256)
+          handler: handleDeposit
+      file: ./src/mapping/angle.ts
+  - kind: ethereum/contract
     name: Angle
     network: {{network}}
     source:

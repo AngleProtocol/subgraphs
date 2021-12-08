@@ -2,6 +2,7 @@
   "network": "rinkeby",
   "core": "0x321657Ba5D7cE91c26d96e70efe518cA51CCc6f6",
   "angle": "0x5D13a8FAC3c4CD83Bf8804CB25fD7CDBcC92cA0B",
+  "veAngle": "0x",
   "bondingCurve": "0xf3898f7A9E39C781365274f2BC35d9C95F5aD0f6",
   "rewardsDistributor": "0x19D9Acef7a2fE46577F684F226B1060749661202",
   "chainlink_CHF_USD": "0x03dde2afa7531c61ed650ed355ad94753bfc7786",
