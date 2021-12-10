@@ -6,4 +6,4 @@ export const ROUND_COEFF = BigInt.fromString('1800') // 30 minutes
 export const MAX_LOCK_TIME = BigInt.fromString('4')
   .times(BigInt.fromString('365'))
   .times(BigInt.fromString('86400'))
-export const WEEK = BigInt.fromString('4').times(BigInt.fromString('86400'))
+export const WEEK = BigInt.fromString('7').times(BigInt.fromString('86400'))

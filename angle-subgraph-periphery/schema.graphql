@@ -39,12 +39,3 @@ type OracleAPRHistoricalData @entity {
 type Contracts @entity {
   id: ID!
 }
-
-type bondingCurve @entity {
-  id: ID!
-  price: BigInt
-  toSell: BigInt
-  sold: BigInt
-  timestamp: BigInt
-  blockNumber: BigInt
-}

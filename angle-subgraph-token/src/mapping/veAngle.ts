@@ -1,4 +1,4 @@
-import { Address, BigInt, store } from '@graphprotocol/graph-ts'
+import { BigInt } from '@graphprotocol/graph-ts'
 import { MAX_LOCK_TIME } from '../../../constants'
 import { veANGLE } from '../../generated/schema'
 import { Deposit } from '../../generated/veAngle/veANGLE'
@@ -32,7 +32,7 @@ export function handleDeposit(event: Deposit): void {
     data.amount = amount
     data.save()
   } else {
-    let data = new veANGLE(toId)
+    let data = veANGLE.load(toId)
     data.slope = data.amount.div(MAX_LOCK_TIME)
     data.bias = data.slope.times(locktime.minus(timestamp))
     data.locked = locktime
