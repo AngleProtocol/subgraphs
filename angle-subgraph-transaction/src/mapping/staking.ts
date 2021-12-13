@@ -1,45 +1,52 @@
 import { Stake, Unstake } from '../../generated/schema'
-import { StakingRewards, Withdrawn, Staked } from '../../generated/RewardsDistributor/StakingRewards'
-import { BigInt } from '@graphprotocol/graph-ts'
-import { ERC20 } from '../../generated/templates/StakingRewardsTemplate/ERC20'
+import { Address, BigInt } from '@graphprotocol/graph-ts'
+import { ERC20 } from '../../generated/templates/LiquidityGaugeTemplate/ERC20'
+import { LiquidityGauge, Transfer } from '../../generated/templates/LiquidityGaugeTemplate/LiquidityGauge'
 
-export function handleStaked(event: Staked): void {
-  if (event.params.amount.equals(BigInt.fromString('0'))) return
-  const stakingRewardsContract = StakingRewards.bind(event.address)
-  const token = ERC20.bind(stakingRewardsContract.stakingToken())
-  const decimals = token.decimals().toString()
-  const name = token.name()
-  const txId =
-    event.transaction.hash.toHexString() + '_' + event.params.user.toHexString() + '_' + event.params.amount.toString()
-  let txData = new Stake(txId)
-  txData.transactionId = event.transaction.hash.toHexString()
-  txData.amount = event.params.amount
-  txData.decimals = decimals
-  txData.sender = event.transaction.from.toHexString()
-  txData.stakedToken = name
-  txData.timestamp = event.block.timestamp
-  txData.blockNumber = event.block.number
-  txData.save()
+function isBurn(event: Transfer): boolean {
+  return event.params._to.equals(Address.fromString('0x0000000000000000000000000000000000000000'))
 }
 
-export function handleWithdrawn(event: Withdrawn): void {
-  if (event.params.amount.equals(BigInt.fromString('0'))) return
-  const stakingRewardsContract = StakingRewards.bind(event.address)
-  const token = ERC20.bind(stakingRewardsContract.stakingToken())
+function isMint(event: Transfer): boolean {
+  return event.params._from.equals(Address.fromString('0x0000000000000000000000000000000000000000'))
+}
+
+export function handleTransfer(event: Transfer): void {
+  if (event.params._value.equals(BigInt.fromString('0'))) return
+
+  const stakingRewardsContract = LiquidityGauge.bind(event.address)
+  const token = ERC20.bind(stakingRewardsContract.lp_token())
   const decimals = token.decimals().toString()
   const name = token.name()
-
   const txId =
-    event.transaction.hash.toHexString() + '_' + event.params.user.toHexString() + '_' + event.params.amount.toString()
-  let txData = new Unstake(txId)
-  txData.transactionId = event.transaction.hash.toHexString()
-  txData = new Unstake(txId)
-  txData.amount = event.params.amount
-  txData.decimals = decimals
-  txData.sender = event.transaction.from.toHexString()
-  txData.stakedToken = name
-  txData.timestamp = event.block.timestamp
-  txData.blockNumber = event.block.number
+    event.transaction.hash.toHexString() +
+    '_' +
+    event.params._to.toHexString() +
+    '_' +
+    event.params._from.toHexString() +
+    '_' +
+    event.params._value.toString()
 
-  txData.save()
+  if (!isBurn(event)) {
+    let txData = new Stake(txId)
+    txData.transactionId = event.transaction.hash.toHexString()
+    txData.amount = event.params._value
+    txData.decimals = decimals
+    txData.sender = event.params._from.toHexString()
+    txData.stakedToken = name
+    txData.timestamp = event.block.timestamp
+    txData.blockNumber = event.block.number
+    txData.save()
+  }
+  if (!isMint(event)) {
+    let txData = new Unstake(txId)
+    txData.transactionId = event.transaction.hash.toHexString()
+    txData.amount = event.params._value
+    txData.decimals = decimals
+    txData.sender = event.params._from.toHexString()
+    txData.stakedToken = name
+    txData.timestamp = event.block.timestamp
+    txData.blockNumber = event.block.number
+    txData.save()
+  }
 }

@@ -29,27 +29,25 @@ dataSources:
           handler: handleStableMasterDeployed
       file: ./src/mapping/core.ts
   - kind: ethereum/contract
-    name: RewardsDistributor
+    name: GaugeController
     network: {{network}}
     source:
-      address: '{{rewardsDistributor}}'
-      abi: RewardsDistributor
+      address: '{{gaugeController}}'
+      abi: GaugeController
       startBlock: {{block}}
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.5
       language: wasm/assemblyscript
       entities:
-        - RewardDistributorData
+        - GaugeControllerData
       abis:
-        - name: RewardsDistributor
-          file: ../abis/RewardsDistributor.json
-        - name: StakingRewards
-          file: ../abis/StakingRewards.json
+        - name: GaugeController
+          file: ../abis/GaugeController.json
       eventHandlers:
-        - event: NewStakingContract(indexed address)
-          handler: handleStakingContract
-      file: ./src/mapping/rewardsDistributor.ts
+        - event: NewGauge(address,int128,uint256)
+          handler: handleNewGauge
+      file: ./src/mapping/gaugeController.ts
 templates:
   - kind: ethereum/contract
     name: SanTokenTemplate
@@ -221,10 +219,10 @@ templates:
           handler: handleHarvest
       file: ./src/mapping/strategy.ts
   - kind: ethereum/contract
-    name: StakingRewardsTemplate
+    name: LiquidityGaugeTemplate
     network: {{network}}
     source:
-      abi: StakingRewards
+      abi: LiquidityGauge
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.5
@@ -233,19 +231,11 @@ templates:
         - StakingData
         - StakingHistoricalHourlyData
       abis:
-        - name: StakingRewards
-          file: ../abis/StakingRewards.json
-        - name: PerpetualManagerFront
-          file: ../abis/PerpetualManagerFront.json
-        - name: StableMaster
-          file: ../abis/StableMasterFront.json
-        - name: PoolManager
-          file: ../abis/PoolManager.json
+        - name: LiquidityGauge
+          file: ../abis/LiquidityGaugeV4.json
         - name: ERC20
           file: ../abis/ERC20.json
       eventHandlers:
-        - event: Staked(indexed address,uint256)
-          handler: handleStaked
-        - event: Withdrawn(indexed address,uint256)
-          handler: handleWithdrawn
+        - event: Transfer(indexed address,indexed address,uint256)
+          handler: handleTransfer
       file: ./src/mapping/staking.ts

@@ -58,36 +58,41 @@ type Contracts @entity {
   id: ID!
 }
 
-type StakingData @entity {
-  # Address of the staking contract
+type GaugeData @entity {
+  # Address of the gauge contract
   id: ID!
+  type: BigInt
+  rewardDatas: [GaugeRewardData!]! @derivedFrom(field: "gauge")
+}
+
+type GaugeRewardData @entity {
+  # Address of the gauge contract + reward token
+  id: ID!
+  gauge: GaugeData
+  token: String!
+  distributor: String
   periodFinish: BigInt
   rewardRate: BigInt
-  rewardsDuration: BigInt
   totalSupply: BigInt
+  workingSupply: BigInt
   lastUpdateTime: BigInt
-  rewardPerTokenStored: BigInt
-  # Address of the rewardsDistributor
-  rewardsDistributor: ID!
-  # Timestamp of last update
+  # Block Number of last update
+  blockNumber: BigInt!
   timestamp: BigInt!
 }
 
-type StakingHistoricalData @entity {
-  # Address of the staking contract + timestamp
+type GaugeRewardHistoricalData @entity {
+  # Address of the gauge contract + reward token + timestamp
   id: ID!
-  # Address of the staking contract
-  address: String
+  gauge: GaugeData!
+  token: String!
+  distributor: String
   periodFinish: BigInt
   rewardRate: BigInt
   totalSupply: BigInt
-  rewardsDuration: BigInt
+  workingSupply: BigInt
   lastUpdateTime: BigInt
-  rewardPerTokenStored: BigInt
-  # Address of the rewardsDistributor
-  rewardsDistributor: ID!
   # Block Number of last update
   blockNumber: BigInt!
-  # Timestamp at the beginning of the period
   timestamp: BigInt!
 }
