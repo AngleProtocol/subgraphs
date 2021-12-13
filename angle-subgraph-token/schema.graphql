@@ -53,6 +53,20 @@ type GaugeData @entity {
   id: ID!
   type: BigInt
   rewardDatas: [GaugeRewardData!]! @derivedFrom(field: "gauge")
+  relWeigth: BigInt
+  # Block Number of last update
+  blockNumber: BigInt!
+  timestamp: BigInt!
+}
+
+type GaugeHistoricalData @entity {
+  # Address of the gauge contract + timestamp
+  id: ID!
+  type: BigInt
+  relWeigth: BigInt
+  # Block Number of last update
+  blockNumber: BigInt!
+  timestamp: BigInt!
 }
 
 type GaugeRewardData @entity {
