@@ -1,5 +1,5 @@
 specVersion: 0.0.2
-description: Oracles, Bonding Curve and all peripheric datas on {{network}}.
+description: Oracles and all peripheric datas on {{network}}.
 schema:
   file: ./schema.graphql
 dataSources:
