@@ -48,7 +48,7 @@ dataSources:
       eventHandlers:
         - event: Deposit(indexed address,uint256,indexed uint256,int128,uint256)
           handler: handleDeposit
-      file: ./src/mapping/angle.ts
+      file: ./src/mapping/veAngle.ts
   - kind: ethereum/contract
     name: Angle
     network: {{network}}
