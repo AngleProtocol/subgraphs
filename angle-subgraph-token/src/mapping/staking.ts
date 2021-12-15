@@ -98,10 +98,14 @@ export function updateGaugeSupplyData(event: ethereum.Event): void {
   const block = event.block
   const timestamp = block.timestamp
 
+  // common values
+  const gaugeId = event.address.toHexString()
+  const totalSupply = stakingRewardsContract.totalSupply()
+  const workingSupply = stakingRewardsContract.working_supply()
+
   const rewardCount = parseInt(stakingRewardsContract.reward_count().toString())
   for (let i = 0; i < rewardCount; i++) {
     const token = stakingRewardsContract.reward_tokens(BigInt.fromString(i.toString()))
-    const gaugeId = event.address.toHexString()
     const id = gaugeId + '_' + token.toHexString()
     // we round to the closest hour
     const roundedTimestamp = historicalSlice(block)
@@ -111,9 +115,6 @@ export function updateGaugeSupplyData(event: ethereum.Event): void {
     if (data == null) {
       data = new GaugeRewardData(id)
     }
-
-    const totalSupply = stakingRewardsContract.totalSupply()
-    const workingSupply = stakingRewardsContract.working_supply()
 
     data.gauge = gaugeId
     data.token = token.toHexString()
