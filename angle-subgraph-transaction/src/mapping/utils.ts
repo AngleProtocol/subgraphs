@@ -243,6 +243,11 @@ export function _updatePoolData(
     dataHistorical.lastBlockUpdated = lastBlockUpadted
     dataHistorical.lockedInterests = lockedInterests
     dataHistorical.maxInterestsDistributed = maxInterestsDistributed
+    dataHistorical.totalProtocolFees = data.totalProtocolFees
+    dataHistorical.totalKeeperFees = data.totalKeeperFees
+    dataHistorical.totalSLPFees = data.totalSLPFees
+    dataHistorical.totalProtocolInterests = data.totalProtocolInterests
+    dataHistorical.totalSLPInterests = data.totalSLPInterests
     dataHistorical.feesAside = feesAside
     dataHistorical.feesForSLPs = feesForSLPs
     dataHistorical.interestsForSLPs = interestsForSLPs
