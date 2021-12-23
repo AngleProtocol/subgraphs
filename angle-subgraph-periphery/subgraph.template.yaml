@@ -108,6 +108,26 @@ dataSources:
         - event: AnswerUpdated(indexed int256,indexed uint256,uint256)
           handler: handleAnswerUpdated
       file: ./src/mapping/chainlink.ts
+  - kind: ethereum/contract
+    name: Chainlink5
+    network: {{network}}
+    source:
+      address: '{{chainlink_ETH_USD}}'
+      abi: ChainlinkFeed
+      startBlock: {{block}}
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - Oracle
+      abis:
+        - name: ChainlinkFeed
+          file: ../abis/Chainlink.json
+      eventHandlers:
+        - event: AnswerUpdated(indexed int256,indexed uint256,uint256)
+          handler: handleAnswerUpdated
+      file: ./src/mapping/chainlink.ts
 templates:
   - kind: ethereum/contract
     name: SanTokenTemplate
