@@ -14,15 +14,23 @@ export function handleUpdateSurplusConverter(event: SurplusConverterUpdated): vo
   // create directly the FeeDistributor linked at contract creation
   const surplusConverter = BaseSurplusConverter.bind(event.params.newSurplusConverter)
   const originalFeeDistributorAddress = surplusConverter.feeDistributor()
-  FeeDistributorTemplate.create(originalFeeDistributorAddress)
-
   const feeDistributor = FeeDistributor.bind(originalFeeDistributorAddress)
-  const data = new FeeDistribution(originalFeeDistributorAddress.toHexString())
-  data.token = feeDistributor.token().toHexString()
-  data.lastTokenTime = feeDistributor.last_token_time()
-  data.blockNumber = event.block.number
-  data.save()
+  // if this is actually a surplusConverter revert
+  const call = feeDistributor.try_last_token_time()
+  if (call.reverted) return
 
-  contractData = new Contracts(originalFeeDistributorAddress.toHexString())
-  contractData.save()
+  let data = FeeDistribution.load(originalFeeDistributorAddress.toHexString())
+  // if the entity doesn't already exists
+  if (data == null) {
+    FeeDistributorTemplate.create(originalFeeDistributorAddress)
+
+    contractData = new Contracts(originalFeeDistributorAddress.toHexString())
+    contractData.save()
+
+    data = new FeeDistribution(originalFeeDistributorAddress.toHexString())
+    data.token = feeDistributor.token().toHexString()
+    data.lastTokenTime = feeDistributor.last_token_time()
+    data.blockNumber = event.block.number
+    data.save()
+  }
 }
