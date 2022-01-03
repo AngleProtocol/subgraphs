@@ -1,9 +1,5 @@
-import {
-  CheckpointToken,
-  Claimed,
-  FeeDistributor
-} from '../../generated/templates/FeeDistributorTemplate/FeeDistributor'
-import { FeeDistribution, FeesEarned, WeeklyDistribution } from '../../generated/schema'
+import { CheckpointToken, Claimed, FeeDistributor } from '../../generated/FeeDistributorSanUSDCEUR/FeeDistributor'
+import { FeesEarned, WeeklyDistribution } from '../../generated/schema'
 import { WEEK } from '../../../constants'
 
 export function handleClaim(event: Claimed): void {
@@ -27,9 +23,11 @@ export function handleClaim(event: Claimed): void {
 
 export function handleCheckpoint(event: CheckpointToken): void {
   const feeDistributor = FeeDistributor.bind(event.address)
-  const dataFeeDistributor = FeeDistribution.load(event.address.toHexString())!
 
-  const lastTokenTime = dataFeeDistributor.lastTokenTime.div(WEEK).times(WEEK)
+  const lastTokenTime = feeDistributor
+    .last_token_time()
+    .div(WEEK)
+    .times(WEEK)
   const upToWeek = event.block.timestamp
     .plus(WEEK)
     .div(WEEK)

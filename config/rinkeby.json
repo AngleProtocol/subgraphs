@@ -10,5 +10,6 @@
   "chainlink_GBP_USD": "0x48ea192e08b823fdba7b6b5399f49c3a36b3844f",
   "chainlink_JPY_USD": "0x915659964309157e59c8052ffea0339988f7d897",
   "chainlink_ETH_USD": "0x28d757e89e38ee5eeff3eab330ad1ab99dd7c9eb",
+  "FeeDistributor_sanUSDC_EUR": "0x6dcba54703712e1dCD83e736a1c8b1d83Ecf93F2",
   "block": 9774504
 }
