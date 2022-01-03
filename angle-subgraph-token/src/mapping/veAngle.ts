@@ -1,4 +1,4 @@
-import { BigInt, store } from '@graphprotocol/graph-ts'
+import { BigInt } from '@graphprotocol/graph-ts'
 import { MAX_LOCK_TIME } from '../../../constants'
 import { veANGLE } from '../../generated/schema'
 import { Deposit, Withdraw } from '../../generated/veAngle/veANGLE'

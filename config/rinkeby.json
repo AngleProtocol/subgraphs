@@ -9,5 +9,6 @@
   "chainlink_EUR_USD": "0xc4b4fad3dc8c08dba5d639a6e435f116b9282db0",
   "chainlink_GBP_USD": "0x48ea192e08b823fdba7b6b5399f49c3a36b3844f",
   "chainlink_JPY_USD": "0x915659964309157e59c8052ffea0339988f7d897",
+  "chainlink_ETH_USD": "0x28d757e89e38ee5eeff3eab330ad1ab99dd7c9eb",
   "block": 9774504
 }

@@ -4,7 +4,7 @@ import {
   BurntStablecoins
 } from '../../generated/templates/StableMasterTemplate/StableMaster'
 import { PoolManager } from '../../generated/templates/StableMasterTemplate/PoolManager'
-import { PerpetualManagerFrontTemplate, SanTokenTemplate } from '../../generated/templates'
+import { ERCManagerFrontTemplate, PerpetualManagerFrontTemplate, SanTokenTemplate } from '../../generated/templates'
 import { Contracts } from '../../generated/schema'
 
 import { updateOracleData } from './utils'
@@ -14,6 +14,7 @@ export function handleCollateralDeployed(event: CollateralDeployed): void {
   // Start indexing and tracking new contracts
   PerpetualManagerFrontTemplate.create(event.params._perpetualManager)
   SanTokenTemplate.create(event.params._sanToken)
+  ERCManagerFrontTemplate.create(event.params._poolManager)
 
   let contractData = new Contracts(event.params._perpetualManager.toHexString())
   contractData.save()

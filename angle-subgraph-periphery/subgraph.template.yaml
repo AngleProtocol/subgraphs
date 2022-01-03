@@ -197,6 +197,30 @@ templates:
           handler: handleBurn
       file: ./src/mapping/stableMaster.ts
   - kind: ethereum/contract
+    name: ERCManagerFrontTemplate
+    network: {{network}}
+    source:
+      abi: PoolManager
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - PoolData
+      abis:
+        - name: PoolManager
+          file: ../abis/PoolManager.json
+        - name: StableMaster
+          file: ../abis/StableMasterFront.json
+        - name: BaseSurplusConverter
+          file: ../abis/BaseSurplusConverter.json
+        - name: FeeDistributor
+          file: ../abis/FeeDistribution.json
+      eventHandlers:
+        - event: SurplusConverterUpdated(indexed address,indexed address)
+          handler: handleUpdateSurplusConverter
+      file: ./src/mapping/ercManager.ts
+  - kind: ethereum/contract
     name: PerpetualManagerFrontTemplate
     network: {{network}}
     source:
@@ -228,3 +252,43 @@ templates:
         - event: Transfer(indexed address,indexed address,indexed uint256)
           handler: handleTransfer
       file: ./src/mapping/PerpetualManager.ts
+  - kind: ethereum/contract
+    name: BaseSurplusConverterTemplate
+    network: {{network}}
+    source:
+      abi: BaseSurplusConverter
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - Perpetual
+      abis:
+        - name: BaseSurplusConverter
+          file: ../abis/BaseSurplusConverter.json
+        - name: FeeDistributor
+          file: ../abis/FeeDistribution.json
+      eventHandlers:
+        - event: FeeDistributorUpdated(indexed address,indexed address)
+          handler: handleUpdateFeeDistributor
+      file: ./src/mapping/baseSurplusConverter.ts
+  - kind: ethereum/contract
+    name: FeeDistributorTemplate
+    network: {{network}}
+    source:
+      abi: FeeDistributor
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - Perpetual
+      abis:
+        - name: FeeDistributor
+          file: ../abis/FeeDistribution.json
+      eventHandlers:
+        - event: Claimed(indexed address,uint256,uint256,uint256)
+          handler: handleClaim
+        - event: CheckpointToken(uint256,uint256)
+          handler: handleCheckpoint
+      file: ./src/mapping/feeDistribution.ts
