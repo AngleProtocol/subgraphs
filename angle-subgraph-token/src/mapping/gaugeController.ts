@@ -1,8 +1,7 @@
 import { BigInt, store } from '@graphprotocol/graph-ts'
 import { GaugeData, GaugeHistoricalData } from '../../generated/schema'
 import { LiquidityGaugeTemplate, PerpetualStakingRewardsTemplate } from '../../generated/templates'
-import { KilledGauge, NewGauge, VoteForGauge } from '../../generated/GaugeController/GaugeController'
-import { GaugeController } from '../../../angle-subgraph-transaction/generated/GaugeController/GaugeController'
+import { GaugeController, KilledGauge, NewGauge, VoteForGauge } from '../../generated/GaugeController/GaugeController'
 import { historicalSlice } from './utils'
 
 export function handleNewGauge(event: NewGauge): void {
