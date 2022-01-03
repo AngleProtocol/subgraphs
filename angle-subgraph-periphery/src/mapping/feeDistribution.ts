@@ -1,4 +1,8 @@
-import { CheckpointToken, Claimed, FeeDistributor } from '../../generated/FeeDistributorSanUSDCEUR/FeeDistributor'
+import {
+  CheckpointToken,
+  Claimed,
+  FeeDistributor
+} from '../../generated/templates/FeeDistributorTemplate/FeeDistributor'
 import { FeesEarned, WeeklyDistribution } from '../../generated/schema'
 import { WEEK } from '../../../constants'
 
