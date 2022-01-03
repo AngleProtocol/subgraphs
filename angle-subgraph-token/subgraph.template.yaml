@@ -70,31 +70,27 @@ dataSources:
           handler: handleTransfer
       file: ./src/mapping/angle.ts
   - kind: ethereum/contract
-    name: RewardsDistributor
+    name: GaugeController
     network: {{network}}
     source:
-      address: '{{rewardsDistributor}}'
-      abi: RewardsDistributor
+      address: '{{gaugeController}}'
+      abi: GaugeController
       startBlock: {{block}}
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.5
       language: wasm/assemblyscript
       entities:
-        - RewardDistributorData
+        - GaugeControllerData
       abis:
-        - name: RewardsDistributor
-          file: ../abis/RewardsDistributor.json
-        - name: StakingRewards
-          file: ../abis/StakingRewards.json
-        - name: PerpetualManagerFront
-          file: ../abis/PerpetualManagerFront.json
+        - name: GaugeController
+          file: ../abis/GaugeController.json
       eventHandlers:
-        - event: NewStakingContract(indexed address)
-          handler: handleStakingContract
-        - event: DeletedStakingContract(indexed address)
-          handler: handleDeleteStakingContract
-      file: ./src/mapping/rewardsDistributor.ts
+        - event: NewGauge(address,int128,uint256)
+          handler: handleNewGauge
+        - event: KilledGauge(address)
+          handler: handleKillGauge
+      file: ./src/mapping/gaugeController.ts
 templates:
   - kind: ethereum/contract
     name: AgTokenTemplate
@@ -193,43 +189,6 @@ templates:
           handler: handleCollateralDeployed
       file: ./src/mapping/stableMaster.ts
   - kind: ethereum/contract
-    name: StakingRewardsTemplate
-    network: {{network}}
-    source:
-      abi: StakingRewards
-    mapping:
-      kind: ethereum/events
-      apiVersion: 0.0.5
-      language: wasm/assemblyscript
-      entities:
-        - StakingData
-        - StakingHistoricalHourlyData
-      abis:
-        - name: StakingRewards
-          file: ../abis/StakingRewards.json
-        - name: PerpetualManagerFront
-          file: ../abis/PerpetualManagerFront.json
-        - name: StableMaster
-          file: ../abis/StableMasterFront.json
-        - name: PoolManager
-          file: ../abis/PoolManager.json
-        - name: ERC20
-          file: ../abis/ERC20.json
-        - name: AgToken
-          file: ../abis/AgToken.json
-        - name: SanToken
-          file: ../abis/SanToken.json
-        - name: SushiLPToken
-          file: ../abis/SushiLPToken.json
-      eventHandlers:
-        - event: RewardAdded(uint256)
-          handler: handleUpdateStaking
-        - event: Staked(indexed address,uint256)
-          handler: handleStaked
-        - event: Withdrawn(indexed address,uint256)
-          handler: handleWithdrawn
-      file: ./src/mapping/staking.ts
-  - kind: ethereum/contract
     name: PerpetualStakingRewardsTemplate
     network: {{network}}
     source:
@@ -253,4 +212,43 @@ templates:
           handler: handleUpdatePerpStaking
         - event: Transfer(indexed address,indexed address,indexed uint256)
           handler: handleUpdatePerpStaking
+      file: ./src/mapping/staking.ts
+  - kind: ethereum/contract
+    name: LiquidityGaugeTemplate
+    network: {{network}}
+    source:
+      abi: LiquidityGauge
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - StakingData
+        - StakingHistoricalHourlyData
+      abis:
+        - name: LiquidityGauge
+          file: ../abis/LiquidityGaugeV4.json
+        - name: PerpetualManagerFront
+          file: ../abis/PerpetualManagerFront.json
+        - name: StableMaster
+          file: ../abis/StableMasterFront.json
+        - name: PoolManager
+          file: ../abis/PoolManager.json
+        - name: ERC20
+          file: ../abis/ERC20.json
+        - name: AgToken
+          file: ../abis/AgToken.json
+        - name: SanToken
+          file: ../abis/SanToken.json
+        - name: SushiLPToken
+          file: ../abis/SushiLPToken.json
+      eventHandlers:
+        - event: RewardDataUpdate(indexed address,uint256)
+          handler: updateGaugeData
+        - event: UpdateLiquidityLimit(address,uint256,uint256,uint256,uint256)
+          handler: updateGaugeSupplyData
+        - event: Transfer(indexed address,indexed address,uint256)
+          handler: updateGaugeSupplyData
+        - event: Transfer(indexed address,indexed address,uint256)
+          handler: handleTransfer
       file: ./src/mapping/staking.ts

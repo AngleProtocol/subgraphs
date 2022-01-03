@@ -1,146 +1,199 @@
 import {
   CapitalGain,
-  StakingData,
-  StakingHistoricalData,
   agToken,
   sanToken,
-  externalToken
+  externalToken,
+  GaugeRewardData,
+  GaugeRewardHistoricalData
 } from '../../generated/schema'
-import { StakingRewards, Withdrawn, Staked } from '../../generated/RewardsDistributor/StakingRewards'
-import { ethereum, BigInt } from '@graphprotocol/graph-ts'
-import { SanToken } from '../../generated/templates/StakingRewardsTemplate/SanToken'
-import { ERC20 } from '../../generated/templates/StakingRewardsTemplate/ERC20'
+import { ethereum, BigInt, Address } from '@graphprotocol/graph-ts'
+import { SanToken } from '../../generated/templates/LiquidityGaugeTemplate/SanToken'
+import { ERC20 } from '../../generated/templates/LiquidityGaugeTemplate/ERC20'
 import { PoolManager } from '../../generated/templates/StableMasterTemplate/PoolManager'
-import { SushiLPToken } from '../../generated/templates/StakingRewardsTemplate/SushiLPToken'
+import { SushiLPToken } from '../../generated/templates/LiquidityGaugeTemplate/SushiLPToken'
 import { PerpetualManagerFront } from '../../generated/templates/StableMasterTemplate/PerpetualManagerFront'
-import { StableMaster } from '../../generated/templates/StakingRewardsTemplate/StableMaster'
+import { StableMaster } from '../../generated/templates/LiquidityGaugeTemplate/StableMaster'
 import { historicalSlice } from './utils'
 import { BASE_TOKENS } from '../../../constants'
+import {
+  LiquidityGauge,
+  Transfer,
+  RewardDataUpdate
+} from '../../generated/templates/LiquidityGaugeTemplate/LiquidityGauge'
 
-function updateStakingData(event: ethereum.Event): void {
-  const stakingRewardsContract = StakingRewards.bind(event.address)
+function isBurn(event: Transfer): boolean {
+  return event.params._to.equals(Address.fromString('0x0000000000000000000000000000000000000000'))
+}
+
+function isMint(event: Transfer): boolean {
+  return event.params._from.equals(Address.fromString('0x0000000000000000000000000000000000000000'))
+}
+
+export function updateGaugeData(event: RewardDataUpdate): void {
+  const stakingRewardsContract = LiquidityGauge.bind(event.address)
   const block = event.block
+  const timestamp = block.timestamp
 
-  const id = event.address.toHexString()
+  const token = event.params._token
+  const gaugeId = event.address.toHexString()
+  const id = gaugeId + '_' + token.toHexString()
   // we round to the closest hour
   const roundedTimestamp = historicalSlice(block)
   const idHistoricalHour = id + '_hour_' + roundedTimestamp.toString()
 
-  let data = StakingData.load(id)
+  let data = GaugeRewardData.load(id)
   if (data == null) {
-    data = new StakingData(id)
+    data = new GaugeRewardData(id)
   }
 
-  const periodFinish = stakingRewardsContract.periodFinish()
-  data.periodFinish = periodFinish
-
-  const rewardRate = stakingRewardsContract.rewardRate()
-  data.rewardRate = rewardRate
-
-  const rewardsDuration = stakingRewardsContract.rewardsDuration()
-  data.rewardsDuration = rewardsDuration
-
-  const lastUpdateTime = stakingRewardsContract.lastUpdateTime()
-  data.lastUpdateTime = lastUpdateTime
-
+  const rewardData = stakingRewardsContract.reward_data(token)
+  const distributor = rewardData.value1.toHexString()
+  const periodFinish = rewardData.value2
+  const rewardRate = rewardData.value3
+  const lastUpdateTime = rewardData.value4
   const totalSupply = stakingRewardsContract.totalSupply()
+  const workingSupply = stakingRewardsContract.working_supply()
+
+  data.gauge = gaugeId
+  data.token = token.toHexString()
+  data.distributor = distributor
+  data.periodFinish = periodFinish
+  data.rewardRate = rewardRate
+  data.lastUpdateTime = lastUpdateTime
   data.totalSupply = totalSupply
-
-  const rewardPerTokenStored = stakingRewardsContract.rewardPerTokenStored()
-  data.rewardPerTokenStored = rewardPerTokenStored
-
-  const rewardsDistributor = stakingRewardsContract.rewardsDistribution().toHexString()
-  data.rewardsDistributor = rewardsDistributor
-
-  const timestamp = block.timestamp
+  data.workingSupply = workingSupply
+  data.blockNumber = block.number
   data.timestamp = timestamp
 
-  let dataHistorical = StakingHistoricalData.load(idHistoricalHour)
+  let dataHistorical = GaugeRewardHistoricalData.load(idHistoricalHour)
   if (dataHistorical == null) {
-    dataHistorical = new StakingHistoricalData(idHistoricalHour)
+    dataHistorical = new GaugeRewardHistoricalData(idHistoricalHour)
+    dataHistorical.gauge = gaugeId
+    dataHistorical.token = token.toHexString()
+    dataHistorical.distributor = distributor
     dataHistorical.periodFinish = periodFinish
     dataHistorical.rewardRate = rewardRate
-    dataHistorical.rewardsDuration = rewardsDuration
     dataHistorical.lastUpdateTime = lastUpdateTime
     dataHistorical.totalSupply = totalSupply
-    dataHistorical.rewardPerTokenStored = rewardPerTokenStored
-    dataHistorical.rewardsDistributor = rewardsDistributor
+    dataHistorical.workingSupply = workingSupply
     dataHistorical.blockNumber = block.number
     dataHistorical.timestamp = roundedTimestamp
   } else {
+    dataHistorical.distributor = distributor
     dataHistorical.periodFinish = periodFinish
     dataHistorical.rewardRate = rewardRate
-    dataHistorical.rewardsDuration = rewardsDuration
     dataHistorical.lastUpdateTime = lastUpdateTime
     dataHistorical.totalSupply = totalSupply
-    dataHistorical.rewardPerTokenStored = rewardPerTokenStored
-    dataHistorical.rewardsDistributor = rewardsDistributor
+    dataHistorical.workingSupply = workingSupply
     dataHistorical.blockNumber = block.number
     dataHistorical.timestamp = roundedTimestamp
   }
 
   data.save()
   dataHistorical.save()
+}
+
+export function updateGaugeSupplyData(event: ethereum.Event): void {
+  const stakingRewardsContract = LiquidityGauge.bind(event.address)
+  const block = event.block
+  const timestamp = block.timestamp
+
+  // common values
+  const gaugeId = event.address.toHexString()
+  const totalSupply = stakingRewardsContract.totalSupply()
+  const workingSupply = stakingRewardsContract.working_supply()
+
+  const rewardCount = parseInt(stakingRewardsContract.reward_count().toString())
+  for (let i = 0; i < rewardCount; i++) {
+    const token = stakingRewardsContract.reward_tokens(BigInt.fromString(i.toString()))
+    const id = gaugeId + '_' + token.toHexString()
+    // we round to the closest hour
+    const roundedTimestamp = historicalSlice(block)
+    const idHistoricalHour = id + '_hour_' + roundedTimestamp.toString()
+
+    let data = GaugeRewardData.load(id)
+    if (data == null) {
+      data = new GaugeRewardData(id)
+    }
+
+    data.gauge = gaugeId
+    data.token = token.toHexString()
+    data.totalSupply = totalSupply
+    data.workingSupply = workingSupply
+    data.blockNumber = block.number
+    data.timestamp = timestamp
+
+    let dataHistorical = GaugeRewardHistoricalData.load(idHistoricalHour)
+    if (dataHistorical == null) {
+      dataHistorical = new GaugeRewardHistoricalData(idHistoricalHour)
+      dataHistorical.gauge = gaugeId
+      dataHistorical.token = token.toHexString()
+      dataHistorical.totalSupply = totalSupply
+      dataHistorical.workingSupply = workingSupply
+      dataHistorical.blockNumber = block.number
+      dataHistorical.timestamp = roundedTimestamp
+    } else {
+      dataHistorical.totalSupply = totalSupply
+      dataHistorical.workingSupply = workingSupply
+      dataHistorical.blockNumber = block.number
+      dataHistorical.timestamp = roundedTimestamp
+    }
+
+    data.save()
+    dataHistorical.save()
+  }
 }
 
 export function handleUpdatePerpStaking(event: ethereum.Event): void {
   const stakingRewardsContract = PerpetualManagerFront.bind(event.address)
   const block = event.block
+  const timestamp = block.timestamp
 
   const id = event.address.toHexString()
   // we round to the closest hour
   const roundedTimestamp = historicalSlice(block)
   const idHistoricalHour = id + '_hour_' + roundedTimestamp.toString()
 
-  let data = StakingData.load(id)
+  let data = GaugeRewardData.load(id)
   if (data == null) {
-    data = new StakingData(id)
+    data = new GaugeRewardData(id)
   }
 
+  const token = stakingRewardsContract.rewardToken().toHexString()
   const periodFinish = stakingRewardsContract.periodFinish()
-  data.periodFinish = periodFinish
-
   const rewardRate = stakingRewardsContract.rewardRate()
-  data.rewardRate = rewardRate
-
-  const rewardsDuration = stakingRewardsContract.rewardsDuration()
-  data.rewardsDuration = rewardsDuration
-
   const lastUpdateTime = stakingRewardsContract.lastUpdateTime()
-  data.lastUpdateTime = lastUpdateTime
-
   const totalSupply = stakingRewardsContract.totalHedgeAmount()
-  data.totalSupply = totalSupply
-
-  const rewardPerTokenStored = stakingRewardsContract.rewardPerTokenStored()
-  data.rewardPerTokenStored = rewardPerTokenStored
-
   const rewardsDistributor = stakingRewardsContract.rewardsDistribution().toHexString()
-  data.rewardsDistributor = rewardsDistributor
 
-  const timestamp = block.timestamp
+  data.gauge = id
+  data.token = token
+  data.periodFinish = periodFinish
+  data.distributor = rewardsDistributor
+  data.rewardRate = rewardRate
+  data.lastUpdateTime = lastUpdateTime
+  data.totalSupply = totalSupply
+  data.blockNumber = block.number
   data.timestamp = timestamp
 
-  let dataHistorical = StakingHistoricalData.load(idHistoricalHour)
+  let dataHistorical = GaugeRewardHistoricalData.load(idHistoricalHour)
   if (dataHistorical == null) {
-    dataHistorical = new StakingHistoricalData(idHistoricalHour)
+    dataHistorical = new GaugeRewardHistoricalData(idHistoricalHour)
+    dataHistorical.gauge = id
+    dataHistorical.token = token
     dataHistorical.periodFinish = periodFinish
+    dataHistorical.distributor = rewardsDistributor
     dataHistorical.rewardRate = rewardRate
-    dataHistorical.rewardsDuration = rewardsDuration
     dataHistorical.lastUpdateTime = lastUpdateTime
     dataHistorical.totalSupply = totalSupply
-    dataHistorical.rewardPerTokenStored = rewardPerTokenStored
-    dataHistorical.rewardsDistributor = rewardsDistributor
     dataHistorical.blockNumber = block.number
     dataHistorical.timestamp = roundedTimestamp
   } else {
     dataHistorical.periodFinish = periodFinish
     dataHistorical.rewardRate = rewardRate
-    dataHistorical.rewardsDuration = rewardsDuration
     dataHistorical.lastUpdateTime = lastUpdateTime
     dataHistorical.totalSupply = totalSupply
-    dataHistorical.rewardPerTokenStored = rewardPerTokenStored
-    dataHistorical.rewardsDistributor = rewardsDistributor
+    dataHistorical.distributor = rewardsDistributor
     dataHistorical.blockNumber = block.number
     dataHistorical.timestamp = roundedTimestamp
   }
@@ -149,19 +202,8 @@ export function handleUpdatePerpStaking(event: ethereum.Event): void {
   dataHistorical.save()
 }
 
-export function handleUpdateStaking(event: ethereum.Event): void {
-  updateStakingData(event)
-}
-
-export function handleStaked(event: Staked): void {
-  if (event.params.amount.equals(BigInt.fromString('0'))) return
-
-  updateStakingData(event)
-
-  const stakingRewardsContract = StakingRewards.bind(event.address)
-  const token = stakingRewardsContract.stakingToken()
-
-  const tokenDataId = event.params.user.toHexString() + '_' + token.toHexString()
+export function handleStaked(token: Address, event: Transfer): void {
+  const tokenDataId = event.params._to.toHexString() + '_' + token.toHexString()
 
   const sanTokenContract = SanToken.bind(token)
   const result = sanTokenContract.try_poolManager()
@@ -175,11 +217,11 @@ export function handleStaked(event: Staked): void {
         data = new agToken(tokenDataId)
         data.stableName = name
         data.balance = BigInt.fromString('0')
-        data.owner = event.params.user.toHexString()
+        data.owner = event.params._to.toHexString()
         data.token = token.toHexString()
-        data.staked = event.params.amount
+        data.staked = event.params._value
       } else {
-        data.staked = data.staked.plus(event.params.amount)
+        data.staked = data.staked.plus(event.params._value)
       }
       data.save()
     } else {
@@ -192,12 +234,12 @@ export function handleStaked(event: Staked): void {
           ).symbol()}`
         }
         data.name = name
-        data.balance = ERC20.bind(token).balanceOf(event.params.user)
-        data.owner = event.params.user.toHexString()
+        data.balance = ERC20.bind(token).balanceOf(event.params._to)
+        data.owner = event.params._to.toHexString()
         data.token = token.toHexString()
-        data.staked = event.params.amount
+        data.staked = event.params._value
       } else {
-        data.staked = data.staked.plus(event.params.amount)
+        data.staked = data.staked.plus(event.params._value)
       }
       data.save()
     }
@@ -215,11 +257,11 @@ export function handleStaked(event: Staked): void {
 
     let data = sanToken.load(tokenDataId)
 
-    const addressId = event.params.user.toHexString() + '_' + collatName + '_' + stableName.substr(2)
+    const addressId = event.params._to.toHexString() + '_' + collatName + '_' + stableName.substr(2)
     // Balance of staked tokens before the call
     const balance = data == null ? BigInt.fromString('0') : data.staked
     const lastStakedPosition = balance
-      .plus(event.params.amount)
+      .plus(event.params._value)
       .times(sanRate)
       .div(BASE_TOKENS)
 
@@ -231,27 +273,21 @@ export function handleStaked(event: Staked): void {
 
     if (data == null) {
       data = new sanToken(tokenDataId)
-      data.owner = event.params.user.toHexString()
+      data.owner = event.params._to.toHexString()
       data.token = token.toHexString()
       data.balance = BigInt.fromString('0')
       data.collatName = collatName
       data.stableName = stableName
-      data.staked = event.params.amount
+      data.staked = event.params._value
     } else {
-      data.staked = data.staked.plus(event.params.amount)
+      data.staked = data.staked.plus(event.params._value)
     }
     data.save()
   }
 }
 
-export function handleWithdrawn(event: Withdrawn): void {
-  if (event.params.amount.equals(BigInt.fromString('0'))) return
-  updateStakingData(event)
-
-  const stakingRewardsContract = StakingRewards.bind(event.address)
-  const token = stakingRewardsContract.stakingToken()
-
-  const tokenDataId = event.params.user.toHexString() + '_' + token.toHexString()
+export function handleUnstaked(token: Address, event: Transfer): void {
+  const tokenDataId = event.params._from.toHexString() + '_' + token.toHexString()
 
   const sanTokenContract = SanToken.bind(token)
   const result = sanTokenContract.try_poolManager()
@@ -262,14 +298,14 @@ export function handleWithdrawn(event: Withdrawn): void {
   if (result.reverted) {
     if (symbol.substr(0, 2) == 'ag') {
       const data = agToken.load(tokenDataId)!
-      data.staked = data.staked.minus(event.params.amount)
+      data.staked = data.staked.minus(event.params._value)
       data.save()
     } else {
       const data = externalToken.load(tokenDataId)!
       // For external tokens we don't want to track there actual balance but just the what is goingthrough on the protocol
       // Otherwise this would asks to track all the other tokens when entering/exiting/transferring
-      data.balance = data.balance.minus(event.params.amount)
-      data.staked = data.staked.minus(event.params.amount)
+      data.balance = data.balance.minus(event.params._value)
+      data.staked = data.staked.minus(event.params._value)
       data.save()
     }
   } else {
@@ -285,11 +321,11 @@ export function handleWithdrawn(event: Withdrawn): void {
 
     const data = sanToken.load(tokenDataId)!
 
-    const addressId = event.params.user.toHexString() + '_' + collatName + '_' + stableName.substr(2)
+    const addressId = event.params._from.toHexString() + '_' + collatName + '_' + stableName.substr(2)
     // Balance of staked tokens before the call
     const balance = data.staked
     const lastStakedPosition = balance
-      .minus(event.params.amount)
+      .minus(event.params._value)
       .times(sanRate)
       .div(BASE_TOKENS)
 
@@ -298,7 +334,21 @@ export function handleWithdrawn(event: Withdrawn): void {
     gainData.lastStakedPosition = lastStakedPosition
     gainData.save()
 
-    data.staked = data.staked.minus(event.params.amount)
+    data.staked = data.staked.minus(event.params._value)
     data.save()
+  }
+}
+
+export function handleTransfer(event: Transfer): void {
+  if (event.params._value.equals(BigInt.fromString('0'))) return
+
+  const liquidityGaugeContract = LiquidityGauge.bind(event.address)
+  const token = liquidityGaugeContract.lp_token()
+
+  if (!isBurn(event)) {
+    handleStaked(token, event)
+  }
+  if (!isMint(event)) {
+    handleUnstaked(token, event)
   }
 }
