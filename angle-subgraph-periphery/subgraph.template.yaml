@@ -208,6 +208,8 @@ templates:
       entities:
         - PoolData
       abis:
+        - name: ERC20
+          file: ../abis/ERC20.json
         - name: PoolManager
           file: ../abis/PoolManager.json
         - name: StableMaster
@@ -264,6 +266,8 @@ templates:
       entities:
         - Perpetual
       abis:
+        - name: ERC20
+          file: ../abis/ERC20.json
         - name: BaseSurplusConverter
           file: ../abis/BaseSurplusConverter.json
         - name: FeeDistributor

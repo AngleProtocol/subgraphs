@@ -2,6 +2,7 @@ import { Contracts, FeeDistribution } from '../../generated/schema'
 import { FeeDistributorTemplate } from '../../generated/templates'
 import { FeeDistributorUpdated } from '../../generated/templates/BaseSurplusConverterTemplate/BaseSurplusConverter'
 import { FeeDistributor } from '../../generated/templates/BaseSurplusConverterTemplate/FeeDistributor'
+import { ERC20 } from '../../generated/templates/BaseSurplusConverterTemplate/ERC20'
 
 export function handleUpdateFeeDistributor(event: FeeDistributorUpdated): void {
   const newFeeDistributorAddress = event.params.newFeeDistributor
@@ -19,8 +20,12 @@ export function handleUpdateFeeDistributor(event: FeeDistributorUpdated): void {
     const contractData = new Contracts(newFeeDistributorAddress.toHexString())
     contractData.save()
 
+    const tokenAddress = feeDistributor.token()
+    const rewardToken = ERC20.bind(tokenAddress)
+
     const data = new FeeDistribution(newFeeDistributorAddress.toHexString())
-    data.token = feeDistributor.token().toHexString()
+    data.token = tokenAddress.toHexString()
+    data.tokenName = rewardToken.name()
     data.lastTokenTime = feeDistributor.last_token_time()
     data.blockNumber = event.block.number
     data.save()

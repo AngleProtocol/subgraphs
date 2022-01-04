@@ -1,7 +1,8 @@
 import { BigInt } from '@graphprotocol/graph-ts'
 import { MAX_LOCK_TIME } from '../../../constants'
-import { veANGLE } from '../../generated/schema'
+import { lockedANGLEHistorical, veANGLE } from '../../generated/schema'
 import { Deposit, Withdraw } from '../../generated/veAngle/veANGLE'
+import { historicalSlice } from './utils'
 
 export function handleDeposit(event: Deposit): void {
   const toId = event.params.provider.toHexString()
@@ -9,6 +10,18 @@ export function handleDeposit(event: Deposit): void {
   const amount = event.params.value
   const locktime = event.params.locktime
   const type = event.params.type
+
+  // keep track of the locked ANGLE
+  const roundedTimestamp = historicalSlice(event.block)
+  const idHistoricalHour = event.address.toHexString() + '_hour_' + roundedTimestamp.toString()
+  let dataHistorical = lockedANGLEHistorical.load(idHistoricalHour)
+  if (dataHistorical == null) {
+    dataHistorical = new lockedANGLEHistorical(idHistoricalHour)
+    dataHistorical.locked = BigInt.fromString('0')
+  }
+  dataHistorical.locked = dataHistorical.locked.plus(amount)
+  dataHistorical.timestamp = roundedTimestamp
+  dataHistorical.save()
 
   // deposit / create / extend
   if (type.equals(BigInt.fromString('0')) || type.equals(BigInt.fromString('2'))) {
@@ -45,6 +58,19 @@ export function handleWithdraw(event: Withdraw): void {
   const timestamp = event.params.ts
   const toId = event.params.provider.toHexString()
   let data = veANGLE.load(toId)!
+
+  // keep track of the locked ANGLE
+  const roundedTimestamp = historicalSlice(event.block)
+  const idHistoricalHour = event.address.toHexString() + '_hour_' + roundedTimestamp.toString()
+  let dataHistorical = lockedANGLEHistorical.load(idHistoricalHour)
+  if (dataHistorical == null) {
+    dataHistorical = new lockedANGLEHistorical(idHistoricalHour)
+    dataHistorical.locked = BigInt.fromString('0')
+  }
+  dataHistorical.locked = dataHistorical.locked.minus(data.amount)
+  dataHistorical.timestamp = roundedTimestamp
+  dataHistorical.save()
+
   data.lastUpdate = timestamp
   data.slope = BigInt.fromString('0')
   data.bias = BigInt.fromString('0')

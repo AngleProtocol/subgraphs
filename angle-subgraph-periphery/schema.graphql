@@ -48,6 +48,7 @@ type FeeDistribution @entity {
   # Address of the fee distributor
   id: ID!
   token: String!
+  tokenName: String!
   tokensPerWeek: [WeeklyDistribution!]! @derivedFrom(field: "feeDistributor")
   lastTokenTime: BigInt!
   # Block Number of last update

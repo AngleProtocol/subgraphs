@@ -3,6 +3,7 @@ import { BaseSurplusConverterTemplate, FeeDistributorTemplate } from '../../gene
 import { BaseSurplusConverter } from '../../generated/templates/ERCManagerFrontTemplate/BaseSurplusConverter'
 import { FeeDistributor } from '../../generated/templates/ERCManagerFrontTemplate/FeeDistributor'
 import { SurplusConverterUpdated } from '../../generated/templates/ERCManagerFrontTemplate/PoolManager'
+import { ERC20 } from '../../generated/templates/ERCManagerFrontTemplate/ERC20'
 
 export function handleUpdateSurplusConverter(event: SurplusConverterUpdated): void {
   // Start indexing and tracking new contracts
@@ -27,8 +28,12 @@ export function handleUpdateSurplusConverter(event: SurplusConverterUpdated): vo
     contractData = new Contracts(originalFeeDistributorAddress.toHexString())
     contractData.save()
 
+    const tokenAddress = feeDistributor.token()
+    const rewardToken = ERC20.bind(tokenAddress)
+
     data = new FeeDistribution(originalFeeDistributorAddress.toHexString())
-    data.token = feeDistributor.token().toHexString()
+    data.token = tokenAddress.toHexString()
+    data.tokenName = rewardToken.name()
     data.lastTokenTime = feeDistributor.last_token_time()
     data.blockNumber = event.block.number
     data.save()
