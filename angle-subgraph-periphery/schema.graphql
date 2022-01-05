@@ -49,6 +49,7 @@ type FeeDistribution @entity {
   id: ID!
   token: String!
   tokenName: String!
+  tokenDecimals: BigInt!
   tokensPerWeek: [WeeklyDistribution!]! @derivedFrom(field: "feeDistributor")
   lastTokenTime: BigInt!
   # Block Number of last update

@@ -26,6 +26,7 @@ export function handleUpdateFeeDistributor(event: FeeDistributorUpdated): void {
     const data = new FeeDistribution(newFeeDistributorAddress.toHexString())
     data.token = tokenAddress.toHexString()
     data.tokenName = rewardToken.name()
+    data.tokenDecimals = rewardToken.decimals()
     data.lastTokenTime = feeDistributor.last_token_time()
     data.blockNumber = event.block.number
     data.save()
