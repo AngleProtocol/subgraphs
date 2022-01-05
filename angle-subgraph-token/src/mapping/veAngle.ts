@@ -1,10 +1,11 @@
 import { BigInt } from '@graphprotocol/graph-ts'
 import { MAX_LOCK_TIME } from '../../../constants'
-import { lockedANGLEHistorical, veANGLE, veANGLEHistorical } from '../../generated/schema'
+import { lockedANGLE, lockedANGLEHistorical, veANGLE, veANGLEHistorical } from '../../generated/schema'
 import { Deposit, Withdraw } from '../../generated/veAngle/veANGLE'
 import { historicalSlice } from './utils'
 
 export function handleDeposit(event: Deposit): void {
+  const veANGLEAddress = event.address.toHexString()
   const roundedTimestamp = historicalSlice(event.block)
   const timestamp = event.params.ts
 
@@ -16,11 +17,17 @@ export function handleDeposit(event: Deposit): void {
 
   // keep track of the locked ANGLE
   const idLockedANGLEHistoricalHour = roundedTimestamp.toString()
+  let dataLockedANGLE = lockedANGLE.load(veANGLEAddress)
   let dataHistoricalLockedANGLE = lockedANGLEHistorical.load(idLockedANGLEHistoricalHour)
+  if (dataLockedANGLE == null) {
+    dataLockedANGLE = new lockedANGLE(veANGLEAddress)
+    dataLockedANGLE.locked = BigInt.fromString('0')
+  }
   if (dataHistoricalLockedANGLE == null) {
     dataHistoricalLockedANGLE = new lockedANGLEHistorical(idLockedANGLEHistoricalHour)
-    dataHistoricalLockedANGLE.locked = BigInt.fromString('0')
+    dataHistoricalLockedANGLE.locked = dataLockedANGLE.locked
   }
+  dataLockedANGLE.locked = dataLockedANGLE.locked.plus(amount)
   dataHistoricalLockedANGLE.locked = dataHistoricalLockedANGLE.locked.plus(amount)
   dataHistoricalLockedANGLE.timestamp = roundedTimestamp
   dataHistoricalLockedANGLE.save()
@@ -32,6 +39,7 @@ export function handleDeposit(event: Deposit): void {
     if (dataHistorical == null) {
       dataHistorical = new veANGLEHistorical(idHistorical)
       dataHistorical.endLocked = data.endLocked
+      dataHistorical.user = toId
     }
 
     data.amount = data.amount.plus(amount)
@@ -39,8 +47,8 @@ export function handleDeposit(event: Deposit): void {
     if (data.endLocked.ge(timestamp)) {
       data.slope = data.amount.div(MAX_LOCK_TIME)
       data.bias = data.slope.times(data.endLocked.minus(timestamp))
-      dataHistorical.slope = data.amount.div(MAX_LOCK_TIME)
-      dataHistorical.bias = data.slope.times(data.endLocked.minus(timestamp))
+      dataHistorical.slope = data.slope
+      dataHistorical.bias = data.bias
     } else {
       data.slope = BigInt.fromString('0')
       data.bias = BigInt.fromString('0')
@@ -65,6 +73,7 @@ export function handleDeposit(event: Deposit): void {
       dataHistorical = new veANGLEHistorical(idHistorical)
     }
     dataHistorical.timestamp = timestamp
+    dataHistorical.user = toId
     dataHistorical.slope = data.slope
     dataHistorical.bias = data.bias
     dataHistorical.endLocked = data.endLocked
@@ -83,6 +92,7 @@ export function handleDeposit(event: Deposit): void {
       dataHistorical = new veANGLEHistorical(idHistorical)
     }
     dataHistorical.timestamp = timestamp
+    dataHistorical.user = toId
     dataHistorical.slope = data.slope
     dataHistorical.bias = data.bias
     dataHistorical.endLocked = data.endLocked
@@ -92,6 +102,7 @@ export function handleDeposit(event: Deposit): void {
 }
 
 export function handleWithdraw(event: Withdraw): void {
+  const veANGLEAddress = event.address.toHexString()
   const timestamp = event.params.ts
   const toId = event.params.provider.toHexString()
   const idHistorical = event.params.provider.toHexString() + '_hour_' + timestamp.toString()
@@ -100,7 +111,13 @@ export function handleWithdraw(event: Withdraw): void {
   // keep track of the locked ANGLE
   const roundedTimestamp = historicalSlice(event.block)
   const idLockedANGLEHistoricalHour = roundedTimestamp.toString()
-  let dataHistoricalLockedANGLE = lockedANGLEHistorical.load(idLockedANGLEHistoricalHour)!
+  let dataLockedANGLE = lockedANGLE.load(veANGLEAddress)!
+  let dataHistoricalLockedANGLE = lockedANGLEHistorical.load(idLockedANGLEHistoricalHour)
+  if (dataHistoricalLockedANGLE == null) {
+    dataHistoricalLockedANGLE = new lockedANGLEHistorical(idLockedANGLEHistoricalHour)
+    dataHistoricalLockedANGLE.locked = dataLockedANGLE.locked
+  }
+  dataLockedANGLE.locked = dataLockedANGLE.locked.minus(data.amount)
   dataHistoricalLockedANGLE.locked = dataHistoricalLockedANGLE.locked.minus(data.amount)
   dataHistoricalLockedANGLE.timestamp = roundedTimestamp
   dataHistoricalLockedANGLE.save()
@@ -118,6 +135,7 @@ export function handleWithdraw(event: Withdraw): void {
     dataHistorical = new veANGLEHistorical(idHistorical)
   }
   dataHistorical.timestamp = timestamp
+  dataHistorical.user = toId
   dataHistorical.slope = BigInt.fromString('0')
   dataHistorical.bias = BigInt.fromString('0')
   dataHistorical.endLocked = BigInt.fromString('0')

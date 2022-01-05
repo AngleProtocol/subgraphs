@@ -5,6 +5,13 @@ type ANGLE @entity {
   balance: BigInt!
 }
 
+type lockedANGLE @entity {
+  # veANGLE address
+  id: ID!
+  timestamp: BigInt!
+  locked: BigInt!
+}
+
 type lockedANGLEHistorical @entity {
   # Timestamp
   id: ID!
