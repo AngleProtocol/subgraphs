@@ -1,3 +1,4 @@
+import { BigInt } from '@graphprotocol/graph-ts'
 import { Contracts, FeeDistribution } from '../../generated/schema'
 import { BaseSurplusConverterTemplate, FeeDistributorTemplate } from '../../generated/templates'
 import { BaseSurplusConverter } from '../../generated/templates/ERCManagerFrontTemplate/BaseSurplusConverter'
@@ -34,7 +35,7 @@ export function handleUpdateSurplusConverter(event: SurplusConverterUpdated): vo
     data = new FeeDistribution(originalFeeDistributorAddress.toHexString())
     data.token = tokenAddress.toHexString()
     data.tokenName = rewardToken.name()
-    data.tokenDecimals = rewardToken.decimals()
+    data.tokenDecimals = BigInt.fromI32(rewardToken.decimals())
     data.lastTokenTime = feeDistributor.last_token_time()
     data.blockNumber = event.block.number
     data.save()

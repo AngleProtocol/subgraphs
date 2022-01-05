@@ -50,6 +50,7 @@ export function handleDeposit(event: Deposit): void {
     data.lastUpdate = timestamp
     dataHistorical.timestamp = timestamp
     data.save()
+    dataHistorical.save()
   } else if (type.equals(BigInt.fromString('1'))) {
     let data = new veANGLE(toId)
     data.lastUpdate = timestamp
@@ -68,6 +69,7 @@ export function handleDeposit(event: Deposit): void {
     dataHistorical.bias = data.bias
     dataHistorical.endLocked = data.endLocked
     dataHistorical.amount = data.amount
+    dataHistorical.save()
   } else {
     let data = veANGLE.load(toId)!
     data.slope = data.amount.div(MAX_LOCK_TIME)
@@ -85,6 +87,7 @@ export function handleDeposit(event: Deposit): void {
     dataHistorical.bias = data.bias
     dataHistorical.endLocked = data.endLocked
     dataHistorical.amount = data.amount
+    dataHistorical.save()
   }
 }
 
@@ -119,4 +122,5 @@ export function handleWithdraw(event: Withdraw): void {
   dataHistorical.bias = BigInt.fromString('0')
   dataHistorical.endLocked = BigInt.fromString('0')
   dataHistorical.amount = BigInt.fromString('0')
+  dataHistorical.save()
 }
