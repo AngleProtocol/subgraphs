@@ -9,17 +9,19 @@ type lockedANGLE @entity {
   # veANGLE address
   id: ID!
   timestamp: BigInt!
-  locked: BigInt!
+  angleLocked: BigInt!
+  veSupply: BigInt!
 }
 
 type lockedANGLEHistorical @entity {
   # Timestamp
   id: ID!
   timestamp: BigInt!
-  locked: BigInt!
+  angleLocked: BigInt!
+  veSupply: BigInt!
 }
 
-type veANGLE @entity {
+type veANGLEData @entity {
   # Address of the angle owner
   id: ID!
   bias: BigInt!
