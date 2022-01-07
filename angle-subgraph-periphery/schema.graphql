@@ -36,6 +36,34 @@ type OracleAPRHistoricalData @entity {
   timestamp: BigInt!
 }
 
+type FeesEarned @entity {
+  # Address of the owner + address of the token
+  id: ID!
+  owner: String!
+  token: String!
+  earned: BigInt!
+}
+
+type FeeDistribution @entity {
+  # Address of the fee distributor
+  id: ID!
+  token: String!
+  tokenName: String!
+  tokenDecimals: BigInt!
+  tokensPerWeek: [WeeklyDistribution!]! @derivedFrom(field: "feeDistributor")
+  lastTokenTime: BigInt!
+  # Block Number of last update
+  blockNumber: BigInt
+}
+
+type WeeklyDistribution @entity {
+  # Address of the fee distributor + week number
+  id: ID!
+  feeDistributor: FeeDistribution!
+  week: BigInt!
+  distributed: BigInt!
+}
+
 type Contracts @entity {
   id: ID!
 }

@@ -9,11 +9,13 @@ import { Contracts } from '../../generated/schema'
 
 import { updateOracleData } from './utils'
 import { Address, Bytes } from '@graphprotocol/graph-ts'
+import { ERCManagerFrontTemplate } from '../../../angle-subgraph-strategy/generated/templates'
 
 export function handleCollateralDeployed(event: CollateralDeployed): void {
   // Start indexing and tracking new contracts
   PerpetualManagerFrontTemplate.create(event.params._perpetualManager)
   SanTokenTemplate.create(event.params._sanToken)
+  ERCManagerFrontTemplate.create(event.params._poolManager)
 
   let contractData = new Contracts(event.params._perpetualManager.toHexString())
   contractData.save()
