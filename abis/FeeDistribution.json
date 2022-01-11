@@ -111,7 +111,8 @@
     "type": "function",
     "name": "checkpoint_token",
     "inputs": [],
-    "outputs": []
+    "outputs": [],
+    "gas": 855540
   },
   {
     "stateMutability": "view",
@@ -132,14 +133,16 @@
         "name": "",
         "type": "uint256"
       }
-    ]
+    ],
+    "gas": 518366
   },
   {
     "stateMutability": "nonpayable",
     "type": "function",
     "name": "checkpoint_total_supply",
     "inputs": [],
-    "outputs": []
+    "outputs": [],
+    "gas": 21265540
   },
   {
     "stateMutability": "nonpayable",
@@ -185,7 +188,8 @@
         "name": "",
         "type": "bool"
       }
-    ]
+    ],
+    "gas": 50179990
   },
   {
     "stateMutability": "nonpayable",
@@ -202,7 +206,8 @@
         "name": "",
         "type": "bool"
       }
-    ]
+    ],
+    "gas": 862907
   },
   {
     "stateMutability": "nonpayable",
@@ -214,28 +219,32 @@
         "type": "address"
       }
     ],
-    "outputs": []
+    "outputs": [],
+    "gas": 39722
   },
   {
     "stateMutability": "nonpayable",
     "type": "function",
     "name": "accept_admin",
     "inputs": [],
-    "outputs": []
+    "outputs": [],
+    "gas": 39570
   },
   {
     "stateMutability": "nonpayable",
     "type": "function",
     "name": "toggle_allow_checkpoint_token",
     "inputs": [],
-    "outputs": []
+    "outputs": [],
+    "gas": 41700
   },
   {
     "stateMutability": "nonpayable",
     "type": "function",
     "name": "kill_me",
     "inputs": [],
-    "outputs": []
+    "outputs": [],
+    "gas": 46824
   },
   {
     "stateMutability": "nonpayable",
@@ -252,7 +261,8 @@
         "name": "",
         "type": "bool"
       }
-    ]
+    ],
+    "gas": 19233
   },
   {
     "stateMutability": "view",
@@ -264,7 +274,8 @@
         "name": "",
         "type": "uint256"
       }
-    ]
+    ],
+    "gas": 2718
   },
   {
     "stateMutability": "view",
@@ -276,7 +287,8 @@
         "name": "",
         "type": "uint256"
       }
-    ]
+    ],
+    "gas": 2748
   },
   {
     "stateMutability": "view",
@@ -293,7 +305,8 @@
         "name": "",
         "type": "uint256"
       }
-    ]
+    ],
+    "gas": 2993
   },
   {
     "stateMutability": "view",
@@ -310,7 +323,8 @@
         "name": "",
         "type": "uint256"
       }
-    ]
+    ],
+    "gas": 3023
   },
   {
     "stateMutability": "view",
@@ -322,7 +336,8 @@
         "name": "",
         "type": "uint256"
       }
-    ]
+    ],
+    "gas": 2838
   },
   {
     "stateMutability": "view",
@@ -339,7 +354,8 @@
         "name": "",
         "type": "uint256"
       }
-    ]
+    ],
+    "gas": 2913
   },
   {
     "stateMutability": "view",
@@ -351,7 +367,8 @@
         "name": "",
         "type": "address"
       }
-    ]
+    ],
+    "gas": 2898
   },
   {
     "stateMutability": "view",
@@ -363,7 +380,8 @@
         "name": "",
         "type": "address"
       }
-    ]
+    ],
+    "gas": 2928
   },
   {
     "stateMutability": "view",
@@ -375,7 +393,8 @@
         "name": "",
         "type": "uint256"
       }
-    ]
+    ],
+    "gas": 2958
   },
   {
     "stateMutability": "view",
@@ -387,7 +406,8 @@
         "name": "",
         "type": "uint256"
       }
-    ]
+    ],
+    "gas": 2988
   },
   {
     "stateMutability": "view",
@@ -404,7 +424,8 @@
         "name": "",
         "type": "uint256"
       }
-    ]
+    ],
+    "gas": 3063
   },
   {
     "stateMutability": "view",
@@ -416,7 +437,8 @@
         "name": "",
         "type": "address"
       }
-    ]
+    ],
+    "gas": 3048
   },
   {
     "stateMutability": "view",
@@ -428,7 +450,8 @@
         "name": "",
         "type": "address"
       }
-    ]
+    ],
+    "gas": 3078
   },
   {
     "stateMutability": "view",
@@ -440,7 +463,8 @@
         "name": "",
         "type": "bool"
       }
-    ]
+    ],
+    "gas": 3108
   },
   {
     "stateMutability": "view",
@@ -452,7 +476,8 @@
         "name": "",
         "type": "address"
       }
-    ]
+    ],
+    "gas": 3138
   },
   {
     "stateMutability": "view",
@@ -464,6 +489,7 @@
         "name": "",
         "type": "bool"
       }
-    ]
+    ],
+    "gas": 3168
   }
 ]
