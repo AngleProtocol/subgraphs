@@ -15,7 +15,7 @@ export function handleTransfer(event: Transfer): void {
   if (event.params._value.equals(BigInt.fromString('0'))) return
 
   const stakingRewardsContract = LiquidityGauge.bind(event.address)
-  const token = ERC20.bind(stakingRewardsContract.lp_token())
+  const token = ERC20.bind(stakingRewardsContract.staking_token())
   const decimals = token.decimals().toString()
   const name = token.name()
   const txId =

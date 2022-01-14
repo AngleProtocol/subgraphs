@@ -228,8 +228,8 @@ templates:
       apiVersion: 0.0.5
       language: wasm/assemblyscript
       entities:
-        - StakingData
-        - StakingHistoricalHourlyData
+        - Stake
+        - Unstake
       abis:
         - name: LiquidityGauge
           file: ../abis/LiquidityGaugeV4.json

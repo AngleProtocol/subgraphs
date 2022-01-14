@@ -1,7 +1,7 @@
-import { BigInt, store } from '@graphprotocol/graph-ts'
+import { BigInt } from '@graphprotocol/graph-ts'
 import { GaugeData, GaugeHistoricalData } from '../../generated/schema'
 import { LiquidityGaugeTemplate, PerpetualStakingRewardsTemplate } from '../../generated/templates'
-import { GaugeController, KilledGauge, NewGauge, VoteForGauge } from '../../generated/GaugeController/GaugeController'
+import { GaugeController, NewGauge, VoteForGauge } from '../../generated/GaugeController/GaugeController'
 import { historicalSlice } from './utils'
 
 export function handleNewGauge(event: NewGauge): void {
@@ -68,9 +68,4 @@ export function handleGaugeVote(event: VoteForGauge): void {
     data.save()
     dataHistorical.save()
   }
-}
-
-export function handleKillGauge(event: KilledGauge): void {
-  const id = event.params.addr
-  store.remove('StakingData', id.toHexString())
 }

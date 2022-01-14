@@ -35,6 +35,7 @@ export function updateGaugeData(event: RewardDataUpdate): void {
   const timestamp = block.timestamp
 
   const token = event.params._token
+  const tokenContract = ERC20.bind(token)
   const gaugeId = event.address.toHexString()
   const id = gaugeId + '_' + token.toHexString()
   // we round to the closest hour
@@ -46,6 +47,7 @@ export function updateGaugeData(event: RewardDataUpdate): void {
     data = new GaugeRewardData(id)
   }
 
+  const decimalsStakedToken = stakingRewardsContract.decimals()
   const rewardData = stakingRewardsContract.reward_data(token)
   const distributor = rewardData.value1.toHexString()
   const periodFinish = rewardData.value2
@@ -55,7 +57,10 @@ export function updateGaugeData(event: RewardDataUpdate): void {
   const workingSupply = stakingRewardsContract.working_supply()
 
   data.gauge = gaugeId
+  data.decimalsStakedToken = decimalsStakedToken
   data.token = token.toHexString()
+  data.decimals = BigInt.fromI32(tokenContract.decimals())
+  data.tokenSymbol = tokenContract.symbol()
   data.distributor = distributor
   data.periodFinish = periodFinish
   data.rewardRate = rewardRate
@@ -70,6 +75,9 @@ export function updateGaugeData(event: RewardDataUpdate): void {
     dataHistorical = new GaugeRewardHistoricalData(idHistoricalHour)
     dataHistorical.gauge = gaugeId
     dataHistorical.token = token.toHexString()
+    dataHistorical.decimals = BigInt.fromI32(tokenContract.decimals())
+    dataHistorical.decimalsStakedToken = decimalsStakedToken
+    dataHistorical.tokenSymbol = tokenContract.symbol()
     dataHistorical.distributor = distributor
     dataHistorical.periodFinish = periodFinish
     dataHistorical.rewardRate = rewardRate
@@ -99,6 +107,7 @@ export function updateGaugeSupplyData(event: ethereum.Event): void {
   const timestamp = block.timestamp
 
   // common values
+  const decimalsStakedToken = stakingRewardsContract.decimals()
   const gaugeId = event.address.toHexString()
   const totalSupply = stakingRewardsContract.totalSupply()
   const workingSupply = stakingRewardsContract.working_supply()
@@ -117,6 +126,7 @@ export function updateGaugeSupplyData(event: ethereum.Event): void {
     }
 
     data.gauge = gaugeId
+    data.decimalsStakedToken = decimalsStakedToken
     data.token = token.toHexString()
     data.totalSupply = totalSupply
     data.workingSupply = workingSupply
@@ -127,6 +137,7 @@ export function updateGaugeSupplyData(event: ethereum.Event): void {
     if (dataHistorical == null) {
       dataHistorical = new GaugeRewardHistoricalData(idHistoricalHour)
       dataHistorical.gauge = gaugeId
+      dataHistorical.decimalsStakedToken = decimalsStakedToken
       dataHistorical.token = token.toHexString()
       dataHistorical.totalSupply = totalSupply
       dataHistorical.workingSupply = workingSupply
@@ -154,20 +165,27 @@ export function handleUpdatePerpStaking(event: ethereum.Event): void {
   const roundedTimestamp = historicalSlice(block)
   const idHistoricalHour = id + '_hour_' + roundedTimestamp.toString()
 
-  let data = GaugeRewardData.load(id)
-  if (data == null) {
-    data = new GaugeRewardData(id)
-  }
-
-  const token = stakingRewardsContract.rewardToken().toHexString()
+  const decimalsStakedToken = BigInt.fromI32(
+    ERC20.bind(PoolManager.bind(stakingRewardsContract.poolManager()).token()).decimals()
+  )
+  const token = stakingRewardsContract.rewardToken()
   const periodFinish = stakingRewardsContract.periodFinish()
   const rewardRate = stakingRewardsContract.rewardRate()
   const lastUpdateTime = stakingRewardsContract.lastUpdateTime()
   const totalSupply = stakingRewardsContract.totalHedgeAmount()
   const rewardsDistributor = stakingRewardsContract.rewardsDistribution().toHexString()
 
-  data.gauge = id
-  data.token = token
+  let data = GaugeRewardData.load(id)
+  if (data == null) {
+    const tokenContract = ERC20.bind(token)
+    data = new GaugeRewardData(id)
+    data.decimals = BigInt.fromI32(tokenContract.decimals())
+    data.decimalsStakedToken = decimalsStakedToken
+    data.tokenSymbol = tokenContract.symbol()
+    data.gauge = id
+    data.token = token.toHexString()
+  }
+
   data.periodFinish = periodFinish
   data.distributor = rewardsDistributor
   data.rewardRate = rewardRate
@@ -180,7 +198,8 @@ export function handleUpdatePerpStaking(event: ethereum.Event): void {
   if (dataHistorical == null) {
     dataHistorical = new GaugeRewardHistoricalData(idHistoricalHour)
     dataHistorical.gauge = id
-    dataHistorical.token = token
+    dataHistorical.decimalsStakedToken = decimalsStakedToken
+    dataHistorical.token = token.toHexString()
     dataHistorical.periodFinish = periodFinish
     dataHistorical.distributor = rewardsDistributor
     dataHistorical.rewardRate = rewardRate
@@ -340,10 +359,11 @@ export function handleUnstaked(token: Address, event: Transfer): void {
 }
 
 export function handleTransfer(event: Transfer): void {
+  updateGaugeSupplyData(event)
   if (event.params._value.equals(BigInt.fromString('0'))) return
 
   const liquidityGaugeContract = LiquidityGauge.bind(event.address)
-  const token = liquidityGaugeContract.lp_token()
+  const token = liquidityGaugeContract.staking_token()
 
   if (!isBurn(event)) {
     handleStaked(token, event)

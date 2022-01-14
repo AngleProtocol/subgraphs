@@ -6,11 +6,11 @@ import { Oracle } from '../../generated/templates/StableMasterTemplate/Oracle'
 import { OracleAPRHistoricalData, OracleData } from '../../generated/schema'
 import { ROUND_COEFF } from '../../../constants'
 
-export function historicalSlice(block: ethereum.Block): BigInt {
+export function historicalSlice(block: ethereum.Block, roundCoeff: BigInt = ROUND_COEFF): BigInt {
   const timestamp = block.timestamp
   // we round to the closest hour
-  const hourId = timestamp.div(ROUND_COEFF)
-  const hourStartTimestamp = hourId.times(ROUND_COEFF)
+  const hourId = timestamp.div(roundCoeff)
+  const hourStartTimestamp = hourId.times(roundCoeff)
 
   return hourStartTimestamp
 }

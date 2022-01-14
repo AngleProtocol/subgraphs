@@ -5,6 +5,15 @@ type ANGLE @entity {
   balance: BigInt!
 }
 
+type ANGLEHistorical @entity {
+  # Address of the angle owner + rounded timestamp
+  id: ID!
+  owner: String!
+  # Balance
+  balance: BigInt!
+  timestamp: BigInt!
+}
+
 type lockedANGLE @entity {
   # veANGLE address
   id: ID!
@@ -111,6 +120,9 @@ type GaugeRewardData @entity {
   id: ID!
   gauge: GaugeData
   token: String!
+  decimals: BigInt
+  decimalsStakedToken: BigInt
+  tokenSymbol: String
   distributor: String
   periodFinish: BigInt
   rewardRate: BigInt
@@ -127,6 +139,9 @@ type GaugeRewardHistoricalData @entity {
   id: ID!
   gauge: GaugeData!
   token: String!
+  decimals: BigInt
+  decimalsStakedToken: BigInt
+  tokenSymbol: String
   distributor: String
   periodFinish: BigInt
   rewardRate: BigInt
