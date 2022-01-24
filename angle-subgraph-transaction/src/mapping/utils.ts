@@ -191,10 +191,27 @@ export function _updatePoolData(
   const feesForSLPs = slpInfo.feesForSLPs
   data.feesForSLPs = feesForSLPs
 
+  const resultInterestsForSurplus = poolManager.try_interestsForSurplus()
+  let interestsForSurplus = BigInt.fromString('0')
+  if (!resultInterestsForSurplus.reverted) {
+    interestsForSurplus = resultInterestsForSurplus.value
+    data.interestsForSurplus = interestsForSurplus
+  }
+
   const interestsForSLPs = slpInfo.interestsForSLPs
   data.interestsForSLPs = interestsForSLPs
 
-  const apr = poolManager.estimatedAPR()
+  let apr: BigInt
+  const result = poolManager.try_interestsForSurplus()
+  if (result.reverted) {
+    apr = poolManager.estimatedAPR()
+  } else {
+    const interestForSurplus = result.value
+    apr = poolManager
+      .estimatedAPR()
+      .times(BASE_PARAMS.minus(interestForSurplus))
+      .div(BASE_PARAMS)
+  }
   data.apr = apr
 
   data.totalHedgeAmount = totalHedgeAmount
@@ -250,6 +267,7 @@ export function _updatePoolData(
     dataHistorical.totalSLPInterests = data.totalSLPInterests
     dataHistorical.feesAside = feesAside
     dataHistorical.feesForSLPs = feesForSLPs
+    dataHistorical.interestsForSurplus = interestsForSurplus
     dataHistorical.interestsForSLPs = interestsForSLPs
     dataHistorical.apr = apr
     dataHistorical.totalHedgeAmount = totalHedgeAmount

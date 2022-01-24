@@ -4,7 +4,7 @@ import { ERC20 } from '../../generated/templates/StableMasterTemplate/ERC20'
 import { PoolManager } from '../../generated/templates/StableMasterTemplate/PoolManager'
 import { Oracle } from '../../generated/templates/StableMasterTemplate/Oracle'
 import { OracleAPRHistoricalData, OracleData } from '../../generated/schema'
-import { ROUND_COEFF } from '../../../constants'
+import { BASE_PARAMS, ROUND_COEFF } from '../../../constants'
 
 export function historicalSlice(block: ethereum.Block, roundCoeff: BigInt = ROUND_COEFF): BigInt {
   const timestamp = block.timestamp
@@ -24,7 +24,17 @@ export function updateOracleData(poolManager: PoolManager, block: ethereum.Block
   const stableName = agToken.symbol()
   const collatName = token.symbol()
   const rates = oracle.readAll()
-  const apr = poolManager.estimatedAPR()
+  const result = poolManager.try_interestsForSurplus()
+  let apr: BigInt
+  if (result.reverted) {
+    apr = poolManager.estimatedAPR()
+  } else {
+    const interestForSurplus = result.value
+    apr = poolManager
+      .estimatedAPR()
+      .times(BASE_PARAMS.minus(interestForSurplus))
+      .div(BASE_PARAMS)
+  }
 
   const id = oracle._address.toHexString()
   const roundedTimestamp = historicalSlice(block)

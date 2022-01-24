@@ -11,8 +11,27 @@ export function handleHarvest(event: Harvested): void {
   const stableMaster = StableMaster.bind(poolManager.stableMaster())
   const collatData = stableMaster.collateralMap(poolManager._address)
   const percentInterestsForSLPs = collatData.value7.interestsForSLPs
-  const interestSLPs = event.params.profit.times(percentInterestsForSLPs).div(BASE_PARAMS)
-  const interestProtocol = event.params.profit.minus(interestSLPs)
+
+  let interestSLPs: BigInt
+  let interestProtocol: BigInt
+  const result = poolManager.try_interestsForSurplus()
+  if (result.reverted) {
+    interestSLPs = event.params.profit.times(percentInterestsForSLPs).div(BASE_PARAMS)
+    interestProtocol = event.params.profit.minus(interestSLPs)
+  } else {
+    const interestForSurplus = result.value
+    interestSLPs = event.params.profit
+      .times(BASE_PARAMS.minus(interestForSurplus))
+      .times(percentInterestsForSLPs)
+      .div(BASE_PARAMS)
+      .div(BASE_PARAMS)
+    interestProtocol = event.params.profit
+      .times(BASE_PARAMS.minus(interestForSurplus))
+      .times(BASE_PARAMS.minus(percentInterestsForSLPs))
+      .div(BASE_PARAMS)
+      .div(BASE_PARAMS)
+  }
+
   const data = _updatePoolData(poolManager, event.block)
   data.save()
   _updateGainPoolData(
