@@ -88,8 +88,8 @@ dataSources:
       eventHandlers:
         - event: NewGauge(address,int128,uint256)
           handler: handleNewGauge
-        - event: KilledGauge(address)
-          handler: handleKillGauge
+        - event: VoteForGauge(uint256,address,address,uint256)
+          handler: handleGaugeVote
       file: ./src/mapping/gaugeController.ts
 templates:
   - kind: ethereum/contract
@@ -203,6 +203,10 @@ templates:
       abis:
         - name: PerpetualManagerFront
           file: ../abis/PerpetualManagerFront.json
+        - name: PoolManager
+          file: ../abis/PoolManager.json
+        - name: ERC20
+          file: ../abis/ERC20.json
       eventHandlers:
         - event: RewardAdded(uint256)
           handler: handleUpdatePerpStaking
@@ -246,8 +250,6 @@ templates:
         - event: RewardDataUpdate(indexed address,uint256)
           handler: updateGaugeData
         - event: UpdateLiquidityLimit(address,uint256,uint256,uint256,uint256)
-          handler: updateGaugeSupplyData
-        - event: Transfer(indexed address,indexed address,uint256)
           handler: updateGaugeSupplyData
         - event: Transfer(indexed address,indexed address,uint256)
           handler: handleTransfer
