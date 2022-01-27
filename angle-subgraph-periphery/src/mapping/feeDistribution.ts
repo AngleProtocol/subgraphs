@@ -3,7 +3,7 @@ import {
   Claimed,
   FeeDistributor
 } from '../../generated/templates/FeeDistributorTemplate/FeeDistributor'
-import { FeesEarned, WeeklyDistribution } from '../../generated/schema'
+import { FeeDistribution, FeesEarned, WeeklyDistribution } from '../../generated/schema'
 import { WEEK } from '../../../constants'
 
 export function handleClaim(event: Claimed): void {
@@ -26,12 +26,10 @@ export function handleClaim(event: Claimed): void {
 }
 
 export function handleCheckpoint(event: CheckpointToken): void {
+  let feeDistributionData = FeeDistribution.load(event.address.toHexString())!
   const feeDistributor = FeeDistributor.bind(event.address)
 
-  const lastTokenTime = feeDistributor
-    .last_token_time()
-    .div(WEEK)
-    .times(WEEK)
+  const lastTokenTime = feeDistributionData.lastTokenTime.div(WEEK).times(WEEK)
   const upToWeek = event.block.timestamp
     .plus(WEEK)
     .div(WEEK)
@@ -43,7 +41,8 @@ export function handleCheckpoint(event: CheckpointToken): void {
     .toI32()
 
   let curWeek = lastTokenTime
-  for (let i = 0; i < weekElapsed; i++) {
+
+  while (curWeek.lt(upToWeek)) {
     const id = event.address.toHexString() + '_' + curWeek.toString()
 
     let data = WeeklyDistribution.load(id)
@@ -58,4 +57,8 @@ export function handleCheckpoint(event: CheckpointToken): void {
     data.save()
     curWeek = curWeek.plus(WEEK)
   }
+
+  // update the lastTokenTime, to not redo the work twice
+  feeDistributionData.lastTokenTime = feeDistributor.last_token_time()
+  feeDistributionData.save()
 }
