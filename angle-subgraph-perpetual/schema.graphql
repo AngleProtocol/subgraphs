@@ -74,6 +74,8 @@ type PoolData @entity {
   feesAside: BigInt
   # Portion of the fees from users minting and burning that goes to SLPs
   feesForSLPs: BigInt
+  # Portion of the interests from lending that goes to veANGLE
+  interestsForSurplus: BigInt
   # Portion of the interests from lending that goes to SLPs
   interestsForSLPs: BigInt
   # Estimated APR
@@ -139,6 +141,8 @@ type PoolHistoricalData @entity {
   feesAside: BigInt
   # Portion of the fees from users minting and burning that goes to SLPs
   feesForSLPs: BigInt
+  # Portion of the interests from lending that goes to veANGLE
+  interestsForSurplus: BigInt
   # Portion of the interests from lending that goes to SLPs
   interestsForSLPs: BigInt
   # Estimated APR

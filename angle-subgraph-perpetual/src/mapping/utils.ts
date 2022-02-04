@@ -7,7 +7,7 @@ import { PoolManager } from '../../generated/templates/StableMasterTemplate/Pool
 import { PerpetualManagerFront } from '../../generated/templates/StableMasterTemplate/PerpetualManagerFront'
 import { Oracle } from '../../generated/templates/StableMasterTemplate/Oracle'
 import { PoolData, StableData, StableHistoricalData, PoolHistoricalData } from '../../generated/schema'
-import { ROUND_COEFF } from '../../../constants'
+import { BASE_PARAMS, ROUND_COEFF } from '../../../constants'
 
 export function historicalSlice(block: ethereum.Block): BigInt {
   const timestamp = block.timestamp
@@ -135,10 +135,28 @@ export function _updatePoolData(
   const feesForSLPs = slpInfo.feesForSLPs
   data.feesForSLPs = feesForSLPs
 
-  const interestsForSLPs = slpInfo.interestsForSLPs
-  data.interestsForSLPs = interestsForSLPs
+  const resultInterestsForSurplus = poolManager.try_interestsForSurplus()
+  let interestsForSurplus = BigInt.fromString('0')
+  if (!resultInterestsForSurplus.reverted) {
+    interestsForSurplus = resultInterestsForSurplus.value
+    data.interestsForSurplus = interestsForSurplus
+  }
 
-  const apr = poolManager.estimatedAPR()
+  let interestsForSLPs: BigInt
+  let apr: BigInt
+  const result = poolManager.try_interestsForSurplus()
+  if (result.reverted) {
+    interestsForSLPs = slpInfo.interestsForSLPs
+    apr = poolManager.estimatedAPR()
+  } else {
+    const interestForSurplus = result.value
+    interestsForSLPs = slpInfo.interestsForSLPs.times(BASE_PARAMS.minus(interestForSurplus)).div(BASE_PARAMS)
+    apr = poolManager
+      .estimatedAPR()
+      .times(BASE_PARAMS.minus(interestForSurplus))
+      .div(BASE_PARAMS)
+  }
+  data.interestsForSLPs = interestsForSLPs
   data.apr = apr
 
   const totalHedgeAmount = perpetualManager.totalHedgeAmount()
@@ -190,6 +208,7 @@ export function _updatePoolData(
     dataHistorical.maxInterestsDistributed = maxInterestsDistributed
     dataHistorical.feesAside = feesAside
     dataHistorical.feesForSLPs = feesForSLPs
+    dataHistorical.interestsForSurplus = interestsForSurplus
     dataHistorical.interestsForSLPs = interestsForSLPs
     dataHistorical.apr = apr
     dataHistorical.totalHedgeAmount = totalHedgeAmount
