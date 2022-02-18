@@ -1,14 +1,14 @@
 {
   "network": "rinkeby",
-  "core": "0x856A65c3b4832B179103cfAA43cCA81cB716f42F",
-  "angle": "0x8B6D3f0e883DC9c22C60ed126Ae74758abeBB5F9",
-  "veAngle": "0x91531B30dc2E565d1e9E09095FDD9E4A03DE6e79",
-  "gaugeController": "0x4Ee2e99BC7d031fd9e32185F4A0B9503D9020d52",
-  "angleDistributor": "0x6F23278A3e281966eF084Ca5012e3DFF08D95b9a",
+  "core": "0xe42737011675d563e528F07CD53e7838197CC11E",
+  "angle": "0x4f4fb1D5900f2bFE98E2d5EB481E2FB2Df154488",
+  "veAngle": "0x453D35e2BB41c75F4D74a1dAE1c7Ab16a443d2f2",
+  "gaugeController": "0xe89C8c9b69A171d8f630BC44115E564eC2955058",
+  "angleDistributor": "0x4dA7a298814e52007D86830490AB593d109fB335",
   "chainlink_CHF_USD": "0x03dde2afa7531c61ed650ed355ad94753bfc7786",
   "chainlink_EUR_USD": "0xc4b4fad3dc8c08dba5d639a6e435f116b9282db0",
   "chainlink_GBP_USD": "0x48ea192e08b823fdba7b6b5399f49c3a36b3844f",
   "chainlink_JPY_USD": "0x915659964309157e59c8052ffea0339988f7d897",
   "chainlink_ETH_USD": "0x28d757e89e38ee5eeff3eab330ad1ab99dd7c9eb",
-  "block": 9943248
+  "block": 10171649
 }
