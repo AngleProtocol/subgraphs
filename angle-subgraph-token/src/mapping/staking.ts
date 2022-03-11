@@ -284,13 +284,22 @@ export function handleStaked(token: Address, event: Transfer): void {
       .times(sanRate)
       .div(BASE_TOKENS)
 
-    const gainData = CapitalGain.load(addressId)!
+    let gainData = CapitalGain.load(addressId)
+    if (gainData == null) {
+      gainData = new CapitalGain(addressId)
+      gainData.gains = BigInt.fromString('0')
+      gainData.lastPosition = BigInt.fromString('0')
+    }
     gainData.gains = gainData.gains.plus(balance.times(sanRate).div(BASE_TOKENS)).minus(gainData.lastStakedPosition)
     gainData.lastStakedPosition = lastStakedPosition
 
     gainData.save()
 
     if (data == null) {
+      gainData = new CapitalGain(addressId)
+      gainData.gains = BigInt.fromString('0')
+      gainData.lastPosition = BigInt.fromString('0')
+
       data = new sanToken(tokenDataId)
       data.owner = event.params._to.toHexString()
       data.token = token.toHexString()
