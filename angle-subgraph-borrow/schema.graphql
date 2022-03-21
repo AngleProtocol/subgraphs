@@ -1,0 +1,171 @@
+type TreasuryData @entity {
+  # Address of the agToken
+  id: ID!
+
+  ## Contract state
+  # Address of the treasury
+  treasury: String!
+  # List of vaultManagers reporting to this treasury
+  vaultManagers: [VaultManagerData!]! @derivedFrom(field: "treasury")
+  # Amount of bad debt
+  badDebt: BigInt!
+  # Amount of surplus available
+  surplus: BigInt!
+  # Amount of unprocessed surplus available
+  surplusBuffer: BigInt!
+
+  # Governance parameters
+  # Share of the `surplusBuffer` distributed to governance (in `BASE_PARAMS`)
+  surplusForGovernance: BigInt!
+  # Address of the contract managing surplus
+  surplusManager: String!
+
+  ## Time tracking
+  # BlockNumber of last update
+  blockNumber: BigInt!
+  # Timestamp of last update
+  timestamp: BigInt!
+}
+
+type TreasuryHistoricalData @entity {
+  # Address of the agToken + timestamp
+  id: ID!
+
+  ## Contract state
+  # Address of the treasury
+  treasury: String!
+  # Amount of bad debt
+  badDebt: BigInt!
+  # Amount of surplus available
+  surplus: BigInt!
+  # Amount of unprocessed surplus available
+  surplusBuffer: BigInt!
+
+  # Governance parameters
+  # Share of the `surplusBuffer` distributed to governance (in `BASE_PARAMS`)
+  surplusForGovernance: BigInt!
+  # Address of the contract managing surplus
+  surplusManager: String!
+
+  ## Time tracking
+  # BlockNumber of last update
+  blockNumber: BigInt!
+  # Timestamp of last update
+  timestamp: BigInt!
+}
+
+type VaultManagerData @entity {
+  # Address of VaultManager
+  id: ID!
+  # Address of VaultManager
+  vaultManager: String!
+  # Address of agToken
+  agToken: String!
+  # Address of collateral
+  collateral: String!
+  # Minimum debt of a healthy vault
+  dust: BigInt!
+
+  ## Contract state
+  # Address of treasury
+  treasury: TreasuryData!
+  # Amount of collateral deposited
+  collateralAmount: BigInt!
+  # Total amount of debt across vaults in agToken
+  debt: BigInt!
+  # Amount of bad debt
+  badDebt: BigInt!
+  # Amount of surplus
+  surplus: BigInt!
+  # Value of interestAccumulator
+  interestAccumulator: BigInt!
+  # Has minting rights
+  mintingEnabled: Boolean!
+  # Is contract paused
+  paused: Boolean!
+
+  ## Governance parameters
+  # Maximum debt this VaultManager can handle
+  debtCeiling: BigInt!
+  # Liquidation boost parameters
+  liquidationBoostX: [BigInt!]!
+  liquidationBoostY: [BigInt!]!
+  # If whitelisting is enabled
+  whitelisting: Boolean!
+  # Value of collateral factor
+  collateralFactor: BigInt!
+  # Value of target health factor
+  targetHealthFactor: BigInt!
+  # Value of borrow fee
+  borrowFee: BigInt!
+  # Value of borrow interest rate
+  interestRate: BigInt!
+  # Value of liquidation surcharge
+  liquidationSurcharge: BigInt!
+  # Value of max liquidation discount
+  maxLiquidationDiscount: BigInt!
+
+  ## Time tracking
+  # BlockNumber of last update
+  blockNumber: BigInt!
+  # Timestamp of last update
+  timestamp: BigInt!
+}
+
+type VaultManagerHistoricalData @entity {
+  # Address of VaultManager + timestamp
+  id: ID!
+  # Address of VaultManager
+  vaultManager: String!
+  # Address of agToken
+  agToken: String!
+  # Address of collateral
+  collateral: String!
+  # Minimum debt of a healthy vault
+  dust: BigInt!
+
+  ## State
+  # Address of treasury
+  treasury: TreasuryData!
+  # Amount of collateral deposited
+  collateralAmount: BigInt!
+  # Total amount of debt across vaults in agToken
+  debt: BigInt!
+  # Amount of bad debt
+  badDebt: BigInt!
+  # Amount of surplus
+  surplus: BigInt!
+  # Value of interestAccumulator
+  interestAccumulator: BigInt!
+  # Has minting rights
+  mintingEnabled: Boolean!
+  # Is contract paused
+  paused: Boolean!
+
+  ## Governance parameters
+  # Maximum debt this VaultManager can handle
+  debtCeiling: BigInt!
+  # Liquidation boost parameters
+  liquidationBoostX: [BigInt!]!
+  liquidationBoostY: [BigInt!]!
+  # If whitelisting is enabled
+  whitelisting: Boolean!
+  # Value of collateral factor
+  collateralFactor: BigInt!
+  # Value of target health factor
+  targetHealthFactor: BigInt!
+  # Value of borrow fee
+  borrowFee: BigInt!
+  # Value of borrow interest rate
+  interestRate: BigInt!
+  # Value of liquidation surcharge
+  liquidationSurcharge: BigInt!
+  # Value of max liquidation discount
+  maxLiquidationDiscount: BigInt!
+
+  ## Time tracking
+  # BlockNumber of last update
+  blockNumber: BigInt!
+  # Timestamp of last update
+  timestamp: BigInt!
+}
