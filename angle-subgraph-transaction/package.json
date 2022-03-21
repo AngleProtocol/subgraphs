@@ -2,20 +2,20 @@
   "name": "transaction",
   "license": "UNLICENSED",
   "scripts": {
-    "codegen": "yarn prepare && yarn graph codegen",
-    "codegen:rinkeby": "yarn prepare:rinkeby && yarn graph codegen",
+    "codegen": "yarn prepare && graph codegen",
+    "codegen:rinkeby": "yarn prepare:rinkeby && graph codegen",
     "clean": "rm -rf build generated",
-    "build": "yarn clean && yarn codegen && yarn graph build",
-    "build:rinkeby": "yarn clean && yarn codegen:rinkeby && yarn graph build",
+    "build": "yarn clean && yarn codegen && graph build",
+    "build:rinkeby": "yarn clean && yarn codegen:rinkeby && graph build",
     "lint": "eslint --ignore-path .gitignore --fix --max-warnings 10 'src/**/*.ts'",
-    "deploy": "yarn build && yarn graph deploy --node https://api.thegraph.com/deploy/ --ipfs https://api.thegraph.com/ipfs/ picodes/transaction",
-    "deploy:rinkeby": "yarn build:rinkeby && yarn graph deploy --node https://api.thegraph.com/deploy/ --ipfs https://api.thegraph.com/ipfs/ picodes/rinkeby-transaction",
-    "deploy:dev": "yarn build && yarn graph deploy --node https://api.thegraph.com/deploy/ --ipfs https://api.thegraph.com/ipfs/ picodes/transaction-dev",
+    "deploy": "yarn build && graph deploy --node https://api.thegraph.com/deploy/ --ipfs https://api.thegraph.com/ipfs/ picodes/transaction",
+    "deploy:rinkeby": "yarn build:rinkeby && graph deploy --node https://api.thegraph.com/deploy/ --ipfs https://api.thegraph.com/ipfs/ picodes/rinkeby-transaction",
+    "deploy:dev": "yarn build && graph deploy --node https://api.thegraph.com/deploy/ --ipfs https://api.thegraph.com/ipfs/ picodes/transaction-dev",
     "create-local": "graph create --node http://localhost:8020/ angle/sub",
     "remove-local": "graph remove --node http://localhost:8020/ angle/sub",
     "deploy-local": "yarn clean && yarn prepare && graph codegen && graph build && graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 angle/sub",
     "prepare": "mustache ../config/mainnet.json subgraph.template.yaml > subgraph.yaml",
     "prepare:rinkeby": "mustache ../config/rinkeby.json subgraph.template.yaml > subgraph.yaml",
-    "test": "yarn graph test"
+    "test": "graph test"
   }
 }
