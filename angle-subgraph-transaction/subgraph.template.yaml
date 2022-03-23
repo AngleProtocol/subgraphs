@@ -165,7 +165,7 @@ templates:
           handler: handlePausePerp
         - event: Transfer(indexed address,indexed address,indexed uint256)
           handler: handleTransfer
-      file: ./src/mapping/PerpetualManager.ts
+      file: ./src/mapping/perpetualManager.ts
   - kind: ethereum/contract
     name: ERCManagerFrontTemplate
     network: {{network}}
