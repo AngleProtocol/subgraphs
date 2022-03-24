@@ -3,55 +3,57 @@ description: General pool, stable datas and all transactions on {{network}}.
 schema:
   file: ./schema.graphql
 dataSources:
-  - kind: ethereum/contract
-    name: Core
-    network: {{network}}
-    source:
-      address: '{{core}}'
-      abi: Core
-      startBlock: {{block}}
-    mapping:
-      kind: ethereum/events
-      apiVersion: 0.0.5
-      language: wasm/assemblyscript
-      entities:
-        - TreasuryData #TODO: remove ?
-      abis:
-        - name: Core
-          file: ../abis/Core.json
-      eventHandlers:
-        - event: StableMasterDeployed(indexed address,indexed address)
-          handler: handleStableMasterDeployed
-      file: ./src/mapping/core.ts
-templates:
-  - kind: ethereum/contract
-    name: AgTokenTemplate
-    network: {{network}}
-    source:
-      abi: AgToken
-    mapping:
-      kind: ethereum/events
-      apiVersion: 0.0.5
-      language: wasm/assemblyscript
-      entities:
-        - VaultManagerData
-        - VaultManagerHistoricalData
-      abis:
-        - name: AgToken
-          file: ../abis/AgToken.json
-        - name: Treasury
-          file: ../abis/Treasury.json
-      eventHandlers:
-        - event: TreasuryUpdated(indexed address)
-          handler: handleTreasuryUpdated
-        - event: MinterToggled(indexed address)
-          handler: handleMinterToggled
-      file: ./src/mapping/agToken.ts
+  #   - kind: ethereum/contract
+  #     name: Core
+  #     network: {{network}}
+  #     source:
+  #       address: '{{core}}'
+  #       abi: Core
+  #       startBlock: {{block}}
+  #     mapping:
+  #       kind: ethereum/events
+  #       apiVersion: 0.0.5
+  #       language: wasm/assemblyscript
+  #       entities:
+  #         - TreasuryData #TODO: remove ?
+  #       abis:
+  #         - name: Core
+  #           file: ../abis/Core.json
+  #       eventHandlers:
+  #         - event: StableMasterDeployed(indexed address,indexed address)
+  #           handler: handleStableMasterDeployed
+  #       file: ./src/mapping/core.ts
+  # templates:
+  #   - kind: ethereum/contract
+  #     name: AgTokenTemplate
+  #     network: {{network}}
+  #     source:
+  #       abi: AgToken
+  #     mapping:
+  #       kind: ethereum/events
+  #       apiVersion: 0.0.5
+  #       language: wasm/assemblyscript
+  #       entities:
+  #         - VaultManagerData
+  #         - VaultManagerHistoricalData
+  #       abis:
+  #         - name: AgToken
+  #           file: ../abis/AgToken.json
+  #         - name: Treasury
+  #           file: ../abis/Treasury.json
+  #       eventHandlers:
+  #         - event: TreasuryUpdated(indexed address)
+  #           handler: handleTreasuryUpdated
+  #         - event: MinterToggled(indexed address)
+  #           handler: handleMinterToggled
+  #       file: ./src/mapping/agToken.ts
   - kind: ethereum/contract
     name: TreasuryTemplate
     network: {{network}}
     source:
       abi: Treasury
+      startBlock: {{block_treasury}}
+      address: '{{ageur_treasury}}'
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.5
@@ -62,6 +64,12 @@ templates:
       abis:
         - name: Treasury
           file: ../abis/Treasury.json
+        - name: AgToken
+          file: ../abis/AgToken.json
+        - name: VaultManager
+          file: ../abis/VaultManager.json
+        - name: ERC20
+          file: ../abis/ERC20.json
       eventHandlers:
         - event: BadDebtUpdated(uint256)
           handler: handleBadDebtUpdated
@@ -74,6 +82,7 @@ templates:
         - event: VaultManagerToggled(indexed address)
           handler: handleVaultManagerToggled
       file: ./src/mapping/treasury.ts
+templates:
   - kind: ethereum/contract
     name: VaultManagerTemplate
     network: {{network}}
@@ -89,6 +98,8 @@ templates:
       abis:
         - name: VaultManager
           file: ../abis/VaultManager.json
+        - name: ERC20
+          file: ../abis/ERC20.json
       eventHandlers:
         - event: AccruedToTreasury(uint256,uint256)
           handler: handleAccruedToTreasury
