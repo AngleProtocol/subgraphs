@@ -1,6 +1,8 @@
 type TreasuryData @entity {
-  # Address of the agToken
+  # Address of the treasury
   id: ID!
+  # Address of the stablecoin
+  agToken: String!
 
   ## Contract state
   # Address of the treasury
@@ -28,8 +30,10 @@ type TreasuryData @entity {
 }
 
 type TreasuryHistoricalData @entity {
-  # Address of the agToken + timestamp
+  # Address of the treasury + timestamp
   id: ID!
+  # Address of the stablecoin
+  agToken: String!
 
   ## Contract state
   # Address of the treasury
@@ -68,42 +72,40 @@ type VaultManagerData @entity {
 
   ## Contract state
   # Address of treasury
-  treasury: TreasuryData
+  treasury: TreasuryData!
   # Amount of collateral deposited
-  collateralAmount: BigInt
-  # Total amount of debt across vaults in agToken
-  debt: BigInt
+  collateralAmount: BigInt!
+  # Total amount of debt across vaults in agToken, normalized
+  totalNormalizedDebt: BigInt!
   # Amount of bad debt
-  badDebt: BigInt
+  badDebt: BigInt!
   # Amount of surplus
-  surplus: BigInt
+  surplus: BigInt!
   # Value of interestAccumulator
-  interestAccumulator: BigInt
+  interestAccumulator: BigInt!
   # Has minting rights
-  mintingEnabled: Boolean
-  # Is contract paused
-  paused: Boolean
+  mintingEnabled: Boolean!
 
   ## Governance parameters
   # Maximum debt this VaultManager can handle
-  debtCeiling: BigInt
+  debtCeiling: BigInt!
   # Liquidation boost parameters
-  liquidationBoostX: [BigInt!]
-  liquidationBoostY: [BigInt!]
+  xLiquidationBoost: [BigInt!]!
+  yLiquidationBoost: [BigInt!]!
   # If whitelisting is enabled
-  whitelisting: Boolean
+  whitelistingActivated: Boolean!
   # Value of collateral factor
-  collateralFactor: BigInt
+  collateralFactor: BigInt!
   # Value of target health factor
-  targetHealthFactor: BigInt
+  targetHealthFactor: BigInt!
   # Value of borrow fee
-  borrowFee: BigInt
+  borrowFee: BigInt!
   # Value of borrow interest rate
-  interestRate: BigInt
+  interestRate: BigInt!
   # Value of liquidation surcharge
-  liquidationSurcharge: BigInt
+  liquidationSurcharge: BigInt!
   # Value of max liquidation discount
-  maxLiquidationDiscount: BigInt
+  maxLiquidationDiscount: BigInt!
 
   ## Time tracking
   # BlockNumber of last update
@@ -126,42 +128,40 @@ type VaultManagerHistoricalData @entity {
 
   ## State
   # Address of treasury
-  treasury: TreasuryData
+  treasury: TreasuryData!
   # Amount of collateral deposited
-  collateralAmount: BigInt
-  # Total amount of debt across vaults in agToken
-  debt: BigInt
+  collateralAmount: BigInt!
+  # Total amount of debt across vaults in agToken, normalized
+  totalNormalizedDebt: BigInt!
   # Amount of bad debt
-  badDebt: BigInt
+  badDebt: BigInt!
   # Amount of surplus
-  surplus: BigInt
+  surplus: BigInt!
   # Value of interestAccumulator
-  interestAccumulator: BigInt
+  interestAccumulator: BigInt!
   # Has minting rights
-  mintingEnabled: Boolean
-  # Is contract paused
-  paused: Boolean
+  mintingEnabled: Boolean!
 
   ## Governance parameters
   # Maximum debt this VaultManager can handle
-  debtCeiling: BigInt
+  debtCeiling: BigInt!
   # Liquidation boost parameters
-  liquidationBoostX: [BigInt!]
-  liquidationBoostY: [BigInt!]
+  xLiquidationBoost: [BigInt!]!
+  yLiquidationBoost: [BigInt!]!
   # If whitelisting is enabled
-  whitelisting: Boolean
+  whitelistingActivated: Boolean!
   # Value of collateral factor
-  collateralFactor: BigInt
+  collateralFactor: BigInt!
   # Value of target health factor
-  targetHealthFactor: BigInt
+  targetHealthFactor: BigInt!
   # Value of borrow fee
-  borrowFee: BigInt
+  borrowFee: BigInt!
   # Value of borrow interest rate
-  interestRate: BigInt
+  interestRate: BigInt!
   # Value of liquidation surcharge
-  liquidationSurcharge: BigInt
+  liquidationSurcharge: BigInt!
   # Value of max liquidation discount
-  maxLiquidationDiscount: BigInt
+  maxLiquidationDiscount: BigInt!
 
   ## Time tracking
   # BlockNumber of last update

@@ -81,6 +81,8 @@ dataSources:
           handler: handleSurplusManagerUpdated
         - event: VaultManagerToggled(indexed address)
           handler: handleVaultManagerToggled
+        - event: NewTreasurySet(indexed address)
+          handler: handleNewTreasurySet
       file: ./src/mapping/treasury.ts
 templates:
   - kind: ethereum/contract
@@ -106,7 +108,9 @@ templates:
         - event: CollateralAmountUpdated(uint256,uint256,uint8)
           handler: handleCollateralAmountUpdated
         - event: InterestRateAccumulatorUpdated(uint256,uint256)
-          handler: handleInterestRateAccumulatorUpdated
+          handler: handleInterestAccumulatorUpdated
+        - event: InternalDebtUpdated(uint256,uint256,uint8)
+          handler: handleInternalDebtUpdated
         - event: FiledUint64(uint64,bytes32)
           handler: handleFiledUint64
         - event: DebtCeilingUpdated(uint256)
