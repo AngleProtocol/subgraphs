@@ -1,6 +1,7 @@
 version: '3.7'
 services:
   graph-node:
+    tty: true
     image: graphprotocol/graph-node
     ports:
       - '8000:8000'
