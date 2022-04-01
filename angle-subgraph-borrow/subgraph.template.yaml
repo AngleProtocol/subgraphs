@@ -102,12 +102,14 @@ templates:
           file: ../abis/VaultManager.json
         - name: ERC20
           file: ../abis/ERC20.json
+        - name: Oracle
+          file: ../abis/OracleMulti.json
       eventHandlers:
         - event: AccruedToTreasury(uint256,uint256)
           handler: handleAccruedToTreasury
         - event: CollateralAmountUpdated(uint256,uint256,uint8)
           handler: handleCollateralAmountUpdated
-        - event: InterestRateAccumulatorUpdated(uint256,uint256)
+        - event: InterestAccumulatorUpdated(uint256,uint256)
           handler: handleInterestAccumulatorUpdated
         - event: InternalDebtUpdated(uint256,uint256,uint8)
           handler: handleInternalDebtUpdated
@@ -121,4 +123,8 @@ templates:
           handler: handleOracleUpdated
         - event: ToggledWhitelisting(bool)
           handler: handleToggledWhitelisting
+        - event: Transfer(indexed address,indexed address,indexed uint256)
+          handler: handleTransfer
+        - event: LiquidatedVaults(uint256[])
+          handler: handleLiquidatedVaults
       file: ./src/mapping/vaultManager.ts

@@ -11,8 +11,6 @@ type TreasuryData @entity {
   vaultManagers: [VaultManagerData!]! @derivedFrom(field: "treasury")
   # Amount of bad debt
   badDebt: BigInt!
-  # Amount of surplus available
-  surplus: BigInt!
   # Amount of unprocessed surplus available
   surplusBuffer: BigInt!
 
@@ -22,6 +20,12 @@ type TreasuryData @entity {
   # Address of the contract managing surplus
   surplusManager: String!
 
+  ## Derivated values
+  # Amount of surplus available for safety
+  surplus: BigInt!
+  # sum of all profits succesfully forwarded to governance
+  governanceProfits: BigInt!
+
   ## Time tracking
   # BlockNumber of last update
   blockNumber: BigInt!
@@ -30,7 +34,7 @@ type TreasuryData @entity {
 }
 
 type TreasuryHistoricalData @entity {
-  # Address of the treasury + timestamp
+  # Address of the treasury + '_' + timestamp
   id: ID!
   # Address of the stablecoin
   agToken: String!
@@ -67,6 +71,8 @@ type VaultManagerData @entity {
   agToken: String!
   # Address of collateral
   collateral: String!
+  # base of collateral
+  collateralBase: BigInt!
   # Minimum debt of a healthy vault
   dust: BigInt!
 
@@ -77,14 +83,18 @@ type VaultManagerData @entity {
   collateralAmount: BigInt!
   # Total amount of debt across vaults in agToken, normalized
   totalNormalizedDebt: BigInt!
-  # Amount of bad debt
-  badDebt: BigInt!
-  # Amount of surplus
-  surplus: BigInt!
   # Value of interestAccumulator
   interestAccumulator: BigInt!
   # Has minting rights
   mintingEnabled: Boolean!
+
+  ## Derivated values
+  # Amount of debt in agToken
+  totalDebt: BigInt!
+  # Number of active vaults
+  activeVaultsCount: BigInt!
+  # list of vaults
+  vaults: [VaultData!]! @derivedFrom(field: "vaultManager")
 
   ## Governance parameters
   # Maximum debt this VaultManager can handle
@@ -115,7 +125,7 @@ type VaultManagerData @entity {
 }
 
 type VaultManagerHistoricalData @entity {
-  # Address of VaultManager + timestamp
+  # Address of VaultManager + '_' + timestamp
   id: ID!
   # Address of VaultManager
   vaultManager: String!
@@ -123,6 +133,8 @@ type VaultManagerHistoricalData @entity {
   agToken: String!
   # Address of collateral
   collateral: String!
+  # base of collateral
+  collateralBase: BigInt!
   # Minimum debt of a healthy vault
   dust: BigInt!
 
@@ -133,14 +145,16 @@ type VaultManagerHistoricalData @entity {
   collateralAmount: BigInt!
   # Total amount of debt across vaults in agToken, normalized
   totalNormalizedDebt: BigInt!
-  # Amount of bad debt
-  badDebt: BigInt!
-  # Amount of surplus
-  surplus: BigInt!
   # Value of interestAccumulator
   interestAccumulator: BigInt!
   # Has minting rights
   mintingEnabled: Boolean!
+
+  ## Derivated values
+  # Amount of debt in agToken
+  totalDebt: BigInt!
+  # Number of active vaults
+  activeVaultsCount: BigInt!
 
   ## Governance parameters
   # Maximum debt this VaultManager can handle
@@ -162,6 +176,135 @@ type VaultManagerHistoricalData @entity {
   liquidationSurcharge: BigInt!
   # Value of max liquidation discount
   maxLiquidationDiscount: BigInt!
+
+  ## Time tracking
+  # BlockNumber of last update
+  blockNumber: BigInt!
+  # Timestamp of last update
+  timestamp: BigInt!
+}
+
+type VaultData @entity {
+  # Address of VaultManager + '_' + vaultID
+  id: ID!
+  # Address of VaultManager
+  vaultManager: VaultManagerData!
+  # tokenID
+  vaultID: BigInt!
+
+  ## Contract state
+  # Address of vault owner
+  owner: String!
+  # Amount of collateral deposited
+  collateralAmount: BigInt!
+  # Amount of debt in agToken, normalized
+  normalizedDebt: BigInt!
+  # False when vault is burned
+  isActive: Boolean!
+
+  ## Derivated values
+  # Amount of debt in agToken
+  debt: BigInt!
+  # Vault's health factor (in base 1e9)
+  healthFactor: BigInt
+  # list of past liquidations
+  liquidations: [VaultLiquidation!]! @derivedFrom(field: "vault")
+
+  ## Time tracking
+  # BlockNumber of last update
+  blockNumber: BigInt!
+  # Timestamp of last update
+  timestamp: BigInt!
+}
+
+type VaultHistoricalData @entity {
+  # Address of VaultManager + '_' + vaultID + '_' + timestamp
+  id: ID!
+  # Address of VaultManager
+  vaultManager: String!
+  # tokenID
+  vaultID: BigInt!
+
+  ## Contract state
+  # Address of vault owner
+  owner: String!
+  # Amount of collateral deposited
+  collateralAmount: BigInt!
+  # Amount of debt in agToken, normalized
+  normalizedDebt: BigInt!
+  # False when vault is burned
+  isActive: Boolean!
+
+  ## Derivated values
+  # Amount of debt in agToken
+  debt: BigInt!
+  # Vault's health factor (in base 1e9)
+  healthFactor: BigInt
+
+  ## Time tracking
+  # BlockNumber of last update
+  blockNumber: BigInt!
+  # Timestamp of last update
+  timestamp: BigInt!
+}
+
+type VaultLiquidation @entity {
+  # Address of VaultManager + '_' + vaultID + '_' + timestamp
+  id: ID!
+  # Vault entity
+  vault: VaultData!
+
+  # debt removed
+  debtRemoved: BigInt!
+  # collateral bought by liquidator
+  collateralBought: BigInt!
+
+  # oracle value
+  oraclePrice: BigInt!
+
+  ## Time tracking
+  # BlockNumber of last update
+  blockNumber: BigInt!
+  # Timestamp of last update
+  timestamp: BigInt!
+}
+
+type VaultManagerRevenue @entity {
+  # Address of VaultManager
+  id: ID!
+  # Address of VaultManager
+  vaultManager: String!
+
+  # total surplus accumulated by this VM
+  surplus: BigInt!
+  # total bad debt created by vaults on this VM
+  badDebt: BigInt!
+
+  ## Derivated values
+  # surplus - bad debt
+  profits: BigInt!
+
+  ## Time tracking
+  # BlockNumber of last update
+  blockNumber: BigInt!
+  # Timestamp of last update
+  timestamp: BigInt!
+}
+
+type VaultManagerHistoricalRevenue @entity {
+  # Address of VaultManager + '_' + timestamp
+  id: ID!
+  # Address of VaultManager
+  vaultManager: String!
+
+  # total surplus accumulated by this VM
+  surplus: BigInt!
+  # total bad debt created by vaults on this VM
+  badDebt: BigInt!
+
+  ## Derivated values
+  # surplus - bad debt
+  profits: BigInt!
 
   ## Time tracking
   # BlockNumber of last update
