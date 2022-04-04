@@ -12,10 +12,16 @@ export function historicalSlice(block: ethereum.Block): BigInt {
   return hourStartTimestamp
 }
 
-export function computeDebt(normalizedDebt: BigInt, ratePerSecond:BigInt, interestAccumulator: BigInt, lastInterestAccumulatorUpdated: BigInt, timestamp: BigInt): BigInt {
+export function computeDebt(
+  normalizedDebt: BigInt,
+  ratePerSecond: BigInt,
+  interestAccumulator: BigInt,
+  lastInterestAccumulatorUpdated: BigInt,
+  timestamp: BigInt
+): BigInt {
   const exp = timestamp.minus(lastInterestAccumulatorUpdated)
   let currentInterestAccumulator = interestAccumulator
-  if(!exp.isZero() && !ratePerSecond.isZero()){
+  if (!exp.isZero() && !ratePerSecond.isZero()) {
     const ZERO = BigInt.fromI32(0)
     const ONE = BigInt.fromI32(1)
     const TWO = BigInt.fromI32(2)
@@ -23,11 +29,30 @@ export function computeDebt(normalizedDebt: BigInt, ratePerSecond:BigInt, intere
     const HALF_BASE_INTEREST = BASE_INTEREST.div(TWO)
     const expMinusOne = exp.minus(ONE)
     const expMinusTwo = exp.gt(TWO) ? exp.minus(TWO) : ZERO
-    const basePowerTwo = ratePerSecond.times(ratePerSecond).plus(HALF_BASE_INTEREST).div(BASE_INTEREST)
-    const basePowerThree = basePowerTwo.times(ratePerSecond).plus(HALF_BASE_INTEREST).div(BASE_INTEREST)
-    const secondTerm = exp.times(expMinusOne).times(basePowerTwo).div(TWO)
-    const thirdTerm = exp.times(expMinusOne).times(expMinusTwo).times(basePowerThree).div(SIX)
-    currentInterestAccumulator = interestAccumulator.times(BASE_INTEREST.plus(ratePerSecond.times(exp)).plus(secondTerm).plus(thirdTerm)).div(BASE_INTEREST)
+    const basePowerTwo = ratePerSecond
+      .times(ratePerSecond)
+      .plus(HALF_BASE_INTEREST)
+      .div(BASE_INTEREST)
+    const basePowerThree = basePowerTwo
+      .times(ratePerSecond)
+      .plus(HALF_BASE_INTEREST)
+      .div(BASE_INTEREST)
+    const secondTerm = exp
+      .times(expMinusOne)
+      .times(basePowerTwo)
+      .div(TWO)
+    const thirdTerm = exp
+      .times(expMinusOne)
+      .times(expMinusTwo)
+      .times(basePowerThree)
+      .div(SIX)
+    currentInterestAccumulator = interestAccumulator
+      .times(
+        BASE_INTEREST.plus(ratePerSecond.times(exp))
+          .plus(secondTerm)
+          .plus(thirdTerm)
+      )
+      .div(BASE_INTEREST)
   }
   return normalizedDebt.times(currentInterestAccumulator).div(BASE_PARAMS.times(BASE_TOKENS))
 }
