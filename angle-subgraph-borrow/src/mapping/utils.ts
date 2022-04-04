@@ -1,5 +1,5 @@
 import { ethereum, BigInt } from '@graphprotocol/graph-ts'
-import { ROUND_COEFF } from '../../../constants'
+import { ROUND_COEFF, BASE_PARAMS, BASE_TOKENS } from '../../../constants'
 
 import { log } from '@graphprotocol/graph-ts'
 
@@ -13,9 +13,7 @@ export function historicalSlice(block: ethereum.Block): BigInt {
 }
 
 export function computeDebt(normalizedDebt: BigInt, interestAccumulator: BigInt): BigInt {
-  const base = BigInt.fromString('1000000000')
-  const interestAccumulatorBase = BigInt.fromString('1000000000000000000')
-  return normalizedDebt.times(interestAccumulator).div(base.times(interestAccumulatorBase))
+  return normalizedDebt.times(interestAccumulator).div(BASE_PARAMS.times(BASE_TOKENS))
 }
 
 export function computeHealthFactor(
