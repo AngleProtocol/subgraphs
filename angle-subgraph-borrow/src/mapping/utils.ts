@@ -29,12 +29,5 @@ export function computeHealthFactor(
     // avoid division by zero
     return BigInt.fromI32(1)
   }
-  log.warning('==== HF: {} x {} x {} / {} x {}', [
-    collateral.toString(),
-    collateralFactor.toString(),
-    oracleValue.toString(),
-    debt.toString(),
-    collateralBase.toString()
-  ])
   return collateral.times(collateralFactor.times(oracleValue)).div(debt.times(collateralBase))
 }
