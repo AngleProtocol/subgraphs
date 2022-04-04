@@ -50,6 +50,14 @@ export function handleCollateralAmountUpdated(event: CollateralAmountUpdated): v
   if (event.params.isIncrease) {
     dataVM.collateralAmount = dataVM.collateralAmount.plus(event.params.collateralAmount)
     dataVault.collateralAmount = dataVault.collateralAmount.plus(event.params.collateralAmount)
+    // update debt with interests
+    dataVault.debt = computeDebt(
+      dataVault.normalizedDebt,
+      dataVM.interestRate,
+      dataVM.interestAccumulator,
+      dataVM.lastInterestAccumulatorUpdated,
+      event.block.timestamp
+    )
     // recompute vault's health factor
     dataVault.healthFactor = computeHealthFactor(
       dataVault.collateralAmount,
@@ -83,6 +91,7 @@ export function handleInterestAccumulatorUpdated(event: InterestAccumulatorUpdat
   log.warning('++++ InterestAccumulatorUpdated', [])
   let data = VaultManagerData.load(event.address.toHexString())!
   data.interestAccumulator = event.params.value
+  data.lastInterestAccumulatorUpdated = event.block.timestamp
   data.timestamp = historicalSlice(event.block)
   data.blockNumber = event.block.number
   data.save()
@@ -102,8 +111,20 @@ export function handleInternalDebtUpdated(event: InternalDebtUpdated): void {
     dataVault.normalizedDebt = dataVault.normalizedDebt.minus(event.params.internalAmount)
   }
   // recompute non-normalized debt
-  dataVM.totalDebt = computeDebt(dataVM.totalNormalizedDebt, dataVM.interestAccumulator)
-  dataVault.debt = computeDebt(dataVault.normalizedDebt, dataVM.interestAccumulator)
+  dataVM.totalDebt = computeDebt(
+    dataVM.totalNormalizedDebt,
+    dataVM.interestRate,
+    dataVM.interestAccumulator,
+    dataVM.lastInterestAccumulatorUpdated,
+    event.block.timestamp
+  )
+  dataVault.debt = computeDebt(
+    dataVault.normalizedDebt,
+    dataVM.interestRate,
+    dataVM.interestAccumulator,
+    dataVM.lastInterestAccumulatorUpdated,
+    event.block.timestamp
+  )
   // recompute vault's health factor
   const vaultManager = VaultManager.bind(event.address)
   const oracle = Oracle.bind(vaultManager.oracle())
@@ -227,7 +248,13 @@ export function handleTransfer(event: Transfer): void {
     dataVM.activeVaultsCount = dataVM.activeVaultsCount.minus(BigInt.fromI32(1))
     dataVM.collateralAmount = dataVM.collateralAmount.minus(vaultCollateral)
     dataVM.totalNormalizedDebt = dataVM.totalNormalizedDebt.minus(vaultDebt)
-    dataVM.totalDebt = computeDebt(dataVM.totalNormalizedDebt, dataVM.interestAccumulator)
+    dataVM.totalDebt = computeDebt(
+      dataVM.totalNormalizedDebt,
+      dataVM.interestRate,
+      dataVM.interestAccumulator,
+      dataVM.lastInterestAccumulatorUpdated,
+      event.block.timestamp
+    )
     dataVM.save()
     _addVaultManagerDataToHistory(dataVM)
   } else {

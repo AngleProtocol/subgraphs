@@ -85,6 +85,8 @@ type VaultManagerData @entity {
   totalNormalizedDebt: BigInt!
   # Value of interestAccumulator
   interestAccumulator: BigInt!
+  # Timestamp when interestAccumulator was updated the last time
+  lastInterestAccumulatorUpdated: BigInt!
 
   ## Derivated values
   # Amount of debt in agToken
@@ -151,6 +153,8 @@ type VaultManagerHistoricalData @entity {
   totalNormalizedDebt: BigInt!
   # Value of interestAccumulator
   interestAccumulator: BigInt!
+  # Timestamp when interestAccumulator was updated the last time
+  lastInterestAccumulatorUpdated: BigInt!
 
   ## Derivated values
   # Amount of debt in agToken

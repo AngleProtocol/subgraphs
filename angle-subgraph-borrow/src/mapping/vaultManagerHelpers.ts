@@ -50,6 +50,7 @@ export function _initVaultManager(address: Address, block: ethereum.Block): void
   data.treasury = vaultManager.treasury().toHexString()
   data.collateralAmount = collateralContract.balanceOf(address)
   data.interestAccumulator = vaultManager.interestAccumulator()
+  data.lastInterestAccumulatorUpdated = vaultManager.lastInterestAccumulatorUpdated()
   // value known at init
   data.activeVaultsCount = BigInt.fromI32(0)
   // value known at init
@@ -92,6 +93,7 @@ export function _addVaultManagerDataToHistory(data: VaultManagerData): void {
   dataHistorical.treasury = data.treasury
   dataHistorical.collateralAmount = data.collateralAmount
   dataHistorical.interestAccumulator = data.interestAccumulator
+  dataHistorical.lastInterestAccumulatorUpdated = data.lastInterestAccumulatorUpdated
   dataHistorical.activeVaultsCount = data.activeVaultsCount
   dataHistorical.surplus = data.surplus
   dataHistorical.badDebt = data.badDebt
