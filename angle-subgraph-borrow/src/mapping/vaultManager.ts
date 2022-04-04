@@ -23,6 +23,7 @@ import {
   _addVaultDataToHistory
 } from './vaultManagerHelpers'
 import { historicalSlice, computeHealthFactor, computeDebt } from './utils'
+import { MAX_UINT256 } from '../../../constants'
 import { log } from '@graphprotocol/graph-ts'
 
 // update revenue info for a given vaultManager
@@ -228,8 +229,8 @@ export function handleTransfer(event: Transfer): void {
     data.collateralAmount = BigInt.fromI32(0)
     data.normalizedDebt = BigInt.fromI32(0)
     data.debt = BigInt.fromI32(0)
-    // healthFactor of 1 when vault has no debt
-    data.healthFactor = BigInt.fromI32(1)
+    // healthFactor of 2^256 when vault has no debt
+    data.healthFactor = MAX_UINT256
     data.isActive = true
   } else if (isBurn(event)) {
     // disable instance
@@ -241,8 +242,8 @@ export function handleTransfer(event: Transfer): void {
     data.collateralAmount = BigInt.fromI32(0)
     data.normalizedDebt = BigInt.fromI32(0)
     data.debt = BigInt.fromI32(0)
-    // healthFactor of 1 when vault has no debt
-    data.healthFactor = BigInt.fromI32(1)
+    // healthFactor of 2^256 when vault has no debt
+    data.healthFactor = MAX_UINT256
     // Decrease VM vault counter, collateralAmount and totalNormalizedDebt
     let dataVM = VaultManagerData.load(event.address.toHexString())!
     dataVM.activeVaultsCount = dataVM.activeVaultsCount.minus(BigInt.fromI32(1))

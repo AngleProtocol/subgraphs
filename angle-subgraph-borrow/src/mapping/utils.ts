@@ -1,5 +1,5 @@
 import { ethereum, BigInt } from '@graphprotocol/graph-ts'
-import { ROUND_COEFF, BASE_PARAMS, BASE_TOKENS, BASE_INTEREST } from '../../../constants'
+import { ROUND_COEFF, BASE_PARAMS, BASE_TOKENS, BASE_INTEREST, MAX_UINT256 } from '../../../constants'
 
 import { log } from '@graphprotocol/graph-ts'
 
@@ -66,7 +66,7 @@ export function computeHealthFactor(
 ): BigInt {
   if (debt.isZero()) {
     // avoid division by zero
-    return BigInt.fromI32(1)
+    return MAX_UINT256
   }
   return collateral.times(collateralFactor.times(oracleValue)).div(debt.times(collateralBase))
 }
