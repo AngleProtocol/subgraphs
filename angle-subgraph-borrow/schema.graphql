@@ -85,8 +85,6 @@ type VaultManagerData @entity {
   totalNormalizedDebt: BigInt!
   # Value of interestAccumulator
   interestAccumulator: BigInt!
-  # Has minting rights
-  mintingEnabled: Boolean!
 
   ## Derivated values
   # Amount of debt in agToken
@@ -147,8 +145,6 @@ type VaultManagerHistoricalData @entity {
   totalNormalizedDebt: BigInt!
   # Value of interestAccumulator
   interestAccumulator: BigInt!
-  # Has minting rights
-  mintingEnabled: Boolean!
 
   ## Derivated values
   # Amount of debt in agToken

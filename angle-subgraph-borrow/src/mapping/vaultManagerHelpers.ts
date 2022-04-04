@@ -58,8 +58,6 @@ export function _initVaultManager(address: Address, block: ethereum.Block): void
   data.collateralAmount = collateralContract.balanceOf(address)
   data.interestAccumulator = vaultManager.interestAccumulator()
   // value known at init
-  data.mintingEnabled = true
-  // value known at init
   data.activeVaultsCount = BigInt.fromI32(0)
   data.totalNormalizedDebt = vaultManager.totalNormalizedDebt()
   data.debtCeiling = vaultManager.debtCeiling()
@@ -95,8 +93,6 @@ export function _addVaultManagerDataToHistory(data: VaultManagerData): void {
   dataHistorical.treasury = data.treasury
   dataHistorical.collateralAmount = data.collateralAmount
   dataHistorical.interestAccumulator = data.interestAccumulator
-  // value known at init
-  dataHistorical.mintingEnabled = data.mintingEnabled
   dataHistorical.activeVaultsCount = data.activeVaultsCount
   dataHistorical.totalNormalizedDebt = data.totalNormalizedDebt
   dataHistorical.debtCeiling = data.debtCeiling

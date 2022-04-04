@@ -94,7 +94,6 @@ export function handleVaultManagerToggled(event: VaultManagerToggled): void {
   if (data == null) {
     _initVaultManager(event.params.vaultManager, event.block)
   } else {
-    data.mintingEnabled = !data.mintingEnabled
     data.timestamp = historicalSlice(event.block)
     data.blockNumber = event.block.number
     data.save()
