@@ -97,7 +97,7 @@ export function handleVaultManagerToggled(event: VaultManagerToggled): void {
 }
 
 // We use this event only to update vaultManagers entities
-export function handlehandleNewTreasurySet(event: NewTreasurySet): void {
+export function handleNewTreasurySet(event: NewTreasurySet): void {
   log.warning('++++ NewTreasurySet', [])
 
   const treasury = Treasury.bind(event.address)
