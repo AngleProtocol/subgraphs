@@ -42,14 +42,14 @@ export function _initTreasury(address: Address, block: ethereum.Block): void {
   data.governanceProfits = BigInt.fromI32(0)
 
   data.blockNumber = block.number
-  data.timestamp = historicalSlice(block)
+  data.timestamp = block.timestamp
   data.save()
 
-  _addTreasuryDataToHistory(data)
+  _addTreasuryDataToHistory(data, block)
 }
 
-export function _addTreasuryDataToHistory(data: TreasuryData): void {
-  const idHistorical = data.id + '_' + data.timestamp.toString()
+export function _addTreasuryDataToHistory(data: TreasuryData, block: ethereum.Block): void {
+  const idHistorical = data.id + '_' + historicalSlice(block).toString()
   let dataHistorical = TreasuryHistoricalData.load(idHistorical)
   if (dataHistorical == null) {
     dataHistorical = new TreasuryHistoricalData(idHistorical)

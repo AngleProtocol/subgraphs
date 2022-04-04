@@ -71,15 +71,15 @@ export function _initVaultManager(address: Address, block: ethereum.Block): void
   data.liquidationSurcharge = vaultManager.liquidationSurcharge()
   data.maxLiquidationDiscount = vaultManager.maxLiquidationDiscount()
   data.blockNumber = block.number
-  data.timestamp = historicalSlice(block)
+  data.timestamp = block.timestamp
   data.save()
 
   // Add historical data point
-  _addVaultManagerDataToHistory(data)
+  _addVaultManagerDataToHistory(data, block)
 }
 
-export function _addVaultManagerDataToHistory(data: VaultManagerData): void {
-  const idHistorical = data.id + '_' + data.timestamp.toString()
+export function _addVaultManagerDataToHistory(data: VaultManagerData, block: ethereum.Block): void {
+  const idHistorical = data.id + '_' + historicalSlice(block).toString()
   let dataHistorical = VaultManagerHistoricalData.load(idHistorical)
   if (dataHistorical == null) {
     dataHistorical = new VaultManagerHistoricalData(idHistorical)
@@ -114,8 +114,8 @@ export function _addVaultManagerDataToHistory(data: VaultManagerData): void {
   dataHistorical.save()
 }
 
-export function _addVaultDataToHistory(data: VaultData): void {
-  const idHistorical = data.id + '_' + data.timestamp.toString()
+export function _addVaultDataToHistory(data: VaultData, block: ethereum.Block): void {
+  const idHistorical = data.id + '_' + historicalSlice(block).toString()
   let dataHistorical = VaultHistoricalData.load(idHistorical)
   if (dataHistorical == null) {
     dataHistorical = new VaultHistoricalData(idHistorical)

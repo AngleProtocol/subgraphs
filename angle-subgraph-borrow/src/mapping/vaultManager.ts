@@ -33,10 +33,10 @@ export function handleAccruedToTreasury(event: AccruedToTreasury): void {
   data.surplus = data.surplus.plus(event.params.surplusEndValue)
   data.badDebt = data.badDebt.plus(event.params.badDebtEndValue)
   data.profits = data.surplus.minus(data.badDebt)
-  data.timestamp = historicalSlice(event.block)
+  data.timestamp = event.block.timestamp
   data.blockNumber = event.block.number
   data.save()
-  _addVaultManagerDataToHistory(data)
+  _addVaultManagerDataToHistory(data, event.block)
 }
 
 export function handleCollateralAmountUpdated(event: CollateralAmountUpdated): void {
@@ -78,24 +78,24 @@ export function handleCollateralAmountUpdated(event: CollateralAmountUpdated): v
       dataVM.collateralFactor
     )
   }
-  dataVM.timestamp = historicalSlice(event.block)
-  dataVault.timestamp = historicalSlice(event.block)
+  dataVM.timestamp = event.block.timestamp
+  dataVault.timestamp = event.block.timestamp
   dataVM.blockNumber = event.block.number
   dataVault.blockNumber = event.block.number
   dataVM.save()
   dataVault.save()
-  _addVaultManagerDataToHistory(dataVM)
-  _addVaultDataToHistory(dataVault)
+  _addVaultManagerDataToHistory(dataVM, event.block)
+  _addVaultDataToHistory(dataVault, event.block)
 }
 export function handleInterestAccumulatorUpdated(event: InterestAccumulatorUpdated): void {
   log.warning('++++ InterestAccumulatorUpdated', [])
   let data = VaultManagerData.load(event.address.toHexString())!
   data.interestAccumulator = event.params.value
   data.lastInterestAccumulatorUpdated = event.block.timestamp
-  data.timestamp = historicalSlice(event.block)
+  data.timestamp = event.block.timestamp
   data.blockNumber = event.block.number
   data.save()
-  _addVaultManagerDataToHistory(data)
+  _addVaultManagerDataToHistory(data, event.block)
 }
 export function handleInternalDebtUpdated(event: InternalDebtUpdated): void {
   log.warning('++++ InternalDebtUpdated', [])
@@ -138,14 +138,14 @@ export function handleInternalDebtUpdated(event: InternalDebtUpdated): void {
     dataVault.debt,
     dataVM.collateralFactor
   )
-  dataVM.timestamp = historicalSlice(event.block)
-  dataVault.timestamp = historicalSlice(event.block)
+  dataVM.timestamp = event.block.timestamp
+  dataVault.timestamp = event.block.timestamp
   dataVM.blockNumber = event.block.number
   dataVault.blockNumber = event.block.number
   dataVM.save()
   dataVault.save()
-  _addVaultManagerDataToHistory(dataVM)
-  _addVaultDataToHistory(dataVault)
+  _addVaultManagerDataToHistory(dataVM, event.block)
+  _addVaultDataToHistory(dataVault, event.block)
 }
 
 export function handleFiledUint64(event: FiledUint64): void {
@@ -167,20 +167,20 @@ export function handleFiledUint64(event: FiledUint64): void {
     data.maxLiquidationDiscount = paramValue
   }
 
-  data.timestamp = historicalSlice(event.block)
+  data.timestamp = event.block.timestamp
   data.blockNumber = event.block.number
   data.save()
-  _addVaultManagerDataToHistory(data)
+  _addVaultManagerDataToHistory(data, event.block)
 }
 
 export function handleDebtCeilingUpdated(event: DebtCeilingUpdated): void {
   log.warning('++++ DebtCeilingUpdated', [])
   let data = VaultManagerData.load(event.address.toHexString())!
   data.debtCeiling = event.params.debtCeiling
-  data.timestamp = historicalSlice(event.block)
+  data.timestamp = event.block.timestamp
   data.blockNumber = event.block.number
   data.save()
-  _addVaultManagerDataToHistory(data)
+  _addVaultManagerDataToHistory(data, event.block)
 }
 
 export function handleLiquidationBoostParametersUpdated(event: LiquidationBoostParametersUpdated): void {
@@ -188,10 +188,10 @@ export function handleLiquidationBoostParametersUpdated(event: LiquidationBoostP
   let data = VaultManagerData.load(event.address.toHexString())!
   data.xLiquidationBoost = event.params.xBoost
   data.yLiquidationBoost = event.params.yBoost
-  data.timestamp = historicalSlice(event.block)
+  data.timestamp = event.block.timestamp
   data.blockNumber = event.block.number
   data.save()
-  _addVaultManagerDataToHistory(data)
+  _addVaultManagerDataToHistory(data, event.block)
 }
 
 export function handleOracleUpdated(event: OracleUpdated): void {
@@ -203,10 +203,10 @@ export function handleToggledWhitelisting(event: ToggledWhitelisting): void {
   log.warning('++++ ToggledWhitelisting', [])
   let data = VaultManagerData.load(event.address.toHexString())!
   data.whitelistingActivated = !data.whitelistingActivated
-  data.timestamp = historicalSlice(event.block)
+  data.timestamp = event.block.timestamp
   data.blockNumber = event.block.number
   data.save()
-  _addVaultManagerDataToHistory(data)
+  _addVaultManagerDataToHistory(data, event.block)
 }
 
 export function handleTransfer(event: Transfer): void {
@@ -218,7 +218,7 @@ export function handleTransfer(event: Transfer): void {
     let dataVM = VaultManagerData.load(event.address.toHexString())!
     dataVM.activeVaultsCount = dataVM.activeVaultsCount.plus(BigInt.fromI32(1))
     dataVM.save()
-    _addVaultManagerDataToHistory(dataVM)
+    _addVaultManagerDataToHistory(dataVM, event.block)
     // Create a vault instance
     data = new VaultData(id)
     data.vaultManager = event.address.toHexString()
@@ -256,7 +256,7 @@ export function handleTransfer(event: Transfer): void {
       event.block.timestamp
     )
     dataVM.save()
-    _addVaultManagerDataToHistory(dataVM)
+    _addVaultManagerDataToHistory(dataVM, event.block)
   } else {
     data = VaultData.load(id)!
     data.owner = event.params.to.toHexString()
@@ -264,7 +264,7 @@ export function handleTransfer(event: Transfer): void {
   data.blockNumber = event.block.number
   data.timestamp = event.block.timestamp
   data.save()
-  _addVaultDataToHistory(data)
+  _addVaultDataToHistory(data, event.block)
 }
 
 // Update vaultManager and vault collateral + track liquidations
@@ -303,8 +303,8 @@ export function handleLiquidatedVaults(event: LiquidatedVaults): void {
     dataVault.collateralAmount = dataVault.collateralAmount.minus(collateralBought)
     dataVM.collateralAmount = dataVM.collateralAmount.minus(collateralBought)
     dataVault.save()
-    _addVaultDataToHistory(dataVault)
+    _addVaultDataToHistory(dataVault, event.block)
   }
   dataVM.save()
-  _addVaultManagerDataToHistory(dataVM)
+  _addVaultManagerDataToHistory(dataVM, event.block)
 }

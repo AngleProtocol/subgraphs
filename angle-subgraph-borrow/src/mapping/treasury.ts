@@ -22,10 +22,10 @@ export function handleBadDebtUpdated(event: BadDebtUpdated): void {
   data.badDebt = event.params.badDebtValue
   data.surplus = agToken.balanceOf(event.address)
 
-  data.timestamp = historicalSlice(event.block)
+  data.timestamp = event.block.timestamp
   data.blockNumber = event.block.number
   data.save()
-  _addTreasuryDataToHistory(data)
+  _addTreasuryDataToHistory(data, event.block)
 }
 
 export function handleSurplusBufferUpdated(event: SurplusBufferUpdated): void {
@@ -42,10 +42,10 @@ export function handleSurplusBufferUpdated(event: SurplusBufferUpdated): void {
   // looks like a good time to update treasury's surplus
   data.surplus = agToken.balanceOf(event.address)
 
-  data.timestamp = historicalSlice(event.block)
+  data.timestamp = event.block.timestamp
   data.blockNumber = event.block.number
   data.save()
-  _addTreasuryDataToHistory(data)
+  _addTreasuryDataToHistory(data, event.block)
 }
 
 export function handleSurplusForGovernanceUpdated(event: SurplusForGovernanceUpdated): void {
@@ -53,10 +53,10 @@ export function handleSurplusForGovernanceUpdated(event: SurplusForGovernanceUpd
   let data = TreasuryData.load(event.address.toHexString())!
   data.surplusForGovernance = event.params._surplusForGovernance
 
-  data.timestamp = historicalSlice(event.block)
+  data.timestamp = event.block.timestamp
   data.blockNumber = event.block.number
   data.save()
-  _addTreasuryDataToHistory(data)
+  _addTreasuryDataToHistory(data, event.block)
 }
 
 export function handleSurplusManagerUpdated(event: SurplusManagerUpdated): void {
@@ -64,10 +64,10 @@ export function handleSurplusManagerUpdated(event: SurplusManagerUpdated): void 
   let data = TreasuryData.load(event.address.toHexString())!
   data.surplusManager = event.params._surplusManager.toHexString()
 
-  data.timestamp = historicalSlice(event.block)
+  data.timestamp = event.block.timestamp
   data.blockNumber = event.block.number
   data.save()
-  _addTreasuryDataToHistory(data)
+  _addTreasuryDataToHistory(data, event.block)
 }
 
 export function handleVaultManagerToggled(event: VaultManagerToggled): void {
@@ -79,20 +79,20 @@ export function handleVaultManagerToggled(event: VaultManagerToggled): void {
     _initTreasury(event.address, event.block)
   } else {
     // END OF RINKEBY CODE
-    dataTreasury.timestamp = historicalSlice(event.block)
+    dataTreasury.timestamp = event.block.timestamp
     dataTreasury.blockNumber = event.block.number
     dataTreasury.save()
-    _addTreasuryDataToHistory(dataTreasury)
+    _addTreasuryDataToHistory(dataTreasury, event.block)
   }
 
   let data = VaultManagerData.load(event.params.vaultManager.toHexString())
   if (data == null) {
     _initVaultManager(event.params.vaultManager, event.block)
   } else {
-    data.timestamp = historicalSlice(event.block)
+    data.timestamp = event.block.timestamp
     data.blockNumber = event.block.number
     data.save()
-    _addVaultManagerDataToHistory(data)
+    _addVaultManagerDataToHistory(data, event.block)
   }
 }
 
@@ -106,9 +106,9 @@ export function handleNewTreasurySet(event: NewTreasurySet): void {
   for (let i = 0; i < vaultManagers.length; i++) {
     let data = VaultManagerData.load(vaultManagers[i].toHexString())!
     data.treasury = event.params._treasury.toHexString()
-    data.timestamp = historicalSlice(event.block)
+    data.timestamp = event.block.timestamp
     data.blockNumber = event.block.number
     data.save()
-    _addVaultManagerDataToHistory(data)
+    _addVaultManagerDataToHistory(data, event.block)
   }
 }
