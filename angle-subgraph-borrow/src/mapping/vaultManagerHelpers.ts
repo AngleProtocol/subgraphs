@@ -2,14 +2,7 @@ import { ethereum, BigInt, Address } from '@graphprotocol/graph-ts'
 import { ERC20 } from '../../generated/templates/VaultManagerTemplate/ERC20'
 import { VaultManager, Transfer } from '../../generated/templates/VaultManagerTemplate/VaultManager'
 import { VaultManagerTemplate } from '../../generated/templates'
-import {
-  VaultManagerData,
-  VaultManagerHistoricalData,
-  VaultData,
-  VaultHistoricalData,
-  VaultManagerRevenue,
-  VaultManagerHistoricalRevenue
-} from '../../generated/schema'
+import { VaultManagerData, VaultManagerHistoricalData, VaultData, VaultHistoricalData } from '../../generated/schema'
 import { historicalSlice } from './utils'
 
 import { log } from '@graphprotocol/graph-ts'
@@ -59,6 +52,12 @@ export function _initVaultManager(address: Address, block: ethereum.Block): void
   data.interestAccumulator = vaultManager.interestAccumulator()
   // value known at init
   data.activeVaultsCount = BigInt.fromI32(0)
+  // value known at init
+  data.surplus = BigInt.fromI32(0)
+  // value known at init
+  data.badDebt = BigInt.fromI32(0)
+  // value known at init
+  data.profits = BigInt.fromI32(0)
   data.totalNormalizedDebt = vaultManager.totalNormalizedDebt()
   data.debtCeiling = vaultManager.debtCeiling()
   data.xLiquidationBoost = extractArray(vaultManager, vaultManager.try_xLiquidationBoost)
@@ -94,6 +93,9 @@ export function _addVaultManagerDataToHistory(data: VaultManagerData): void {
   dataHistorical.collateralAmount = data.collateralAmount
   dataHistorical.interestAccumulator = data.interestAccumulator
   dataHistorical.activeVaultsCount = data.activeVaultsCount
+  dataHistorical.surplus = data.surplus
+  dataHistorical.badDebt = data.badDebt
+  dataHistorical.profits = data.profits
   dataHistorical.totalNormalizedDebt = data.totalNormalizedDebt
   dataHistorical.debtCeiling = data.debtCeiling
   dataHistorical.xLiquidationBoost = data.xLiquidationBoost
@@ -105,23 +107,6 @@ export function _addVaultManagerDataToHistory(data: VaultManagerData): void {
   dataHistorical.interestRate = data.interestRate
   dataHistorical.liquidationSurcharge = data.liquidationSurcharge
   dataHistorical.maxLiquidationDiscount = data.maxLiquidationDiscount
-  dataHistorical.blockNumber = data.blockNumber
-  dataHistorical.timestamp = data.timestamp
-  dataHistorical.save()
-}
-
-export function _addVaultManagerRevenueToHistory(data: VaultManagerRevenue): void {
-  const idHistorical = data.id + '_' + data.timestamp.toString()
-  let dataHistorical = VaultManagerHistoricalRevenue.load(idHistorical)
-  if (dataHistorical == null) {
-    dataHistorical = new VaultManagerHistoricalRevenue(idHistorical)
-  }
-
-  dataHistorical.vaultManager = data.vaultManager
-  dataHistorical.surplus = data.surplus
-  dataHistorical.badDebt = data.badDebt
-  dataHistorical.profits = data.profits
-
   dataHistorical.blockNumber = data.blockNumber
   dataHistorical.timestamp = data.timestamp
   dataHistorical.save()

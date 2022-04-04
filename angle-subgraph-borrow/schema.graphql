@@ -93,6 +93,12 @@ type VaultManagerData @entity {
   activeVaultsCount: BigInt!
   # list of vaults
   vaults: [VaultData!]! @derivedFrom(field: "vaultManager")
+  # total surplus accumulated by this VM since inception
+  surplus: BigInt!
+  # total bad debt created by vaults on this VM since inception
+  badDebt: BigInt!
+  # surplus - bad debt (since inception)
+  profits: BigInt!
 
   ## Governance parameters
   # Maximum debt this VaultManager can handle
@@ -151,6 +157,12 @@ type VaultManagerHistoricalData @entity {
   totalDebt: BigInt!
   # Number of active vaults
   activeVaultsCount: BigInt!
+  # total surplus accumulated by this VM since inception
+  surplus: BigInt!
+  # total bad debt created by vaults on this VM since inception
+  badDebt: BigInt!
+  # surplus - bad debt (since inception)
+  profits: BigInt!
 
   ## Governance parameters
   # Maximum debt this VaultManager can handle

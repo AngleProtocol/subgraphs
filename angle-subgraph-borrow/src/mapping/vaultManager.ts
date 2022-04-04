@@ -14,14 +14,13 @@ import {
   LiquidatedVaults
 } from '../../generated/templates/VaultManagerTemplate/VaultManager'
 import { Oracle } from '../../generated/templates/VaultManagerTemplate/Oracle'
-import { VaultManagerData, VaultData, VaultLiquidation, VaultManagerRevenue } from '../../generated/schema'
+import { VaultManagerData, VaultData, VaultLiquidation } from '../../generated/schema'
 import {
   isBurn,
   isMint,
   _initVaultManager,
   _addVaultManagerDataToHistory,
-  _addVaultDataToHistory,
-  _addVaultManagerRevenueToHistory
+  _addVaultDataToHistory
 } from './vaultManagerHelpers'
 import { historicalSlice, computeHealthFactor, computeDebt } from './utils'
 import { log } from '@graphprotocol/graph-ts'
@@ -30,21 +29,14 @@ import { log } from '@graphprotocol/graph-ts'
 export function handleAccruedToTreasury(event: AccruedToTreasury): void {
   log.warning('++++ AccruedToTreasury', [])
   const id = event.address.toHexString()
-  let data = VaultManagerRevenue.load(id)
-  if (data == null) {
-    data = new VaultManagerRevenue(id)
-    data.vaultManager = event.address.toHexString()
-    data.surplus = event.params.surplusEndValue
-    data.badDebt = event.params.badDebtEndValue
-  } else {
-    data.surplus = data.surplus.plus(event.params.surplusEndValue)
-    data.badDebt = data.badDebt.plus(event.params.badDebtEndValue)
-  }
+  let data = VaultManagerData.load(id)!
+  data.surplus = data.surplus.plus(event.params.surplusEndValue)
+  data.badDebt = data.badDebt.plus(event.params.badDebtEndValue)
   data.profits = data.surplus.minus(data.badDebt)
   data.timestamp = historicalSlice(event.block)
   data.blockNumber = event.block.number
   data.save()
-  _addVaultManagerRevenueToHistory(data)
+  _addVaultManagerDataToHistory(data)
 }
 
 export function handleCollateralAmountUpdated(event: CollateralAmountUpdated): void {

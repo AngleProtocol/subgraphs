@@ -11,12 +11,7 @@ import {
 import { AgToken } from '../../generated/TreasuryTemplate/AgToken'
 import { TreasuryData, VaultManagerData } from '../../generated/schema'
 import { _initTreasury, _addTreasuryDataToHistory, extractArray } from './treasuryHelpers'
-import {
-  _initVaultManager,
-  _addVaultManagerDataToHistory,
-  _addVaultDataToHistory,
-  _addVaultManagerRevenueToHistory
-} from './vaultManagerHelpers'
+import { _initVaultManager, _addVaultManagerDataToHistory, _addVaultDataToHistory } from './vaultManagerHelpers'
 import { historicalSlice } from './utils'
 import { log } from '@graphprotocol/graph-ts'
 
