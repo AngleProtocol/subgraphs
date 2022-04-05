@@ -110,6 +110,21 @@ export function handleInternalDebtUpdated(event: InternalDebtUpdated): void {
   } else {
     dataVM.totalNormalizedDebt = dataVM.totalNormalizedDebt.minus(event.params.internalAmount)
     dataVault.normalizedDebt = dataVault.normalizedDebt.minus(event.params.internalAmount)
+
+    // Check if this debt decrease is caused by a liquidation
+    const idLiquidation = idVault + '_' + event.block.timestamp.toString()
+    let dataLiquidation = VaultLiquidation.load(idLiquidation)
+    if (dataLiquidation != null) {
+      const debtRemoved = computeDebt(
+        event.params.internalAmount,
+        dataVM.interestRate,
+        dataVM.interestAccumulator,
+        dataVM.lastInterestAccumulatorUpdated,
+        event.block.timestamp
+      )
+      dataLiquidation.debtRemoved = debtRemoved
+      dataLiquidation.save()
+    }
   }
   // recompute non-normalized debt
   dataVM.totalDebt = computeDebt(
@@ -289,13 +304,9 @@ export function handleLiquidatedVaults(event: LiquidatedVaults): void {
     let collateralAmount = vaultManager.vaultData(vaultID).value0
     let collateralBought = dataVault.collateralAmount.minus(collateralAmount)
 
-    // When this event is fired, unlike collateral, debt has already been updated in latest vault entity
-    let debt = dataVault.debt
-    let debtRemoved = dataVault.debt.minus(debt)
-
     dataLiquidation.collateralBought = collateralBought
-    dataLiquidation.debtRemoved = debtRemoved
     dataLiquidation.oraclePrice = oracle.read()
+    // dataLiquidation.debtRemoved is going to be set later in `handleInternalDebtUpdated`
 
     dataLiquidation.timestamp = timestamp
     dataLiquidation.blockNumber = event.block.number

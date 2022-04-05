@@ -267,7 +267,7 @@ type VaultLiquidation @entity {
   vault: VaultData!
 
   # debt removed
-  debtRemoved: BigInt!
+  debtRemoved: BigInt
   # collateral bought by liquidator
   collateralBought: BigInt!
 
