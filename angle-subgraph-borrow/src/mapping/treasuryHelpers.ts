@@ -38,7 +38,7 @@ export function _initTreasury(address: Address, block: ethereum.Block): void {
   data.surplusForGovernance = treasury.surplusForGovernance()
   data.surplusManager = treasury.surplusManager().toHexString()
 
-  data.surplus = agToken.balanceOf(address).minus(data.surplusBuffer)
+  data.surplus = BigInt.fromI32(0)
   data.governanceProfits = BigInt.fromI32(0)
 
   data.blockNumber = block.number
