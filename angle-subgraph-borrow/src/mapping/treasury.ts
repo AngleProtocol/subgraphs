@@ -7,8 +7,8 @@ import {
   SurplusManagerUpdated,
   VaultManagerToggled,
   NewTreasurySet
-} from '../../generated/TreasuryTemplate/Treasury'
-import { AgToken } from '../../generated/TreasuryTemplate/AgToken'
+} from '../../generated/templates/TreasuryTemplate/Treasury'
+import { AgToken } from '../../generated/templates/TreasuryTemplate/AgToken'
 import { TreasuryData, VaultManagerData } from '../../generated/schema'
 import { _initTreasury, _addTreasuryDataToHistory, extractArray } from './treasuryHelpers'
 import { _initVaultManager, _addVaultManagerDataToHistory, _addVaultDataToHistory } from './vaultManagerHelpers'

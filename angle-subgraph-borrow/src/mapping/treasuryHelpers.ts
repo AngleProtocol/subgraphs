@@ -1,6 +1,6 @@
 import { ethereum, BigInt, Address } from '@graphprotocol/graph-ts'
-import { Treasury } from '../../generated/TreasuryTemplate/Treasury'
-import { AgToken } from '../../generated/TreasuryTemplate/AgToken'
+import { Treasury } from '../../generated/templates/TreasuryTemplate/Treasury'
+import { AgToken } from '../../generated/templates/TreasuryTemplate/AgToken'
 import { TreasuryData, TreasuryHistoricalData } from '../../generated/schema'
 import { historicalSlice } from './utils'
 

@@ -23,37 +23,37 @@ dataSources:
   #         - event: StableMasterDeployed(indexed address,indexed address)
   #           handler: handleStableMasterDeployed
   #       file: ./src/mapping/core.ts
-  # templates:
-  #   - kind: ethereum/contract
-  #     name: AgTokenTemplate
-  #     network: {{network}}
-  #     source:
-  #       abi: AgToken
-  #     mapping:
-  #       kind: ethereum/events
-  #       apiVersion: 0.0.5
-  #       language: wasm/assemblyscript
-  #       entities:
-  #         - VaultManagerData
-  #         - VaultManagerHistoricalData
-  #       abis:
-  #         - name: AgToken
-  #           file: ../abis/AgToken.json
-  #         - name: Treasury
-  #           file: ../abis/Treasury.json
-  #       eventHandlers:
-  #         - event: TreasuryUpdated(indexed address)
-  #           handler: handleTreasuryUpdated
-  #         - event: MinterToggled(indexed address)
-  #           handler: handleMinterToggled
-  #       file: ./src/mapping/agToken.ts
+    - kind: ethereum/contract
+      name: AgTokenTemplate
+      network: {{network}}
+      source:
+        abi: AgToken
+        address: '{{ageur}}'
+        startBlock: {{block_ageur}}
+      mapping:
+        kind: ethereum/events
+        apiVersion: 0.0.5
+        language: wasm/assemblyscript
+        entities:
+          - VaultManagerData
+          - VaultManagerHistoricalData
+        abis:
+          - name: AgToken
+            file: ../abis/AgToken.json
+          - name: Treasury
+            file: ../abis/Treasury.json
+        eventHandlers:
+          - event: TreasuryUpdated(indexed address)
+            handler: handleTreasuryUpdated
+          - event: MinterToggled(indexed address)
+            handler: handleMinterToggled
+        file: ./src/mapping/agToken.ts
+templates:
   - kind: ethereum/contract
     name: TreasuryTemplate
     network: {{network}}
     source:
       abi: Treasury
-      startBlock: {{block_treasury}}
-      address: '{{ageur_treasury}}'
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.5
@@ -84,7 +84,6 @@ dataSources:
         - event: NewTreasurySet(indexed address)
           handler: handleNewTreasurySet
       file: ./src/mapping/treasury.ts
-templates:
   - kind: ethereum/contract
     name: VaultManagerTemplate
     network: {{network}}
