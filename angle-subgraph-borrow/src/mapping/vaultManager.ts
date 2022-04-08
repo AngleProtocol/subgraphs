@@ -311,6 +311,7 @@ export function handleLiquidatedVaults(event: LiquidatedVaults): void {
     dataLiquidation.oraclePrice = oracle.read()
     // dataLiquidation.debtRemoved is going to be set later in `handleInternalDebtUpdated`
 
+    dataLiquidation.vault = idVault
     dataLiquidation.timestamp = timestamp
     dataLiquidation.blockNumber = event.block.number
     dataLiquidation.save()
