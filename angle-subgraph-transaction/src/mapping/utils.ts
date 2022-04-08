@@ -209,7 +209,7 @@ export function _updatePoolData(
     const interestForSurplus = result.value
     const resultAPR = poolManager.try_estimatedAPR()
     interestsForSLPs = slpInfo.interestsForSLPs.times(BASE_PARAMS.minus(interestForSurplus)).div(BASE_PARAMS)
-    apr = result.reverted
+    apr = resultAPR.reverted
       ? BigInt.fromString('0')
       : resultAPR.value.times(BASE_PARAMS.minus(interestForSurplus)).div(BASE_PARAMS)
   }
