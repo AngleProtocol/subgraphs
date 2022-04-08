@@ -203,17 +203,23 @@ export function _updatePoolData(
   const result = poolManager.try_interestsForSurplus()
   if (result.reverted) {
     interestsForSLPs = slpInfo.interestsForSLPs
-    apr = poolManager.estimatedAPR()
+    const resultAPR = poolManager.try_estimatedAPR()
+    apr = resultAPR.reverted ? BigInt.fromString('0') : resultAPR.value
   } else {
     const interestForSurplus = result.value
+    const resultAPR = poolManager.try_estimatedAPR()
     interestsForSLPs = slpInfo.interestsForSLPs.times(BASE_PARAMS.minus(interestForSurplus)).div(BASE_PARAMS)
-    apr = poolManager
-      .estimatedAPR()
-      .times(BASE_PARAMS.minus(interestForSurplus))
-      .div(BASE_PARAMS)
+    apr = result.reverted
+      ? BigInt.fromString('0')
+      : resultAPR.value.times(BASE_PARAMS.minus(interestForSurplus)).div(BASE_PARAMS)
   }
+
   data.interestsForSLPs = interestsForSLPs
-  data.apr = apr
+
+  // if the call did not fail
+  if (!apr.equals(BigInt.fromString('0'))) {
+    data.apr = apr
+  }
 
   data.totalHedgeAmount = totalHedgeAmount
 
@@ -270,7 +276,6 @@ export function _updatePoolData(
     dataHistorical.feesForSLPs = feesForSLPs
     dataHistorical.interestsForSurplus = interestsForSurplus
     dataHistorical.interestsForSLPs = interestsForSLPs
-    dataHistorical.apr = apr
     dataHistorical.totalHedgeAmount = totalHedgeAmount
     dataHistorical.totalMargin = totalMargin
     dataHistorical.rateLower = rates.value0
@@ -283,6 +288,10 @@ export function _updatePoolData(
     dataHistorical.maintenanceMargin = maintenanceMargin
     dataHistorical.blockNumber = block.number
     dataHistorical.timestamp = roundedTimestamp
+
+    if (!apr.equals(BigInt.fromString('0'))) {
+      dataHistorical.apr = apr
+    }
   }
   dataHistorical.save()
 

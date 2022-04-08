@@ -36,10 +36,11 @@ export function handleStrategyAdded(event: StrategyAdded): void {
   stratData.debtRatio = strat.value2
   stratData.managerBalance = poolManager.getBalance()
   stratData.totalAsset = poolManager.getTotalAsset()
-  stratData.apr = strategy.estimatedAPR()
+  // stratData.apr = strategy.estimatedAPR()
   stratData.timestamp = strat.value0
   stratData.save()
 
+  // if the strategy doesn't have sub jobs via lender --> lender entity will be empty
   let i = 0
   let find = true
   while (find) {
