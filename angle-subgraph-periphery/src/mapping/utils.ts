@@ -27,13 +27,14 @@ export function updateOracleData(poolManager: PoolManager, block: ethereum.Block
   const result = poolManager.try_interestsForSurplus()
   let apr: BigInt
   if (result.reverted) {
-    apr = poolManager.estimatedAPR()
+    const resultAPR = poolManager.try_estimatedAPR()
+    apr = resultAPR.reverted ? BigInt.fromString('0') : resultAPR.value
   } else {
     const interestForSurplus = result.value
-    apr = poolManager
-      .estimatedAPR()
-      .times(BASE_PARAMS.minus(interestForSurplus))
-      .div(BASE_PARAMS)
+    const resultAPR = poolManager.try_estimatedAPR()
+    apr = resultAPR.reverted
+      ? BigInt.fromString('0')
+      : resultAPR.value.times(BASE_PARAMS.minus(interestForSurplus)).div(BASE_PARAMS)
   }
 
   const id = oracle._address.toHexString()
@@ -58,21 +59,27 @@ export function updateOracleData(poolManager: PoolManager, block: ethereum.Block
     dataOracleAprHistoricalHour = new OracleAPRHistoricalData(idHistorical)
     dataOracleAprHistoricalHour.collatName = token.symbol()
     dataOracleAprHistoricalHour.stableName = agToken.symbol()
-    dataOracleAprHistoricalHour.apr = apr
     dataOracleAprHistoricalHour.rateLower = rates.value0
     dataOracleAprHistoricalHour.rateUpper = rates.value1
     dataOracleAprHistoricalHour.timestamp = roundedTimestamp
     dataOracleAprHistoricalHour.blockNumber = block.number
+    // if the call didn't failed then update the value
+    if (!apr.equals(BigInt.fromString('0'))) {
+      dataOracleAprHistoricalHour.apr = apr
+    }
   } else {
     // for the moment we just update with the last value in the hour but we could easier takes the first in the hour
     // or takes the mean (by adding a field to the struct to track the nuber of points so far) or more advanced metrics
     dataOracleAprHistoricalHour.collatName = token.symbol()
     dataOracleAprHistoricalHour.stableName = agToken.symbol()
-    dataOracleAprHistoricalHour.apr = apr
     dataOracleAprHistoricalHour.rateLower = rates.value0
     dataOracleAprHistoricalHour.rateUpper = rates.value1
     dataOracleAprHistoricalHour.timestamp = roundedTimestamp
     dataOracleAprHistoricalHour.blockNumber = block.number
+    // if the call didn't failed then update the value
+    if (!apr.equals(BigInt.fromString('0'))) {
+      dataOracleAprHistoricalHour.apr = apr
+    }
   }
 
   data.save()

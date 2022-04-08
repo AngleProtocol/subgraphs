@@ -58,6 +58,7 @@ export function handleHarvest(event: ethereum.Event): void {
   data.save()
   dataHistorical.save()
 
+  // if the strategy doesn't have sub jobs via lender --> lender entity will be empty
   let i = 0
   let find = true
   while (find) {
