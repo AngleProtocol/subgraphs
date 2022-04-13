@@ -99,6 +99,8 @@ templates:
       abis:
         - name: VaultManager
           file: ../abis/VaultManager.json
+        - name: VeBoostProxy
+          file: ../abis/veBoostProxy.json
         - name: ERC20
           file: ../abis/ERC20.json
         - name: Oracle

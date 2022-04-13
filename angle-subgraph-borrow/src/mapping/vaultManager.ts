@@ -18,19 +18,25 @@ import { VaultManagerData, VaultData, VaultLiquidation } from '../../generated/s
 import {
   isBurn,
   isMint,
+  computeHealthFactor,
+  computeDebt,
+  computeLiquidationDiscount,
   _initVaultManager,
   _addVaultManagerDataToHistory,
   _addVaultDataToHistory
 } from './vaultManagerHelpers'
-import { historicalSlice, computeHealthFactor, computeDebt } from './utils'
-import { MAX_UINT256 } from '../../../constants'
+import { BASE_INTEREST, BASE_PARAMS, MAX_UINT256 } from '../../../constants'
 import { log } from '@graphprotocol/graph-ts'
+
+const ZERO = BigInt.fromI32(0)
 
 // update revenue info for a given vaultManager
 export function handleAccruedToTreasury(event: AccruedToTreasury): void {
   log.warning('++++ AccruedToTreasury', [])
   const id = event.address.toHexString()
   let data = VaultManagerData.load(id)!
+  data.pendingSurplus = ZERO
+  data.pendingBadDebt = ZERO
   data.surplus = data.surplus.plus(event.params.surplusEndValue)
   data.badDebt = data.badDebt.plus(event.params.badDebtEndValue)
   data.profits = data.surplus.minus(data.badDebt)
@@ -91,8 +97,14 @@ export function handleCollateralAmountUpdated(event: CollateralAmountUpdated): v
 export function handleInterestAccumulatorUpdated(event: InterestAccumulatorUpdated): void {
   log.warning('++++ InterestAccumulatorUpdated', [])
   let data = VaultManagerData.load(event.address.toHexString())!
+
   data.interestAccumulator = event.params.value
   data.lastInterestAccumulatorUpdated = event.block.timestamp
+
+  // Refresh surplus after interest accrual
+  const vaultManager = VaultManager.bind(event.address)
+  data.pendingSurplus = vaultManager.surplus()
+
   data.timestamp = event.block.timestamp
   data.blockNumber = event.block.number
   data.save()
@@ -104,36 +116,46 @@ export function handleInternalDebtUpdated(event: InternalDebtUpdated): void {
   const idVault = idVM + '_' + event.params.vaultID.toString()
   let dataVM = VaultManagerData.load(idVM)!
   let dataVault = VaultData.load(idVault)!
+
+  // compute non-normalized debt variation
+  const debtVariation = computeDebt(
+    event.params.internalAmount,
+    dataVM.interestRate,
+    dataVM.interestAccumulator,
+    dataVM.lastInterestAccumulatorUpdated,
+    event.block.timestamp
+  )
+
   if (event.params.isIncrease) {
+
     dataVM.totalNormalizedDebt = dataVM.totalNormalizedDebt.plus(event.params.internalAmount)
+    dataVM.totalDebt = dataVM.totalDebt.plus(debtVariation)
     dataVault.normalizedDebt = dataVault.normalizedDebt.plus(event.params.internalAmount)
   } else {
     dataVM.totalNormalizedDebt = dataVM.totalNormalizedDebt.minus(event.params.internalAmount)
+    dataVM.totalDebt = dataVM.totalDebt.minus(debtVariation)
     dataVault.normalizedDebt = dataVault.normalizedDebt.minus(event.params.internalAmount)
 
     // Check if this debt decrease is caused by a liquidation
     const idLiquidation = idVault + '_' + event.block.timestamp.toString()
     let dataLiquidation = VaultLiquidation.load(idLiquidation)
     if (dataLiquidation != null) {
-      const debtRemoved = computeDebt(
-        event.params.internalAmount,
-        dataVM.interestRate,
-        dataVM.interestAccumulator,
-        dataVM.lastInterestAccumulatorUpdated,
-        event.block.timestamp
-      )
-      dataLiquidation.debtRemoved = debtRemoved
+      dataLiquidation.debtRemoved = debtVariation
+      dataLiquidation.liquidatorDiscount = computeLiquidationDiscount(dataLiquidation, dataVault, dataVM)
+      dataLiquidation.liquidatorDeposit = dataLiquidation.collateralBought.times(dataLiquidation.oraclePrice).times(dataLiquidation.liquidatorDiscount!).div(dataVM.collateralBase).div(BASE_PARAMS)
+      dataLiquidation.debtRepayed = dataLiquidation.liquidatorDeposit!.times(dataVM.liquidationSurcharge).div(BASE_PARAMS)
+      dataLiquidation.surcharge = dataLiquidation.liquidatorDeposit!.minus(dataLiquidation.debtRepayed!)
+      // Case where bad debt has been created
+      if(dataVault.normalizedDebt.isZero() && dataVault.collateralAmount.isZero()){
+        dataLiquidation.badDebt = debtVariation.minus(dataLiquidation.liquidatorDeposit!).plus(dataLiquidation.surcharge!)
+      } else{
+        dataLiquidation.badDebt = ZERO
+      }
       dataLiquidation.save()
     }
   }
-  // recompute non-normalized debt
-  dataVM.totalDebt = computeDebt(
-    dataVM.totalNormalizedDebt,
-    dataVM.interestRate,
-    dataVM.interestAccumulator,
-    dataVM.lastInterestAccumulatorUpdated,
-    event.block.timestamp
-  )
+
+  // Recompute current debts
   dataVault.debt = computeDebt(
     dataVault.normalizedDebt,
     dataVM.interestRate,
@@ -141,6 +163,14 @@ export function handleInternalDebtUpdated(event: InternalDebtUpdated): void {
     dataVM.lastInterestAccumulatorUpdated,
     event.block.timestamp
   )
+  dataVM.totalDebt = computeDebt(
+    dataVM.totalNormalizedDebt,
+    dataVM.interestRate,
+    dataVM.interestAccumulator,
+    dataVM.lastInterestAccumulatorUpdated,
+    event.block.timestamp
+  )
+
   // recompute vault's health factor
   const vaultManager = VaultManager.bind(event.address)
   const oracle = Oracle.bind(vaultManager.oracle())
@@ -154,6 +184,11 @@ export function handleInternalDebtUpdated(event: InternalDebtUpdated): void {
     dataVault.debt,
     dataVM.collateralFactor
   )
+
+  // Refresh badDebt and surplus
+  dataVM.pendingBadDebt = vaultManager.badDebt()
+  dataVM.pendingSurplus = vaultManager.surplus()
+
   dataVM.timestamp = event.block.timestamp
   dataVault.timestamp = event.block.timestamp
   dataVM.blockNumber = event.block.number
@@ -205,6 +240,7 @@ export function handleDebtCeilingUpdated(event: DebtCeilingUpdated): void {
 export function handleLiquidationBoostParametersUpdated(event: LiquidationBoostParametersUpdated): void {
   log.warning('++++ LiquidationBoostParametersUpdated', [])
   let data = VaultManagerData.load(event.address.toHexString())!
+  data.veBoostProxy = event.params._veBoostProxy.toHexString()
   data.xLiquidationBoost = event.params.xBoost
   data.yLiquidationBoost = event.params.yBoost
   data.timestamp = event.block.timestamp
@@ -244,9 +280,9 @@ export function handleTransfer(event: Transfer): void {
     data.vaultID = event.params.tokenId
     data.owner = event.params.to.toHexString()
     // vaults are created empty
-    data.collateralAmount = BigInt.fromI32(0)
-    data.normalizedDebt = BigInt.fromI32(0)
-    data.debt = BigInt.fromI32(0)
+    data.collateralAmount = ZERO
+    data.normalizedDebt = ZERO
+    data.debt = ZERO
     // healthFactor of 2^256 when vault has no debt
     data.healthFactor = MAX_UINT256
     data.isActive = true
@@ -257,9 +293,9 @@ export function handleTransfer(event: Transfer): void {
     // save collateral and debt prior to vault closing
     const vaultCollateral = data.collateralAmount
     const vaultDebt = data.normalizedDebt
-    data.collateralAmount = BigInt.fromI32(0)
-    data.normalizedDebt = BigInt.fromI32(0)
-    data.debt = BigInt.fromI32(0)
+    data.collateralAmount = ZERO
+    data.normalizedDebt = ZERO
+    data.debt = ZERO
     // healthFactor of 2^256 when vault has no debt
     data.healthFactor = MAX_UINT256
     // Decrease VM vault counter, collateralAmount and totalNormalizedDebt
@@ -274,6 +310,10 @@ export function handleTransfer(event: Transfer): void {
       dataVM.lastInterestAccumulatorUpdated,
       event.block.timestamp
     )
+    // Refresh surplus for repay fee
+    const vaultManager = VaultManager.bind(event.address)
+    dataVM.pendingSurplus = vaultManager.surplus()
+
     dataVM.save()
     _addVaultManagerDataToHistory(dataVM, event.block)
   } else {
@@ -307,6 +347,7 @@ export function handleLiquidatedVaults(event: LiquidatedVaults): void {
     let collateralAmount = vaultManager.vaultData(vaultID).value0
     let collateralBought = dataVault.collateralAmount.minus(collateralAmount)
 
+    dataLiquidation.liquidator = event.transaction.from.toHexString()
     dataLiquidation.collateralBought = collateralBought
     dataLiquidation.oraclePrice = oracle.read()
     // dataLiquidation.debtRemoved is going to be set later in `handleInternalDebtUpdated`
