@@ -8,8 +8,6 @@ import {
   FiledUint64,
   DebtCeilingUpdated,
   LiquidationBoostParametersUpdated,
-  OracleUpdated,
-  ToggledWhitelisting,
   Transfer,
   LiquidatedVaults
 } from '../../generated/templates/VaultManagerTemplate/VaultManager'
@@ -204,17 +202,19 @@ export function handleFiledUint64(event: FiledUint64): void {
   let data = VaultManagerData.load(event.address.toHexString())!
   const paramName = event.params.what.toString()
   const paramValue = event.params.param
-  if (paramName == 'collateralFactor') {
+  if (paramName == 'CF') {
     data.collateralFactor = paramValue
-  } else if (paramName == 'targetHealthFactor') {
+  } else if (paramName == 'THF') {
     data.targetHealthFactor = paramValue
-  } else if (paramName == 'borrowFee') {
+  } else if (paramName == 'BF') {
     data.borrowFee = paramValue
-  } else if (paramName == 'interestRate') {
+  } else if (paramName == 'RF') {
+    data.repayFee = paramValue
+  } else if (paramName == 'IR') {
     data.interestRate = paramValue
-  } else if (paramName == 'liquidationSurcharge') {
+  } else if (paramName == 'LS') {
     data.liquidationSurcharge = paramValue
-  } else if (paramName == 'maxLiquidationDiscount') {
+  } else if (paramName == 'MLD') {
     data.maxLiquidationDiscount = paramValue
   }
   else{
@@ -243,21 +243,6 @@ export function handleLiquidationBoostParametersUpdated(event: LiquidationBoostP
   data.veBoostProxy = event.params._veBoostProxy.toHexString()
   data.xLiquidationBoost = event.params.xBoost
   data.yLiquidationBoost = event.params.yBoost
-  data.timestamp = event.block.timestamp
-  data.blockNumber = event.block.number
-  data.save()
-  _addVaultManagerDataToHistory(data, event.block)
-}
-
-export function handleOracleUpdated(event: OracleUpdated): void {
-  log.warning('++++ OracleUpdated', [])
-  // do nothing for this event
-}
-
-export function handleToggledWhitelisting(event: ToggledWhitelisting): void {
-  log.warning('++++ ToggledWhitelisting', [])
-  let data = VaultManagerData.load(event.address.toHexString())!
-  data.whitelistingActivated = !data.whitelistingActivated
   data.timestamp = event.block.timestamp
   data.blockNumber = event.block.number
   data.save()

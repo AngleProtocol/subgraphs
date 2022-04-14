@@ -128,6 +128,8 @@ type VaultManagerData @entity {
   targetHealthFactor: BigInt!
   # Value of borrow fee
   borrowFee: BigInt!
+  # Value of repay fee
+  repayFee: BigInt!
   # Value of borrow interest rate
   interestRate: BigInt!
   # Value of liquidation surcharge
@@ -202,6 +204,8 @@ type VaultManagerHistoricalData @entity {
   targetHealthFactor: BigInt!
   # Value of borrow fee
   borrowFee: BigInt!
+  # Value of repay fee
+  repayFee: BigInt!
   # Value of borrow interest rate
   interestRate: BigInt!
   # Value of liquidation surcharge

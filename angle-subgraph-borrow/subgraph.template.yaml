@@ -229,10 +229,6 @@ templates:
           handler: handleDebtCeilingUpdated
         - event: LiquidationBoostParametersUpdated(indexed address,uint256[],uint256[])
           handler: handleLiquidationBoostParametersUpdated
-        - event: OracleUpdated(indexed address)
-          handler: handleOracleUpdated
-        - event: ToggledWhitelisting(bool)
-          handler: handleToggledWhitelisting
         - event: Transfer(indexed address,indexed address,indexed uint256)
           handler: handleTransfer
         - event: LiquidatedVaults(uint256[])

@@ -172,6 +172,7 @@ export function _initVaultManager(address: Address, block: ethereum.Block): void
   data.collateralFactor = vaultManager.collateralFactor()
   data.targetHealthFactor = vaultManager.targetHealthFactor()
   data.borrowFee = vaultManager.borrowFee()
+  data.repayFee = vaultManager.repayFee()
   data.interestRate = vaultManager.interestRate()
   data.liquidationSurcharge = vaultManager.liquidationSurcharge()
   data.maxLiquidationDiscount = vaultManager.maxLiquidationDiscount()
@@ -215,6 +216,7 @@ export function _addVaultManagerDataToHistory(data: VaultManagerData, block: eth
   dataHistorical.collateralFactor = data.collateralFactor
   dataHistorical.targetHealthFactor = data.targetHealthFactor
   dataHistorical.borrowFee = data.borrowFee
+  dataHistorical.repayFee = data.repayFee
   dataHistorical.interestRate = data.interestRate
   dataHistorical.liquidationSurcharge = data.liquidationSurcharge
   dataHistorical.maxLiquidationDiscount = data.maxLiquidationDiscount
