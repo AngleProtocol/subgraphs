@@ -4,7 +4,7 @@ import { VaultManager, Transfer } from '../../generated/templates/VaultManagerTe
 import { Oracle } from '../../generated/templates/VaultManagerTemplate/Oracle'
 import { VaultManagerTemplate } from '../../generated/templates'
 import { VaultManagerData, VaultManagerHistoricalData, VaultData, VaultHistoricalData, VaultLiquidation } from '../../generated/schema'
-import { historicalSlice } from './utils'
+import { historicalSlice, parseOracleDescription } from './utils'
 import { BASE_PARAMS, BASE_TOKENS, BASE_INTEREST, MAX_UINT256 } from '../../../constants'
 import {
   VeBoostProxy
@@ -131,7 +131,8 @@ export function _initVaultManager(address: Address, block: ethereum.Block): void
   const vaultManager = VaultManager.bind(address)
   const collateralContract = ERC20.bind(vaultManager.collateral())
   const oracle = Oracle.bind(vaultManager.oracle())
-  let description = oracle.description()
+  const tokens = parseOracleDescription(oracle.description(), true)
+
 
   log.warning('+++++ New VaultManager: {}', [address.toHexString()])
   // Start indexing and tracking new contracts
@@ -146,8 +147,8 @@ export function _initVaultManager(address: Address, block: ethereum.Block): void
   data.collateral = vaultManager.collateral().toHexString()
   data.collateralBase = BigInt.fromI32(10).pow(collateralContract.decimals() as u8)
   data.dust = vaultManager.dust()
-  data.collateralTicker = description.substr(0,3)
-  data.targetTicker = description.substr(4,7)
+  data.collateralTicker = tokens[0]
+  data.targetTicker = tokens[1]
   log.warning('=== collat {}, euro {}', [data.collateralTicker, data.targetTicker])
   data.treasury = vaultManager.treasury().toHexString()
   data.collateralAmount = collateralContract.balanceOf(address)

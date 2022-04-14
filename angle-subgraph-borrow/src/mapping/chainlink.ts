@@ -8,6 +8,7 @@ import {
   _addVaultDataToHistory
 } from './vaultManagerHelpers'
 import { log, Address, ethereum, BigInt } from '@graphprotocol/graph-ts'
+import { parseOracleDescription } from './utils'
 import { BASE_TOKENS } from '../../../constants'
 
 // Handler used to periodically refresh Oracles and Vault's HF/debt
@@ -17,15 +18,15 @@ export function handleAnswerUpdated(event: AnswerUpdated): void {
   let dataOracle = OracleData.load(event.address.toHexString())
   if (dataOracle == null) {
     const feed = ChainlinkFeed.bind(event.address)
-    const description = feed.description()
+    const tokens = parseOracleDescription(feed.description(), false)
 
     dataOracle = new OracleData(event.address.toHexString())
     // here we assume that Chainlink always put the non-USD token first
-    dataOracle.token = description.substr(0, 3)
+    dataOracle.token = tokens[0]
     dataOracle.price = event.params.current
     dataOracle.save()
 
-    log.warning('=== new Oracle: {} {}', [dataOracle.token, description.substr(-3)])
+    log.warning('=== new Oracle: {} {}', [dataOracle.token, tokens[1]])
 
     // TokenPrice will point to OracleData and be indexed by token address, which will be very practical for `getCollateralPriceInStable`
     const dataTokenPrice = new TokenPrice(dataOracle.token)
