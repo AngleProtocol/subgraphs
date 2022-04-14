@@ -24,6 +24,111 @@ dataSources:
   #           handler: handleStableMasterDeployed
   #       file: ./src/mapping/core.ts
     - kind: ethereum/contract
+      name: Chainlink1
+      network: {{network}}
+      source:
+        address: '{{chainlink_EUR_USD}}'
+        abi: ChainlinkFeed
+        startBlock: {{block_ageur}}
+      mapping:
+        kind: ethereum/events
+        apiVersion: 0.0.5
+        language: wasm/assemblyscript
+        entities:
+          - TokenPrice
+          - OracleData
+        abis:
+          - name: ChainlinkFeed
+            file: ../abis/Chainlink.json
+        eventHandlers:
+          - event: AnswerUpdated(indexed int256,indexed uint256,uint256)
+            handler: handleAnswerUpdated
+        file: ./src/mapping/chainlink.ts
+    - kind: ethereum/contract
+      name: Chainlink2
+      network: {{network}}
+      source:
+        address: '{{chainlink_CHF_USD}}'
+        abi: ChainlinkFeed
+        startBlock: {{block_ageur}}
+      mapping:
+        kind: ethereum/events
+        apiVersion: 0.0.5
+        language: wasm/assemblyscript
+        entities:
+          - TokenPrice
+          - OracleData
+        abis:
+          - name: ChainlinkFeed
+            file: ../abis/Chainlink.json
+        eventHandlers:
+          - event: AnswerUpdated(indexed int256,indexed uint256,uint256)
+            handler: handleAnswerUpdated
+        file: ./src/mapping/chainlink.ts
+    - kind: ethereum/contract
+      name: Chainlink3
+      network: {{network}}
+      source:
+        address: '{{chainlink_GBP_USD}}'
+        abi: ChainlinkFeed
+        startBlock: {{block_ageur}}
+      mapping:
+        kind: ethereum/events
+        apiVersion: 0.0.5
+        language: wasm/assemblyscript
+        entities:
+          - TokenPrice
+          - OracleData
+        abis:
+          - name: ChainlinkFeed
+            file: ../abis/Chainlink.json
+        eventHandlers:
+          - event: AnswerUpdated(indexed int256,indexed uint256,uint256)
+            handler: handleAnswerUpdated
+        file: ./src/mapping/chainlink.ts
+    - kind: ethereum/contract
+      name: Chainlink4
+      network: {{network}}
+      source:
+        address: '{{chainlink_JPY_USD}}'
+        abi: ChainlinkFeed
+        startBlock: {{block_ageur}}
+      mapping:
+        kind: ethereum/events
+        apiVersion: 0.0.5
+        language: wasm/assemblyscript
+        entities:
+          - TokenPrice
+          - OracleData
+        abis:
+          - name: ChainlinkFeed
+            file: ../abis/Chainlink.json
+        eventHandlers:
+          - event: AnswerUpdated(indexed int256,indexed uint256,uint256)
+            handler: handleAnswerUpdated
+        file: ./src/mapping/chainlink.ts
+    - kind: ethereum/contract
+      name: Chainlink5
+      network: {{network}}
+      source:
+        address: '{{chainlink_ETH_USD}}'
+        abi: ChainlinkFeed
+        startBlock: {{block_ageur}}
+      mapping:
+        kind: ethereum/events
+        apiVersion: 0.0.5
+        language: wasm/assemblyscript
+        entities:
+          - TokenPrice
+          - OracleData
+        abis:
+          - name: ChainlinkFeed
+            file: ../abis/Chainlink.json
+        eventHandlers:
+          - event: AnswerUpdated(indexed int256,indexed uint256,uint256)
+            handler: handleAnswerUpdated
+        file: ./src/mapping/chainlink.ts
+    - kind: ethereum/contract
       name: AgTokenTemplate
       network: {{network}}
       source:
@@ -42,6 +147,8 @@ dataSources:
             file: ../abis/AgToken.json
           - name: Treasury
             file: ../abis/Treasury.json
+          - name: Oracle
+            file: ../abis/OracleChainlinkMulti.json
         eventHandlers:
           - event: TreasuryUpdated(indexed address)
             handler: handleTreasuryUpdated
@@ -70,6 +177,8 @@ templates:
           file: ../abis/VaultManager.json
         - name: ERC20
           file: ../abis/ERC20.json
+        - name: Oracle
+          file: ../abis/OracleChainlinkMulti.json
       eventHandlers:
         - event: BadDebtUpdated(uint256)
           handler: handleBadDebtUpdated
@@ -104,7 +213,7 @@ templates:
         - name: ERC20
           file: ../abis/ERC20.json
         - name: Oracle
-          file: ../abis/OracleMulti.json
+          file: ../abis/OracleChainlinkMulti.json
       eventHandlers:
         - event: AccruedToTreasury(uint256,uint256)
           handler: handleAccruedToTreasury

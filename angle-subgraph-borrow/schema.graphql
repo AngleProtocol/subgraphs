@@ -75,6 +75,10 @@ type VaultManagerData @entity {
   collateralBase: BigInt!
   # Minimum debt of a healthy vault
   dust: BigInt!
+  # Ticker of agToken target (e.g: EUR)
+  targetTicker: String!
+  # Ticker of collateral (e.g: ETH)
+  collateralTicker: String!
 
   ## Contract state
   # Address of treasury
@@ -105,6 +109,8 @@ type VaultManagerData @entity {
   pendingSurplus: BigInt!
   # pending bad debt accumulated since last accrual to treasury
   pendingBadDebt: BigInt!
+  # Current value of the oracle
+  oracleValue: BigInt!
 
   ## Governance parameters
   # Maximum debt this VaultManager can handle
@@ -177,6 +183,8 @@ type VaultManagerHistoricalData @entity {
   pendingSurplus: BigInt!
   # pending bad debt accumulated since last accrual to treasury
   pendingBadDebt: BigInt!
+  # Current value of the oracle
+  oracleValue: BigInt!
 
   ## Governance parameters
   # Maximum debt this VaultManager can handle
@@ -304,4 +312,28 @@ type VaultLiquidation @entity {
   blockNumber: BigInt!
   # Timestamp of last update
   timestamp: BigInt!
+}
+
+# This entity is used to refresh vaults whenever ETH/USD Chainlink oracle is updated (~ 1/h)
+type VaultManagerList @entity {
+  # 1
+  id: ID!
+  # List of all active vault managers
+  vaultManagers: [VaultManagerData!]!
+}
+
+type TokenPrice @entity {
+  # Address of non-USD token
+  id: ID!
+  # Address of oracle
+  oracle: OracleData! @derivedFrom(field: "token")
+}
+
+type OracleData @entity {
+  # Address of oracle
+  id: ID!
+  # Address of non-USD token
+  token: TokenPrice!
+  # Price reported by oracle
+  price: BigInt!
 }

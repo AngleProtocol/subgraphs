@@ -9,7 +9,7 @@ import {
   NewTreasurySet
 } from '../../generated/templates/TreasuryTemplate/Treasury'
 import { AgToken } from '../../generated/templates/TreasuryTemplate/AgToken'
-import { TreasuryData, VaultManagerData } from '../../generated/schema'
+import { TreasuryData, VaultManagerData, VaultManagerList } from '../../generated/schema'
 import { _initTreasury, _addTreasuryDataToHistory, extractArray } from './treasuryHelpers'
 import { _initVaultManager, _addVaultManagerDataToHistory, _addVaultDataToHistory } from './vaultManagerHelpers'
 import { log } from '@graphprotocol/graph-ts'
@@ -81,6 +81,13 @@ export function handleVaultManagerToggled(event: VaultManagerToggled): void {
   let data = VaultManagerData.load(event.params.vaultManager.toHexString())
   if (data == null) {
     _initVaultManager(event.params.vaultManager, event.block)
+
+    // Add new VM to the VM list
+    const listVM = VaultManagerList.load("1")!
+    let vaultManagers = listVM.vaultManagers
+    vaultManagers.push(event.params.vaultManager.toHexString())
+    listVM.vaultManagers = vaultManagers
+    listVM.save()
   }
 }
 

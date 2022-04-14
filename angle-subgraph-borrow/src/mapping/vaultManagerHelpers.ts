@@ -130,6 +130,8 @@ export function isMint(event: Transfer): boolean {
 export function _initVaultManager(address: Address, block: ethereum.Block): void {
   const vaultManager = VaultManager.bind(address)
   const collateralContract = ERC20.bind(vaultManager.collateral())
+  const oracle = Oracle.bind(vaultManager.oracle())
+  let description = oracle.description()
 
   log.warning('+++++ New VaultManager: {}', [address.toHexString()])
   // Start indexing and tracking new contracts
@@ -144,6 +146,9 @@ export function _initVaultManager(address: Address, block: ethereum.Block): void
   data.collateral = vaultManager.collateral().toHexString()
   data.collateralBase = BigInt.fromI32(10).pow(collateralContract.decimals() as u8)
   data.dust = vaultManager.dust()
+  data.collateralTicker = description.substr(0,3)
+  data.targetTicker = description.substr(4,7)
+  log.warning('=== collat {}, euro {}', [data.collateralTicker, data.targetTicker])
   data.treasury = vaultManager.treasury().toHexString()
   data.collateralAmount = collateralContract.balanceOf(address)
   data.interestAccumulator = vaultManager.interestAccumulator()
@@ -156,6 +161,7 @@ export function _initVaultManager(address: Address, block: ethereum.Block): void
   data.pendingSurplus = BigInt.fromI32(0)
   data.pendingBadDebt = BigInt.fromI32(0)
 
+  data.oracleValue = oracle.read()
   data.totalNormalizedDebt = vaultManager.totalNormalizedDebt()
   data.debtCeiling = vaultManager.debtCeiling()
   data.veBoostProxy = vaultManager.veBoostProxy().toHexString()
@@ -198,6 +204,7 @@ export function _addVaultManagerDataToHistory(data: VaultManagerData, block: eth
   dataHistorical.profits = data.profits
   dataHistorical.pendingSurplus = data.pendingSurplus
   dataHistorical.pendingBadDebt = data.pendingBadDebt
+  dataHistorical.oracleValue = data.oracleValue
   dataHistorical.totalNormalizedDebt = data.totalNormalizedDebt
   dataHistorical.debtCeiling = data.debtCeiling
   dataHistorical.veBoostProxy = data.veBoostProxy
