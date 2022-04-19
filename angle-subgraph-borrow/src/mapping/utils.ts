@@ -10,8 +10,9 @@ export function historicalSlice(block: ethereum.Block): BigInt {
   return hourStartTimestamp
 }
 
-// Description must be in the format "TOKEN1/TOKEN2" or "TOKEN1/TOKEN2 Oracle"
+// Whitespaces are stripped first. Then, `description` must be in the format "TOKEN1/TOKEN2" or "TOKEN1/TOKEN2Oracle".
 export function parseOracleDescription(description: string, hasExtra: boolean): string[] {
-  if(hasExtra) description = description.slice(0,-7)
+  description = description.replace(' ', '')
+  if(hasExtra) description = description.slice(0,-6)
   return description.split('/')
 }

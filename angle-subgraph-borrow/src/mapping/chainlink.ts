@@ -1,5 +1,5 @@
 import { AnswerUpdated, ChainlinkFeed } from '../../generated/Chainlink1/ChainlinkFeed'
-import { TokenPrice, OracleData, VaultManagerData, VaultManagerList, VaultData } from '../../generated/schema'
+import { OracleByTicker, OracleData, VaultManagerData, VaultManagerList, VaultData } from '../../generated/schema'
 import { _initTreasury } from './treasuryHelpers'
 import {
   computeDebt,
@@ -13,7 +13,7 @@ import { BASE_TOKENS } from '../../../constants'
 
 // Handler used to periodically refresh Oracles and Vault's HF/debt
 export function handleAnswerUpdated(event: AnswerUpdated): void {
-  log.warning('+++++ Chainlink Update !', [])
+  log.warning('+++++ Chainlink Update', [])
 
   let dataOracle = OracleData.load(event.address.toHexString())
   if (dataOracle == null) {
@@ -22,48 +22,55 @@ export function handleAnswerUpdated(event: AnswerUpdated): void {
 
     dataOracle = new OracleData(event.address.toHexString())
     // here we assume that Chainlink always put the non-USD token first
-    dataOracle.token = tokens[0]
+    dataOracle.tokenTicker = tokens[0]
     dataOracle.price = event.params.current
     dataOracle.save()
 
-    log.warning('=== new Oracle: {} {}', [dataOracle.token, tokens[1]])
+    log.warning('=== new Oracle: {} {}', [tokens[0], tokens[1]])
 
-    // TokenPrice will point to OracleData and be indexed by token address, which will be very practical for `getCollateralPriceInStable`
-    const dataTokenPrice = new TokenPrice(dataOracle.token)
-    dataTokenPrice.save()
+    // OracleByTicker will point to OracleData and be indexed by token address, which will help us retrieve the second oracle in `getCollateralPriceInAgToken`
+    const dataOracleByTicker = new OracleByTicker(dataOracle.tokenTicker)
+    dataOracleByTicker.oracle = dataOracle.id
+    dataOracleByTicker.save()
   }
   else{
     dataOracle.price = event.params.current
     dataOracle.save()
-  }
 
-  // Browse all vault managers concerned by the price change
-  const listVM = VaultManagerList.load("1")!
-  for (let i = 0; i < listVM.vaultManagers.length; i++) {
-    const dataVM = VaultManagerData.load(listVM.vaultManagers[i])!
-    // Is this VM concerned by price change ?
-    if(dataVM.collateralTicker == dataOracle.token || dataVM.targetTicker == dataOracle.token){
-      const currentOracleValue = getCollateralPriceInAgToken(dataVM.collateral, dataVM.agToken)
-      log.warning('=== computed value {}', [currentOracleValue.toString()])
-      // update vaults only if the oracle value has actually moved
-      if(currentOracleValue.notEqual(dataVM.oracleValue)){
-        updateVaults(event.block, currentOracleValue, dataVM)
+    // Browse all vault managers concerned by the price change
+    const listVM = VaultManagerList.load("1")!
+    for (let i = 0; i < listVM.vaultManagers.length; i++) {
+      const dataVM = VaultManagerData.load(listVM.vaultManagers[i])!
+      // Is this VM concerned by price change ?
+      if(dataVM.collateralTicker == dataOracle.tokenTicker || dataVM.agTokenTicker == dataOracle.tokenTicker){
+        const collateralOracle = OracleByTicker.load(dataVM.collateralTicker)
+        const agTokenOracle = OracleByTicker.load(dataVM.agTokenTicker)
+        if(collateralOracle == null || agTokenOracle == null){
+          continue
+        }
+        const currentOracleValue = getCollateralPriceInAgToken(collateralOracle, agTokenOracle)
+        // update vaults only if the oracle value has actually moved
+        if(currentOracleValue.notEqual(dataVM.oracleValue)){
+          updateVaults(event.block, currentOracleValue, dataVM)
+        }
       }
     }
   }
 }
 
-function getCollateralPriceInAgToken(collateral: string, agToken: string): BigInt {
-  const collateralPrice = OracleData.load(TokenPrice.load(collateral)!.oracle)!.price
-  log.warning('=== value in USD {}', [collateralPrice.toString()])
-  const agTokenPrice = OracleData.load(TokenPrice.load(agToken)!.oracle)!.price
-  log.warning('=== AG value in USD {}', [agTokenPrice.toString()])
-  return collateralPrice.times(BASE_TOKENS).div(agTokenPrice)
+function getCollateralPriceInAgToken(collateralOracleByTicker: OracleByTicker, agTokenOracleByTicker: OracleByTicker): BigInt {
+  const collateralPriceInUSD = OracleData.load(collateralOracleByTicker.oracle)!.price
+  // log.warning('=== colateral value in USD {}', [collateralPriceInUSD.toString()])
+  const agTokenPriceInUSD = OracleData.load(agTokenOracleByTicker.oracle)!.price
+  // log.warning('=== agToken value in USD {}', [agTokenPriceInUSD.toString()])
+  const collateralPriceInAgToken = collateralPriceInUSD.times(BASE_TOKENS).div(agTokenPriceInUSD)
+  // log.warning('=== collateral value in agToken {}', [collateralPriceInAgToken.toString()])
+  return collateralPriceInAgToken
 }
 
 // Update every vault of a vaultManager with new oracle value
 function updateVaults(block: ethereum.Block, newOracleValue: BigInt, dataVM: VaultManagerData): void {
-  for (let i = 0; i < dataVM.activeVaultsCount.toI32(); i++) {
+  for (let i = 1; i <= dataVM.activeVaultsCount.toI32(); i++) {
     const idVault = dataVM.vaultManager.toString() + '_' + i.toString()
     const dataVault = VaultData.load(idVault)!
     // let's skip burned vaults

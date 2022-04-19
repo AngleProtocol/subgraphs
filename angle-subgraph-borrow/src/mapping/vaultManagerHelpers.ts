@@ -148,8 +148,8 @@ export function _initVaultManager(address: Address, block: ethereum.Block): void
   data.collateralBase = BigInt.fromI32(10).pow(collateralContract.decimals() as u8)
   data.dust = vaultManager.dust()
   data.collateralTicker = tokens[0]
-  data.targetTicker = tokens[1]
-  log.warning('=== collat {}, euro {}', [data.collateralTicker, data.targetTicker])
+  data.agTokenTicker = tokens[1]
+  log.warning('=== collat {}, euro {}', [data.collateralTicker, data.agTokenTicker])
   data.treasury = vaultManager.treasury().toHexString()
   data.collateralAmount = collateralContract.balanceOf(address)
   data.interestAccumulator = vaultManager.interestAccumulator()

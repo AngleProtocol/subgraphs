@@ -76,7 +76,7 @@ type VaultManagerData @entity {
   # Minimum debt of a healthy vault
   dust: BigInt!
   # Ticker of agToken target (e.g: EUR)
-  targetTicker: String!
+  agTokenTicker: String!
   # Ticker of collateral (e.g: ETH)
   collateralTicker: String!
 
@@ -326,18 +326,18 @@ type VaultManagerList @entity {
   vaultManagers: [VaultManagerData!]!
 }
 
-type TokenPrice @entity {
+type OracleByTicker @entity {
   # Address of non-USD token
   id: ID!
   # Address of oracle
-  oracle: OracleData! @derivedFrom(field: "token")
+  oracle: String!
 }
 
 type OracleData @entity {
   # Address of oracle
   id: ID!
-  # Address of non-USD token
-  token: TokenPrice!
+  # Ticker of non-USD token
+  tokenTicker: String!
   # Price reported by oracle
   price: BigInt!
 }
