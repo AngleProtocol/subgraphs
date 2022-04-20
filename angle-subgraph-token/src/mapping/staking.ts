@@ -14,7 +14,7 @@ import { SushiLPToken } from '../../generated/templates/LiquidityGaugeTemplate/S
 import { PerpetualManagerFront } from '../../generated/templates/StableMasterTemplate/PerpetualManagerFront'
 import { StableMaster } from '../../generated/templates/LiquidityGaugeTemplate/StableMaster'
 import { historicalSlice } from './utils'
-import { BASE_TOKENS } from '../../../constants'
+import { BASE_PARAMS, BASE_TOKENS } from '../../../constants'
 import {
   LiquidityGauge,
   Transfer,
@@ -95,6 +95,11 @@ export function updateGaugeData(event: RewardDataUpdate): void {
     dataHistorical.workingSupply = workingSupply
     dataHistorical.blockNumber = block.number
     dataHistorical.timestamp = roundedTimestamp
+    // token can change (cf uni migration)
+    dataHistorical.token = token.toHexString()
+    dataHistorical.decimals = BigInt.fromI32(tokenContract.decimals())
+    dataHistorical.decimalsStakedToken = decimalsStakedToken
+    dataHistorical.tokenSymbol = tokenContract.symbol()
   }
 
   data.save()
@@ -148,6 +153,9 @@ export function updateGaugeSupplyData(event: ethereum.Event): void {
       dataHistorical.workingSupply = workingSupply
       dataHistorical.blockNumber = block.number
       dataHistorical.timestamp = roundedTimestamp
+      // token can change (cf uni migration)
+      dataHistorical.decimalsStakedToken = decimalsStakedToken
+      dataHistorical.token = token.toHexString()
     }
 
     data.save()
@@ -244,9 +252,30 @@ export function handleStaked(token: Address, event: Transfer): void {
       }
       data.save()
     } else {
-      let data = externalToken.load(tokenDataId)
+      let modifyTokenDataID = tokenDataId
+      let scalingFactor = BASE_TOKENS
+
+      // we keep the address of the new tokens and not the old ones
+      const liquidityGaugeContract = LiquidityGauge.bind(event.address)
+      const resultScalingFactor = liquidityGaugeContract.try_scaling_factor()
+      if (resultScalingFactor.reverted) {
+        const tokenHex = token.toHexString()
+        if (tokenHex == '0x2bD9F7974Bc0E4Cb19B8813F8Be6034F3E772add') {
+          // uni migration agEUR/USDC
+          token = Address.fromString('0xEDECB43233549c51CC3268b5dE840239787AD56c')
+          modifyTokenDataID = event.params._to.toHexString() + '_' + token.toHexString()
+        } else if (tokenHex == '0x26C2251801D2cfb5461751c984Dc3eAA358bdf0f') {
+          // uni migration agEUR/ETH
+          token = Address.fromString('0x857E0B2eD0E82D5cDEB015E77ebB873C47F99575')
+          modifyTokenDataID = event.params._to.toHexString() + '_' + token.toHexString()
+        }
+      } else {
+        scalingFactor = resultScalingFactor.value
+      }
+
+      let data = externalToken.load(modifyTokenDataID)
       if (data == null) {
-        data = new externalToken(tokenDataId)
+        data = new externalToken(modifyTokenDataID)
         if (name.split(' ')[0] == 'SushiSwap' || name.split(' ')[0] == 'Uniswap V2') {
           name = `${name} ${ERC20.bind(SushiLPToken.bind(token).token0()).symbol()}/${ERC20.bind(
             SushiLPToken.bind(token).token1()
@@ -256,9 +285,9 @@ export function handleStaked(token: Address, event: Transfer): void {
         data.balance = ERC20.bind(token).balanceOf(event.params._to)
         data.owner = event.params._to.toHexString()
         data.token = token.toHexString()
-        data.staked = event.params._value
+        data.staked = event.params._value.times(BASE_PARAMS).div(scalingFactor)
       } else {
-        data.staked = data.staked.plus(event.params._value)
+        data.staked = data.staked.plus(event.params._value.times(BASE_PARAMS).div(scalingFactor))
       }
       data.save()
     }
@@ -329,10 +358,28 @@ export function handleUnstaked(token: Address, event: Transfer): void {
       data.staked = data.staked.minus(event.params._value)
       data.save()
     } else {
-      const data = externalToken.load(tokenDataId)!
-      // For external tokens we don't want to track there actual balance but just the what is goingthrough on the protocol
+      let modifyTokenDataID = tokenDataId
+      // we keep the address of the new tokens and not the old ones
+      const liquidityGaugeContract = LiquidityGauge.bind(event.address)
+      const resultScalingFactor = liquidityGaugeContract.try_scaling_factor()
+      if (resultScalingFactor.reverted) {
+        const tokenHex = token.toHexString()
+        if (tokenHex == '0x2bD9F7974Bc0E4Cb19B8813F8Be6034F3E772add') {
+          // uni migration agEUR/USDC
+          token = Address.fromString('0xEDECB43233549c51CC3268b5dE840239787AD56c')
+          modifyTokenDataID = event.params._to.toHexString() + '_' + token.toHexString()
+        } else if (tokenHex == '0x26C2251801D2cfb5461751c984Dc3eAA358bdf0f') {
+          // uni migration agEUR/ETH
+          token = Address.fromString('0x857E0B2eD0E82D5cDEB015E77ebB873C47F99575')
+          modifyTokenDataID = event.params._to.toHexString() + '_' + token.toHexString()
+        }
+      }
+
+      // this may be non null
+      const data = externalToken.load(modifyTokenDataID)!
+      // For external tokens we don't want to track there actual balance but just what is going through on the protocol
       // Otherwise this would asks to track all the other tokens when entering/exiting/transferring
-      data.balance = data.balance.minus(event.params._value)
+      data.balance = data.balance.plus(event.params._value)
       data.staked = data.staked.minus(event.params._value)
       data.save()
     }
