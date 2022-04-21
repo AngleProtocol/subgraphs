@@ -18,6 +18,7 @@ import {
   isMint,
   computeHealthFactor,
   computeDebt,
+  computeTVL,
   computeLiquidationDiscount,
   _initVaultManager,
   _addVaultManagerDataToHistory,
@@ -83,6 +84,7 @@ export function handleCollateralAmountUpdated(event: CollateralAmountUpdated): v
       dataVM.collateralFactor
     )
   }
+  dataVM.tvl = computeTVL(dataVM.collateralAmount, dataVM.collateralBase, dataVM.collateralTicker)
   dataVM.timestamp = event.block.timestamp
   dataVault.timestamp = event.block.timestamp
   dataVM.blockNumber = event.block.number
@@ -257,6 +259,8 @@ export function handleTransfer(event: Transfer): void {
     // Increase VM vault counter
     let dataVM = VaultManagerData.load(event.address.toHexString())!
     dataVM.activeVaultsCount = dataVM.activeVaultsCount.plus(BigInt.fromI32(1))
+    dataVM.timestamp = event.block.timestamp
+    dataVM.blockNumber = event.block.number
     dataVM.save()
     _addVaultManagerDataToHistory(dataVM, event.block)
     // Create a vault instance
@@ -287,6 +291,7 @@ export function handleTransfer(event: Transfer): void {
     let dataVM = VaultManagerData.load(event.address.toHexString())!
     dataVM.activeVaultsCount = dataVM.activeVaultsCount.minus(BigInt.fromI32(1))
     dataVM.collateralAmount = dataVM.collateralAmount.minus(vaultCollateral)
+    dataVM.tvl = computeTVL(dataVM.collateralAmount, dataVM.collateralBase, dataVM.collateralTicker)
     dataVM.totalNormalizedDebt = dataVM.totalNormalizedDebt.minus(vaultDebt)
     dataVM.totalDebt = computeDebt(
       dataVM.totalNormalizedDebt,
@@ -299,6 +304,8 @@ export function handleTransfer(event: Transfer): void {
     const vaultManager = VaultManager.bind(event.address)
     dataVM.pendingSurplus = vaultManager.surplus()
 
+    dataVM.timestamp = event.block.timestamp
+    dataVM.blockNumber = event.block.number
     dataVM.save()
     _addVaultManagerDataToHistory(dataVM, event.block)
   } else {
@@ -344,9 +351,16 @@ export function handleLiquidatedVaults(event: LiquidatedVaults): void {
 
     dataVault.collateralAmount = dataVault.collateralAmount.minus(collateralBought)
     dataVM.collateralAmount = dataVM.collateralAmount.minus(collateralBought)
+
+    dataVault.timestamp = timestamp
+    dataVault.blockNumber = event.block.number
     dataVault.save()
     _addVaultDataToHistory(dataVault, event.block)
   }
+  dataVM.tvl = computeTVL(dataVM.collateralAmount, dataVM.collateralBase, dataVM.collateralTicker)
+
+  dataVM.timestamp = timestamp
+  dataVM.blockNumber = event.block.number
   dataVM.save()
   _addVaultManagerDataToHistory(dataVM, event.block)
 }

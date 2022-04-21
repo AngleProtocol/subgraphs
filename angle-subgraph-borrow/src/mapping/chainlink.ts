@@ -4,6 +4,7 @@ import { _initTreasury } from './treasuryHelpers'
 import {
   computeDebt,
   computeHealthFactor,
+  computeTVL,
   _addVaultManagerDataToHistory,
   _addVaultDataToHistory
 } from './vaultManagerHelpers'
@@ -99,6 +100,7 @@ function updateVaults(block: ethereum.Block, newOracleValue: BigInt, dataVM: Vau
   }
 
   // update dataVM as well
+  dataVM.tvl = computeTVL(dataVM.collateralAmount, dataVM.collateralBase, dataVM.collateralTicker)
   dataVM.oracleValue = newOracleValue
   dataVM.timestamp = block.timestamp
   dataVM.blockNumber = block.number

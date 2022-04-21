@@ -3,7 +3,7 @@ import { ERC20 } from '../../generated/templates/VaultManagerTemplate/ERC20'
 import { VaultManager, Transfer } from '../../generated/templates/VaultManagerTemplate/VaultManager'
 import { Oracle } from '../../generated/templates/VaultManagerTemplate/Oracle'
 import { VaultManagerTemplate } from '../../generated/templates'
-import { VaultManagerData, VaultManagerHistoricalData, VaultData, VaultHistoricalData, VaultLiquidation } from '../../generated/schema'
+import { VaultManagerData, VaultManagerHistoricalData, VaultData, VaultHistoricalData, VaultLiquidation, OracleByTicker, OracleData, } from '../../generated/schema'
 import { historicalSlice, parseOracleDescription } from './utils'
 import { BASE_PARAMS, BASE_TOKENS, BASE_INTEREST, MAX_UINT256 } from '../../../constants'
 import {
@@ -104,6 +104,16 @@ export function computeHealthFactor(
   return collateral.times(collateralFactor.times(oracleValue)).div(debt.times(collateralBase))
 }
 
+// Computes USD value of a collateral amount
+export function computeTVL(
+  collateralAmount: BigInt,
+  collateralBase: BigInt,
+  collateralTicker: string
+): BigInt {
+  const collateralPriceUSD = OracleData.load(OracleByTicker.load(collateralTicker)!.oracle)!.price
+  return collateralAmount.times(collateralPriceUSD).div(collateralBase)
+}
+
 export function extractArray(
   thisArg: VaultManager,
   getter: (this: VaultManager, param0: BigInt) => ethereum.CallResult<BigInt>
@@ -155,6 +165,8 @@ export function _initVaultManager(address: Address, block: ethereum.Block): void
   data.interestAccumulator = vaultManager.interestAccumulator()
   data.lastInterestAccumulatorUpdated = vaultManager.lastInterestAccumulatorUpdated()
   // values known at init
+  data.totalDebt = BigInt.fromI32(0)
+  data.tvl = BigInt.fromI32(0)
   data.activeVaultsCount = BigInt.fromI32(0)
   data.surplus = BigInt.fromI32(0)
   data.badDebt = BigInt.fromI32(0)
@@ -200,6 +212,8 @@ export function _addVaultManagerDataToHistory(data: VaultManagerData, block: eth
   dataHistorical.collateralAmount = data.collateralAmount
   dataHistorical.interestAccumulator = data.interestAccumulator
   dataHistorical.lastInterestAccumulatorUpdated = data.lastInterestAccumulatorUpdated
+  dataHistorical.totalDebt = data.totalDebt
+  dataHistorical.tvl = data.tvl
   dataHistorical.activeVaultsCount = data.activeVaultsCount
   dataHistorical.surplus = data.surplus
   dataHistorical.badDebt = data.badDebt

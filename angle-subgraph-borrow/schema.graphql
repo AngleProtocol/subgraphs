@@ -95,6 +95,8 @@ type VaultManagerData @entity {
   ## Derivated values
   # Amount of debt in agToken
   totalDebt: BigInt!
+  # Amount of collateral in USD
+  tvl: BigInt!
   # Number of active vaults
   activeVaultsCount: BigInt!
   # list of vaults
@@ -173,6 +175,8 @@ type VaultManagerHistoricalData @entity {
   ## Derivated values
   # Amount of debt in agToken
   totalDebt: BigInt!
+  # Amount of collateral in USD
+  tvl: BigInt!
   # Number of active vaults
   activeVaultsCount: BigInt!
   # total surplus accumulated by this VM since inception
