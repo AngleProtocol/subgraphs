@@ -267,6 +267,7 @@ export function handleTransfer(event: Transfer): void {
     data = new VaultData(id)
     data.vaultManager = event.address.toHexString()
     data.vaultID = event.params.tokenId
+    data.openingDate = event.block.timestamp
     data.owner = event.params.to.toHexString()
     // vaults are created empty
     data.collateralAmount = ZERO

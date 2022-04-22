@@ -231,6 +231,8 @@ type VaultData @entity {
   vaultManager: VaultManagerData!
   # tokenID
   vaultID: BigInt!
+  # Opening date
+  openingDate: BigInt!
 
   ## Contract state
   # Address of vault owner
