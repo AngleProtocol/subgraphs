@@ -9,10 +9,11 @@ import {
   DebtCeilingUpdated,
   LiquidationBoostParametersUpdated,
   Transfer,
-  LiquidatedVaults
+  LiquidatedVaults,
+  DebtTransferred
 } from '../../generated/templates/VaultManagerTemplate/VaultManager'
 import { Oracle } from '../../generated/templates/VaultManagerTemplate/Oracle'
-import { VaultManagerData, VaultData, VaultLiquidation } from '../../generated/schema'
+import { VaultManagerData, VaultData, VaultLiquidation, DebtTransfer } from '../../generated/schema'
 import {
   isBurn,
   isMint,
@@ -98,6 +99,9 @@ export function handleInterestAccumulatorUpdated(event: InterestAccumulatorUpdat
   log.warning('++++ InterestAccumulatorUpdated', [])
   let data = VaultManagerData.load(event.address.toHexString())!
 
+  // add new interests earned
+  data.surplusFromInterests = data.surplusFromInterests.plus(event.params.value.minus(data.interestAccumulator).times(data.totalNormalizedDebt).div(BASE_INTEREST))
+
   data.interestAccumulator = event.params.value
   data.lastInterestAccumulatorUpdated = event.block.timestamp
 
@@ -114,8 +118,11 @@ export function handleInternalDebtUpdated(event: InternalDebtUpdated): void {
   log.warning('++++ InternalDebtUpdated', [])
   const idVM = event.address.toHexString()
   const idVault = idVM + '_' + event.params.vaultID.toString()
+  const idDebtTransfer = event.block.timestamp.toString()
   let dataVM = VaultManagerData.load(idVM)!
   let dataVault = VaultData.load(idVault)!
+  // Not null only when processing a debt transfer
+  let dataDebtTransfer = DebtTransfer.load(idDebtTransfer)
 
   // compute non-normalized debt variation
   const debtVariation = computeDebt(
@@ -127,31 +134,79 @@ export function handleInternalDebtUpdated(event: InternalDebtUpdated): void {
   )
 
   if (event.params.isIncrease) {
-
     dataVM.totalNormalizedDebt = dataVM.totalNormalizedDebt.plus(event.params.internalAmount)
     dataVM.totalDebt = dataVM.totalDebt.plus(debtVariation)
     dataVault.normalizedDebt = dataVault.normalizedDebt.plus(event.params.internalAmount)
+    if(dataDebtTransfer == null){
+      // General case: compute borrow fee and add it to VM surplus
+      const borrowFee = debtVariation.times(dataVM.borrowFee).div(BASE_PARAMS)
+      dataVM.surplusFromBorrowFees = dataVM.surplusFromBorrowFees.plus(borrowFee)
+    }
+    else if(dataDebtTransfer.srcVaultManager == event.address.toHexString() && dataDebtTransfer.srcVaultID == event.params.vaultID){
+      // Debt transfer case, on srcVault:
+      if(dataDebtTransfer.srcVaultManager != dataDebtTransfer.dstVaultManager){
+        // compute difference in borrow fee and add it to VM surplus if positive
+        const dataDVM = VaultManagerData.load(dataDebtTransfer.dstVaultManager)!
+        if(dataVM.borrowFee.gt(dataDVM.borrowFee)){
+          const debtTransferBorrowFee = dataVM.borrowFee.minus(dataDVM.borrowFee).times(debtVariation).div(BASE_PARAMS)
+          dataVM.surplusFromBorrowFees = dataVM.surplusFromBorrowFees.plus(debtTransferBorrowFee)
+        }
+      }
+      else{
+        // don't do anything, no borrow fees are charged when transferring debt under the same vaultManager
+      }
+    }
+    else{
+      log.error("InternalDebtUpdated (increase) event doesn't match DebtTransferred record !", [])
+    }
   } else {
+    // Debt decrease
     dataVM.totalNormalizedDebt = dataVM.totalNormalizedDebt.minus(event.params.internalAmount)
     dataVM.totalDebt = dataVM.totalDebt.minus(debtVariation)
     dataVault.normalizedDebt = dataVault.normalizedDebt.minus(event.params.internalAmount)
 
-    // Check if this debt decrease is caused by a liquidation
-    const idLiquidation = idVault + '_' + event.block.timestamp.toString()
-    let dataLiquidation = VaultLiquidation.load(idLiquidation)
-    if (dataLiquidation != null) {
-      dataLiquidation.debtRemoved = debtVariation
-      dataLiquidation.liquidatorDiscount = computeLiquidationDiscount(dataLiquidation, dataVault, dataVM)
-      dataLiquidation.liquidatorDeposit = dataLiquidation.collateralBought.times(dataLiquidation.oraclePrice).times(dataLiquidation.liquidatorDiscount!).div(dataVM.collateralBase).div(BASE_PARAMS)
-      dataLiquidation.debtRepayed = dataLiquidation.liquidatorDeposit!.times(dataVM.liquidationSurcharge).div(BASE_PARAMS)
-      dataLiquidation.surcharge = dataLiquidation.liquidatorDeposit!.minus(dataLiquidation.debtRepayed!)
-      // Case where bad debt has been created
-      if(dataVault.normalizedDebt.isZero() && dataVault.collateralAmount.isZero()){
-        dataLiquidation.badDebt = debtVariation.minus(dataLiquidation.liquidatorDeposit!).plus(dataLiquidation.surcharge!)
-      } else{
-        dataLiquidation.badDebt = ZERO
+    if(dataDebtTransfer == null){
+      // Check if this debt decrease is caused by a liquidation
+      const idLiquidation = idVault + '_' + event.block.timestamp.toString()
+      let dataLiquidation = VaultLiquidation.load(idLiquidation)
+      if (dataLiquidation == null) {
+        // General case: compute repay fee and add it to VM surplus
+        const repayFee = debtVariation.times(dataVM.repayFee).div(BASE_PARAMS)
+        dataVM.surplusFromRepayFees = dataVM.surplusFromRepayFees.plus(repayFee)
       }
-      dataLiquidation.save()
+      else{
+        // Liquidation case:
+        dataLiquidation.debtRemoved = debtVariation
+        dataLiquidation.liquidatorDiscount = computeLiquidationDiscount(dataLiquidation, dataVault, dataVM)
+        dataLiquidation.liquidatorDeposit = dataLiquidation.collateralBought.times(dataLiquidation.oraclePrice).times(dataLiquidation.liquidatorDiscount!).div(dataVM.collateralBase).div(BASE_PARAMS)
+        dataLiquidation.debtRepayed = dataLiquidation.liquidatorDeposit!.times(dataVM.liquidationSurcharge).div(BASE_PARAMS)
+        dataLiquidation.surcharge = dataLiquidation.liquidatorDeposit!.minus(dataLiquidation.debtRepayed!)
+        dataVM.surplusFromLiquidationSurcharges = dataVM.surplusFromLiquidationSurcharges.plus(dataLiquidation.surcharge!)
+        // Case where bad debt has been created
+        if(dataVault.normalizedDebt.isZero() && dataVault.collateralAmount.isZero()){
+          dataLiquidation.badDebt = debtVariation.minus(dataLiquidation.liquidatorDeposit!).plus(dataLiquidation.surcharge!)
+        } else{
+          dataLiquidation.badDebt = ZERO
+        }
+        dataLiquidation.save()
+      }
+    }
+    else if(dataDebtTransfer.dstVaultManager == event.address.toHexString() && dataDebtTransfer.dstVaultID == event.params.vaultID){
+      // Debt transfer case, on dstVault:
+      if(dataDebtTransfer.srcVaultManager != dataDebtTransfer.dstVaultManager){
+        // compute difference in repay fee and add it to VM surplus if positive
+        const dataDVM = VaultManagerData.load(dataDebtTransfer.dstVaultManager)!
+        if(dataDVM.repayFee.gt(dataVM.repayFee)){
+          const debtTransferRepayFee = dataDVM.repayFee.minus(dataVM.repayFee).times(debtVariation).div(BASE_PARAMS)
+          dataDVM.surplusFromRepayFees = dataDVM.surplusFromRepayFees.plus(debtTransferRepayFee)
+        }
+      }
+      else{
+         // don't do anything, no repay fees are charged when transferring debt under the same vaultManager
+      }
+    }
+    else{
+      log.error("InternalDebtUpdated (decrease) event doesn't match DebtTransferred record !", [])
     }
   }
 
@@ -364,4 +419,22 @@ export function handleLiquidatedVaults(event: LiquidatedVaults): void {
   dataVM.blockNumber = event.block.number
   dataVM.save()
   _addVaultManagerDataToHistory(dataVM, event.block)
+}
+
+// Stores getDebtIn/Out data to help further InternalDebtUpdated events
+// Entities must be destroyed when getDebtIn/Out complete handling procedure is done, which
+// means that the subgraph API should always return an empty array when requesting this entity.
+// Otherwise, it would mess with InternalDebtUpdated events unrelated to getDebtIn/Out operations
+export function handleDebtTransferred(event: DebtTransferred): void {
+  log.warning('++++ DebtTransferred', [])
+  const DebtTransferredID = event.block.timestamp.toString()
+  let data = DebtTransfer.load(DebtTransferredID)
+  if(data == null){
+    data = new DebtTransfer(DebtTransferredID)
+  }
+  data.srcVaultID = event.params.srcVaultID
+  data.srcVaultManager = event.address.toHexString()
+  data.dstVaultID = event.params.dstVaultID
+  data.dstVaultManager = event.params.dstVaultManager.toHexString()
+  data.save()
 }

@@ -233,4 +233,6 @@ templates:
           handler: handleTransfer
         - event: LiquidatedVaults(uint256[])
           handler: handleLiquidatedVaults
+        - event: DebtTransferred(uint256,uint256,address,uint256)
+          handler: handleDebtTransferred
       file: ./src/mapping/vaultManager.ts

@@ -103,6 +103,14 @@ type VaultManagerData @entity {
   vaults: [VaultData!]! @derivedFrom(field: "vaultManager")
   # total surplus accumulated by this VM since inception
   surplus: BigInt!
+  # total surplus accumulated from vault's interests
+  surplusFromInterests: BigInt!
+  # total surplus accumulated from vault's fees at borrow time
+  surplusFromBorrowFees: BigInt!
+  # total surplus accumulated from vault's fees at repayment time
+  surplusFromRepayFees: BigInt!
+  # total surplus accumulated from protocol surcharge when a liquidation occurs
+  surplusFromLiquidationSurcharges: BigInt!
   # total bad debt created by vaults on this VM since inception
   badDebt: BigInt!
   # surplus - bad debt (since inception)
@@ -181,6 +189,14 @@ type VaultManagerHistoricalData @entity {
   activeVaultsCount: BigInt!
   # total surplus accumulated by this VM since inception
   surplus: BigInt!
+  # total surplus accumulated from vault's interests
+  surplusFromInterests: BigInt!
+  # total surplus accumulated from vault's fees at borrow time
+  surplusFromBorrowFees: BigInt!
+  # total surplus accumulated from vault's fees at repayment time
+  surplusFromRepayFees: BigInt!
+  # total surplus accumulated from protocol surcharge when a liquidation occurs
+  surplusFromLiquidationSurcharges: BigInt!
   # total bad debt created by vaults on this VM since inception
   badDebt: BigInt!
   # surplus - bad debt (since inception)
@@ -322,6 +338,20 @@ type VaultLiquidation @entity {
   blockNumber: BigInt!
   # Timestamp of last update
   timestamp: BigInt!
+}
+
+# This entity is used to find InternalDebtUpdated events where borrow/repay fees should be applied differently
+type DebtTransfer @entity {
+  # timestamp
+  id: ID!
+  # VaultManager from which the debt transfer has been initiated
+  srcVaultManager: String!
+  # ID of the vault that will see its debt increased
+  srcVaultID: BigInt!
+  # VaultManager on which lives the vault that will see its debt decreased
+  dstVaultManager: String!
+  # ID of the vault that will see its debt decreased
+  dstVaultID: BigInt!
 }
 
 # This entity is used to refresh vaults whenever ETH/USD Chainlink oracle is updated (~ 1/h)

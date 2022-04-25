@@ -169,6 +169,10 @@ export function _initVaultManager(address: Address, block: ethereum.Block): void
   data.tvl = BigInt.fromI32(0)
   data.activeVaultsCount = BigInt.fromI32(0)
   data.surplus = BigInt.fromI32(0)
+  data.surplusFromInterests = BigInt.fromI32(0)
+  data.surplusFromBorrowFees = BigInt.fromI32(0)
+  data.surplusFromRepayFees = BigInt.fromI32(0)
+  data.surplusFromLiquidationSurcharges = BigInt.fromI32(0)
   data.badDebt = BigInt.fromI32(0)
   data.profits = BigInt.fromI32(0)
   data.pendingSurplus = BigInt.fromI32(0)
@@ -216,6 +220,10 @@ export function _addVaultManagerDataToHistory(data: VaultManagerData, block: eth
   dataHistorical.tvl = data.tvl
   dataHistorical.activeVaultsCount = data.activeVaultsCount
   dataHistorical.surplus = data.surplus
+  dataHistorical.surplusFromInterests = data.surplusFromInterests
+  dataHistorical.surplusFromBorrowFees = data.surplusFromBorrowFees
+  dataHistorical.surplusFromRepayFees = data.surplusFromRepayFees
+  dataHistorical.surplusFromLiquidationSurcharges = data.surplusFromLiquidationSurcharges
   dataHistorical.badDebt = data.badDebt
   dataHistorical.profits = data.profits
   dataHistorical.pendingSurplus = data.pendingSurplus
