@@ -129,6 +129,27 @@ dataSources:
             handler: handleAnswerUpdated
         file: ./src/mapping/chainlink.ts
     - kind: ethereum/contract
+      name: Chainlink6
+      network: {{network}}
+      source:
+        address: '{{chainlink_BTC_USD}}'
+        abi: ChainlinkFeed
+        startBlock: {{block_ageur}}
+      mapping:
+        kind: ethereum/events
+        apiVersion: 0.0.5
+        language: wasm/assemblyscript
+        entities:
+          - TokenPrice
+          - OracleData
+        abis:
+          - name: ChainlinkFeed
+            file: ../abis/Chainlink.json
+        eventHandlers:
+          - event: AnswerUpdated(indexed int256,indexed uint256,uint256)
+            handler: handleAnswerUpdated
+        file: ./src/mapping/chainlink.ts
+    - kind: ethereum/contract
       name: AgTokenTemplate
       network: {{network}}
       source:
