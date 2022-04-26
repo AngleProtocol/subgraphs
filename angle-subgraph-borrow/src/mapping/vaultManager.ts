@@ -1,4 +1,4 @@
-import { BigInt } from '@graphprotocol/graph-ts'
+import { BigInt, store } from '@graphprotocol/graph-ts'
 import {
   VaultManager,
   AccruedToTreasury,
@@ -204,6 +204,8 @@ export function handleInternalDebtUpdated(event: InternalDebtUpdated): void {
       else{
          // don't do anything, no repay fees are charged when transferring debt under the same vaultManager
       }
+      // End of life for DebtTransfer entity: DebtTransferred -> InternalDebtUpdated (increase) -> InternalDebtUpdated (decrease) -> EoL
+      store.remove('DebtTransfer', idDebtTransfer)
     }
     else{
       log.error("InternalDebtUpdated (decrease) event doesn't match DebtTransferred record !", [])
