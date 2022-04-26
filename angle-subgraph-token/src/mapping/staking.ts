@@ -260,14 +260,14 @@ export function handleStaked(token: Address, event: Transfer): void {
       const resultScalingFactor = liquidityGaugeContract.try_scaling_factor()
       if (resultScalingFactor.reverted) {
         const tokenHex = token.toHexString()
-        if (tokenHex == '0x2bD9F7974Bc0E4Cb19B8813F8Be6034F3E772add') {
+        if (tokenHex == '0x2bd9f7974bc0e4cb19b8813f8be6034f3e772add') {
           // uni migration agEUR/USDC
-          token = Address.fromString('0xEDECB43233549c51CC3268b5dE840239787AD56c')
-          modifyTokenDataID = event.params._to.toHexString() + '_' + token.toHexString()
-        } else if (tokenHex == '0x26C2251801D2cfb5461751c984Dc3eAA358bdf0f') {
+          const tmpToken = Address.fromString('0xedecb43233549c51cc3268b5de840239787ad56c')
+          modifyTokenDataID = event.params._to.toHexString() + '_' + tmpToken.toHexString()
+        } else if (tokenHex == '0x26c2251801d2cfb5461751c984dc3eaa358bdf0f') {
           // uni migration agEUR/ETH
-          token = Address.fromString('0x857E0B2eD0E82D5cDEB015E77ebB873C47F99575')
-          modifyTokenDataID = event.params._to.toHexString() + '_' + token.toHexString()
+          const tmpToken = Address.fromString('0x857e0b2ed0e82d5cdeb015e77ebb873c47f99575')
+          modifyTokenDataID = event.params._to.toHexString() + '_' + tmpToken.toHexString()
         }
       } else {
         scalingFactor = resultScalingFactor.value
@@ -364,14 +364,14 @@ export function handleUnstaked(token: Address, event: Transfer): void {
       const resultScalingFactor = liquidityGaugeContract.try_scaling_factor()
       if (resultScalingFactor.reverted) {
         const tokenHex = token.toHexString()
-        if (tokenHex == '0x2bD9F7974Bc0E4Cb19B8813F8Be6034F3E772add') {
+        if (tokenHex == '0x2bd9f7974bc0e4cb19b8813f8be6034f3e772add') {
           // uni migration agEUR/USDC
-          token = Address.fromString('0xEDECB43233549c51CC3268b5dE840239787AD56c')
-          modifyTokenDataID = event.params._to.toHexString() + '_' + token.toHexString()
-        } else if (tokenHex == '0x26C2251801D2cfb5461751c984Dc3eAA358bdf0f') {
+          const tmpToken = Address.fromString('0xedecb43233549c51cc3268b5de840239787ad56c')
+          modifyTokenDataID = event.params._from.toHexString() + '_' + tmpToken.toHexString()
+        } else if (tokenHex == '0x26c2251801d2cfb5461751c984dc3eaa358bdf0f') {
           // uni migration agEUR/ETH
-          token = Address.fromString('0x857E0B2eD0E82D5cDEB015E77ebB873C47F99575')
-          modifyTokenDataID = event.params._to.toHexString() + '_' + token.toHexString()
+          const tmpToken = Address.fromString('0x857e0b2ed0e82d5cdeb015e77ebb873c47f99575')
+          modifyTokenDataID = event.params._from.toHexString() + '_' + tmpToken.toHexString()
         }
       }
 
