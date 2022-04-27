@@ -146,9 +146,9 @@ export function handleInternalDebtUpdated(event: InternalDebtUpdated): void {
       // Debt transfer case, on srcVault:
       if(dataDebtTransfer.srcVaultManager != dataDebtTransfer.dstVaultManager){
         // compute difference in borrow fee and add it to VM surplus if positive
-        const dataDVM = VaultManagerData.load(dataDebtTransfer.dstVaultManager)!
-        if(dataVM.borrowFee.gt(dataDVM.borrowFee)){
-          const debtTransferBorrowFee = dataVM.borrowFee.minus(dataDVM.borrowFee).times(debtVariation).div(BASE_PARAMS)
+        const dataDstVM = VaultManagerData.load(dataDebtTransfer.dstVaultManager)!
+        if(dataVM.borrowFee.gt(dataDstVM.borrowFee)){
+          const debtTransferBorrowFee = dataVM.borrowFee.minus(dataDstVM.borrowFee).times(debtVariation).div(BASE_PARAMS)
           dataVM.surplusFromBorrowFees = dataVM.surplusFromBorrowFees.plus(debtTransferBorrowFee)
         }
       }
@@ -195,10 +195,10 @@ export function handleInternalDebtUpdated(event: InternalDebtUpdated): void {
       // Debt transfer case, on dstVault:
       if(dataDebtTransfer.srcVaultManager != dataDebtTransfer.dstVaultManager){
         // compute difference in repay fee and add it to VM surplus if positive
-        const dataDVM = VaultManagerData.load(dataDebtTransfer.dstVaultManager)!
-        if(dataDVM.repayFee.gt(dataVM.repayFee)){
-          const debtTransferRepayFee = dataDVM.repayFee.minus(dataVM.repayFee).times(debtVariation).div(BASE_PARAMS)
-          dataDVM.surplusFromRepayFees = dataDVM.surplusFromRepayFees.plus(debtTransferRepayFee)
+        const dataSrcVM = VaultManagerData.load(dataDebtTransfer.srcVaultManager)!
+        if(dataVM.repayFee.gt(dataSrcVM.repayFee)){
+          const debtTransferRepayFee = dataVM.repayFee.minus(dataSrcVM.repayFee).times(debtVariation).div(BASE_PARAMS)
+          dataVM.surplusFromRepayFees = dataVM.surplusFromRepayFees.plus(debtTransferRepayFee)
         }
       }
       else{
