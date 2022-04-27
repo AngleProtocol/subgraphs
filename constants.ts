@@ -9,3 +9,6 @@ export const MAX_LOCK_TIME = BigInt.fromString('4')
   .times(BigInt.fromString('365'))
   .times(BigInt.fromString('86400'))
 export const WEEK = BigInt.fromString('7').times(BigInt.fromString('86400'))
+
+// TODO needs to be changed
+export const BLOCK_UPDATE_POOL_MANAGER_ESTIMATED_APR = BigInt.fromString('14665679')
