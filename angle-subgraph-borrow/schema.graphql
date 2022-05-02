@@ -359,9 +359,9 @@ type VaultManagerList @entity {
 }
 
 type OracleByTicker @entity {
-  # Address of non-USD token
+  # Ticker of non-USD token
   id: ID!
-  # Address of oracle
+  # Address of oracle which allows to load the matching `OracleData` entity
   oracle: String!
 }
 
