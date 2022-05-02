@@ -184,7 +184,6 @@ export function _initVaultManager(address: Address, block: ethereum.Block): void
   data.veBoostProxy = vaultManager.veBoostProxy().toHexString()
   data.xLiquidationBoost = extractArray(vaultManager, vaultManager.try_xLiquidationBoost)
   data.yLiquidationBoost = extractArray(vaultManager, vaultManager.try_yLiquidationBoost)
-  data.whitelistingActivated = vaultManager.whitelistingActivated()
   data.collateralFactor = vaultManager.collateralFactor()
   data.targetHealthFactor = vaultManager.targetHealthFactor()
   data.borrowFee = vaultManager.borrowFee()
@@ -234,7 +233,6 @@ export function _addVaultManagerDataToHistory(data: VaultManagerData, block: eth
   dataHistorical.veBoostProxy = data.veBoostProxy
   dataHistorical.xLiquidationBoost = data.xLiquidationBoost
   dataHistorical.yLiquidationBoost = data.yLiquidationBoost
-  dataHistorical.whitelistingActivated = data.whitelistingActivated
   dataHistorical.collateralFactor = data.collateralFactor
   dataHistorical.targetHealthFactor = data.targetHealthFactor
   dataHistorical.borrowFee = data.borrowFee

@@ -130,8 +130,6 @@ type VaultManagerData @entity {
   # Liquidation boost parameters
   xLiquidationBoost: [BigInt!]!
   yLiquidationBoost: [BigInt!]!
-  # If whitelisting is enabled
-  whitelistingActivated: Boolean!
   # Value of collateral factor
   collateralFactor: BigInt!
   # Value of target health factor
@@ -216,8 +214,6 @@ type VaultManagerHistoricalData @entity {
   # Liquidation boost parameters
   xLiquidationBoost: [BigInt!]!
   yLiquidationBoost: [BigInt!]!
-  # If whitelisting is enabled
-  whitelistingActivated: Boolean!
   # Value of collateral factor
   collateralFactor: BigInt!
   # Value of target health factor
