@@ -260,6 +260,7 @@ export function _addVaultDataToHistory(data: VaultData, block: ethereum.Block): 
   dataHistorical.isActive = data.isActive
   dataHistorical.debt = data.debt
   dataHistorical.healthFactor = data.healthFactor
+  dataHistorical.fees = data.fees
 
   dataHistorical.blockNumber = data.blockNumber
   dataHistorical.timestamp = data.timestamp

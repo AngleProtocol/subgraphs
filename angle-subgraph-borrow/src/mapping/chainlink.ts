@@ -76,6 +76,7 @@ function updateVaults(block: ethereum.Block, newOracleValue: BigInt, dataVM: Vau
     const dataVault = VaultData.load(idVault)!
     // let's skip burned vaults
     if(dataVault.isActive){
+      const previousDebt = dataVault.debt
       // update debt with interests
       dataVault.debt = computeDebt(
         dataVault.normalizedDebt,
@@ -84,6 +85,8 @@ function updateVaults(block: ethereum.Block, newOracleValue: BigInt, dataVM: Vau
         dataVM.lastInterestAccumulatorUpdated,
         block.timestamp
       )
+      // add interests accumulated to fees counter
+      dataVault.fees = dataVault.fees.plus(dataVault.debt.minus(previousDebt))
       // recompute vault's health factor
       dataVault.healthFactor = computeHealthFactor(
         dataVault.collateralAmount,

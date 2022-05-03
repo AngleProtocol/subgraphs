@@ -140,6 +140,7 @@ export function handleInternalDebtUpdated(event: InternalDebtUpdated): void {
     if(dataDebtTransfer == null){
       // General case: compute borrow fee and add it to VM surplus
       const borrowFee = debtVariation.times(dataVM.borrowFee).div(BASE_PARAMS)
+      dataVault.fees = dataVault.fees.plus(borrowFee)
       dataVM.surplusFromBorrowFees = dataVM.surplusFromBorrowFees.plus(borrowFee)
     }
     else if(dataDebtTransfer.srcVaultManager == event.address.toHexString() && dataDebtTransfer.srcVaultID == event.params.vaultID){
@@ -149,6 +150,7 @@ export function handleInternalDebtUpdated(event: InternalDebtUpdated): void {
         const dataDstVM = VaultManagerData.load(dataDebtTransfer.dstVaultManager)!
         if(dataVM.borrowFee.gt(dataDstVM.borrowFee)){
           const debtTransferBorrowFee = dataVM.borrowFee.minus(dataDstVM.borrowFee).times(debtVariation).div(BASE_PARAMS)
+          dataVault.fees = dataVault.fees.plus(debtTransferBorrowFee)
           dataVM.surplusFromBorrowFees = dataVM.surplusFromBorrowFees.plus(debtTransferBorrowFee)
         }
       }
@@ -172,6 +174,7 @@ export function handleInternalDebtUpdated(event: InternalDebtUpdated): void {
       if (dataLiquidation == null) {
         // General case: compute repay fee and add it to VM surplus
         const repayFee = debtVariation.times(dataVM.repayFee).div(BASE_PARAMS)
+        dataVault.fees = dataVault.fees.plus(repayFee)
         dataVM.surplusFromRepayFees = dataVM.surplusFromRepayFees.plus(repayFee)
       }
       else{
@@ -181,6 +184,7 @@ export function handleInternalDebtUpdated(event: InternalDebtUpdated): void {
         dataLiquidation.liquidatorDeposit = dataLiquidation.collateralBought.times(dataLiquidation.oraclePrice).times(dataLiquidation.liquidatorDiscount!).div(dataVM.collateralBase).div(BASE_PARAMS)
         dataLiquidation.debtRepayed = dataLiquidation.liquidatorDeposit!.times(dataVM.liquidationSurcharge).div(BASE_PARAMS)
         dataLiquidation.surcharge = dataLiquidation.liquidatorDeposit!.minus(dataLiquidation.debtRepayed!)
+        dataVault.fees = dataVault.fees.plus(dataLiquidation.surcharge!)
         dataVM.surplusFromLiquidationSurcharges = dataVM.surplusFromLiquidationSurcharges.plus(dataLiquidation.surcharge!)
         // Case where bad debt has been created
         if(dataVault.normalizedDebt.isZero() && dataVault.collateralAmount.isZero()){
@@ -199,6 +203,7 @@ export function handleInternalDebtUpdated(event: InternalDebtUpdated): void {
         if(dataVM.repayFee.gt(dataSrcVM.repayFee)){
           const debtTransferRepayFee = dataVM.repayFee.minus(dataSrcVM.repayFee).times(debtVariation).div(BASE_PARAMS)
           dataVM.surplusFromRepayFees = dataVM.surplusFromRepayFees.plus(debtTransferRepayFee)
+          dataVault.fees = dataVault.fees.plus(debtTransferRepayFee)
         }
       }
       else{
@@ -330,6 +335,7 @@ export function handleTransfer(event: Transfer): void {
     data.collateralAmount = ZERO
     data.normalizedDebt = ZERO
     data.debt = ZERO
+    data.fees = ZERO
     // healthFactor of 2^256 when vault has no debt
     data.healthFactor = MAX_UINT256
     data.isActive = true

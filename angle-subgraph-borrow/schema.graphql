@@ -261,6 +261,8 @@ type VaultData @entity {
   debt: BigInt!
   # Vault's health factor (in base 1e9)
   healthFactor: BigInt
+  # sum of all fees (borrow, repay, interests, liquidation) accrued by this vault
+  fees: BigInt !
   # list of past liquidations
   liquidations: [VaultLiquidation!]! @derivedFrom(field: "vault")
 
@@ -294,6 +296,8 @@ type VaultHistoricalData @entity {
   debt: BigInt!
   # Vault's health factor (in base 1e9)
   healthFactor: BigInt
+  # sum of all fees (borrow, repay, interests, liquidation) accrued by this vault
+  fees: BigInt !
 
   ## Time tracking
   # BlockNumber of last update
