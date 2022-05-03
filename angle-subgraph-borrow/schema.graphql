@@ -65,6 +65,8 @@ type TreasuryHistoricalData @entity {
 type VaultManagerData @entity {
   # Address of VaultManager
   id: ID!
+  # Name of VaultManager
+  name: String!
   # Address of VaultManager
   vaultManager: String!
   # Address of agToken
@@ -155,6 +157,8 @@ type VaultManagerData @entity {
 type VaultManagerHistoricalData @entity {
   # Address of VaultManager + '_' + timestamp
   id: ID!
+  # Name of VaultManager
+  name: String!
   # Address of VaultManager
   vaultManager: String!
   # Address of agToken

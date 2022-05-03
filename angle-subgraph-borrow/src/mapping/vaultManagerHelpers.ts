@@ -152,6 +152,7 @@ export function _initVaultManager(address: Address, block: ethereum.Block): void
   let data = new VaultManagerData(id)
 
   // Create data point
+  data.name = vaultManager.name()
   data.vaultManager = address.toHexString()
   data.agToken = vaultManager.stablecoin().toHexString()
   data.collateral = vaultManager.collateral().toHexString()
@@ -206,6 +207,7 @@ export function _addVaultManagerDataToHistory(data: VaultManagerData, block: eth
     dataHistorical = new VaultManagerHistoricalData(idHistorical)
   }
 
+  dataHistorical.name = data.name
   dataHistorical.vaultManager = data.vaultManager
   dataHistorical.agToken = data.agToken
   dataHistorical.collateral = data.collateral
