@@ -42,7 +42,7 @@ export function computeLiquidationDiscount(dataLiquidation: VaultLiquidation, da
   if(liquidationDiscount.gt(dataVM.maxLiquidationDiscount)){
     liquidationDiscount = dataVM.maxLiquidationDiscount
   }
-  return BASE_PARAMS.minus(liquidationDiscount)
+  return liquidationDiscount
 }
 
 export function computeDebt(
