@@ -18,9 +18,12 @@ export function handleTreasuryUpdated(event: TreasuryUpdated): void {
   }
 
   // should be put in core borrow init
-  const listVM = new VaultManagerList("1")
-  listVM.vaultManagers = []
-  listVM.save()
+  let listVM = VaultManagerList.load("1")
+  if(listVM == null){
+    let listVM = new VaultManagerList("1")
+    listVM.vaultManagers = []
+    listVM.save()
+  }
 }
 
 export function handleMinterToggled(event: MinterToggled): void {
