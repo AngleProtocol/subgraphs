@@ -65,26 +65,18 @@ export function handleCollateralAmountUpdated(event: CollateralAmountUpdated): v
       dataVM.lastInterestAccumulatorUpdated,
       event.block.timestamp
     )
-    // recompute vault's health factor
-    dataVault.healthFactor = computeHealthFactor(
-      dataVault.collateralAmount,
-      dataVM.collateralBase,
-      oracle.read(),
-      dataVault.debt,
-      dataVM.collateralFactor
-    )
   } else {
     dataVM.collateralAmount = dataVM.collateralAmount.minus(event.params.collateralAmount)
     dataVault.collateralAmount = dataVault.collateralAmount.minus(event.params.collateralAmount)
-    // recompute vault's health factor
-    dataVault.healthFactor = computeHealthFactor(
-      dataVault.collateralAmount,
-      dataVM.collateralBase,
-      oracle.read(),
-      dataVault.debt,
-      dataVM.collateralFactor
-    )
   }
+  // recompute vault's health factor
+  dataVault.healthFactor = computeHealthFactor(
+    dataVault.collateralAmount,
+    dataVM.collateralBase,
+    oracle.read(),
+    dataVault.debt,
+    dataVM.collateralFactor
+  )
   dataVM.tvl = computeTVL(dataVM.collateralAmount, dataVM.collateralBase, dataVM.collateralTicker)
   dataVM.timestamp = event.block.timestamp
   dataVault.timestamp = event.block.timestamp
