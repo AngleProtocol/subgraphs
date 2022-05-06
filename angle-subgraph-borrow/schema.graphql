@@ -370,6 +370,10 @@ type VaultTransfer @entity {
   id: ID!
   # Tx Hash
   txHash: String!
+  # Tx origin
+  sender: String!
+  # Tx target
+  recipient: String!
   # Address of vaultManager
   vaultManager: String!
   # Vault Id
@@ -391,6 +395,10 @@ type CollateralUpdate @entity {
   id: ID!
   # Tx Hash
   txHash: String!
+  # Tx origin
+  sender: String!
+  # Tx target
+  recipient: String!
   # Address of vaultManager
   vaultManager: String!
   # Vault Id
@@ -412,6 +420,10 @@ type DebtUpdate @entity {
   id: ID!
   # Tx Hash
   txHash: String!
+  # Tx origin
+  sender: String!
+  # Tx target
+  recipient: String!
   # Address of vaultManager
   vaultManager: String!
   # Vault Id
@@ -433,6 +445,10 @@ type DebtTransfer @entity {
   id: ID!
   # Tx Hash
   txHash: String!
+  # Tx origin
+  sender: String!
+  # Tx target
+  recipient: String!
   # Address of vaultManager receiving the debt
   srcVaultManager: String!
   # Receiving vault Id
@@ -456,6 +472,10 @@ type VaultLiquidation @entity {
   id: ID!
   # Tx Hash
   txHash: String!
+  # Tx origin
+  sender: String!
+  # Tx target
+  recipient: String!
   # Address of vaultManager
   vaultManager: String!
   # Vault Id

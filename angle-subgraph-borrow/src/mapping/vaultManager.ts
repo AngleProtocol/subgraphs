@@ -97,6 +97,8 @@ export function handleCollateralAmountUpdated(event: CollateralAmountUpdated): v
     dataVM.collateralFactor
   )
   dataVM.tvl = computeTVL(dataVM.collateralAmount, dataVM.collateralBase, dataVM.collateralTicker)
+  action.sender = event.transaction.from.toHexString()
+  action.recipient = event.transaction.to!.toHexString()
   dataVM.timestamp = event.block.timestamp
   dataVault.timestamp = event.block.timestamp
   action.timestamp = event.block.timestamp
@@ -166,6 +168,8 @@ export function handleInternalDebtUpdated(event: InternalDebtUpdated): void {
       actionDebtUpdate.vaultID = dataVault.vaultID
       actionDebtUpdate.isIncrease = true
       actionDebtUpdate.amountUpdate = debtVariation
+      actionDebtUpdate.sender = event.transaction.from.toHexString()
+      actionDebtUpdate.recipient = event.transaction.to!.toHexString()
       actionDebtUpdate.timestamp = event.block.timestamp
       actionDebtUpdate.blockNumber = event.block.number
       actionDebtUpdate.save()
@@ -212,6 +216,8 @@ export function handleInternalDebtUpdated(event: InternalDebtUpdated): void {
         actionDebtUpdate.vaultID = dataVault.vaultID
         actionDebtUpdate.isIncrease = false
         actionDebtUpdate.amountUpdate = debtVariation
+        actionDebtUpdate.sender = event.transaction.from.toHexString()
+        actionDebtUpdate.recipient = event.transaction.to!.toHexString()
         actionDebtUpdate.timestamp = event.block.timestamp
         actionDebtUpdate.blockNumber = event.block.number
         actionDebtUpdate.save()
@@ -429,6 +435,8 @@ export function handleTransfer(event: Transfer): void {
   action.vaultID = data.vaultID
   action.from = event.params.from.toHexString()
   action.to = event.params.to.toHexString()
+  action.sender = event.transaction.from.toHexString()
+  action.recipient = event.transaction.to!.toHexString()
   action.timestamp = event.block.timestamp
   action.blockNumber = event.block.number
   action.save()
@@ -461,6 +469,8 @@ export function handleLiquidatedVaults(event: LiquidatedVaults): void {
     // action.debtRemoved is going to be set later in `handleInternalDebtUpdated`
 
     action.vaultID = vaultID
+    action.sender = event.transaction.from.toHexString()
+    action.recipient = event.transaction.to!.toHexString()
     action.timestamp = timestamp
     action.blockNumber = event.block.number
     action.save()
@@ -501,14 +511,16 @@ export function handleDebtTransferred(event: DebtTransferred): void {
   data.save()
 
   // save action
-  const actionDebtTransfer = new DebtTransfer(idDebtTransfer)
-  actionDebtTransfer.txHash = txHash
-  actionDebtTransfer.srcVaultManager = data.srcVaultManager
-  actionDebtTransfer.srcVaultID = data.srcVaultID
-  actionDebtTransfer.dstVaultManager = data.dstVaultManager
-  actionDebtTransfer.dstVaultID = data.dstVaultID
-  actionDebtTransfer.amount = event.params.amount
-  actionDebtTransfer.timestamp = event.block.timestamp
-  actionDebtTransfer.blockNumber = event.block.number
-  actionDebtTransfer.save()
+  const action = new DebtTransfer(idDebtTransfer)
+  action.txHash = txHash
+  action.srcVaultManager = data.srcVaultManager
+  action.srcVaultID = data.srcVaultID
+  action.dstVaultManager = data.dstVaultManager
+  action.dstVaultID = data.dstVaultID
+  action.amount = event.params.amount
+  action.sender = event.transaction.from.toHexString()
+  action.recipient = event.transaction.to!.toHexString()
+  action.timestamp = event.block.timestamp
+  action.blockNumber = event.block.number
+  action.save()
 }
