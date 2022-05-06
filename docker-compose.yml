@@ -1,6 +1,7 @@
-version: '3'
+version: '3.7'
 services:
   graph-node:
+    tty: true
     image: graphprotocol/graph-node
     ports:
       - '8000:8000'
@@ -11,13 +12,16 @@ services:
     depends_on:
       - ipfs
       - postgres
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
     environment:
       postgres_host: postgres
       postgres_user: graph-node
       postgres_pass: let-me-in
       postgres_db: graph-node
       ipfs: 'ipfs:5001'
-      ethereum: 'mainnet:http://host.docker.internal:8545'
+      # ethereum: 'rinkeby:https://eth-rinkeby.alchemyapi.io/v2/96VaIW_CCjJ2-OrTUmfnUnakFXA8WXRJ'
+      ethereum: 'rinkeby:http://host.docker.internal:8545'
       ETHEREUM_REORG_THRESHOLD: 1
       ETHEREUM_ANCESTOR_COUNT: 1
   ipfs:
@@ -30,7 +34,7 @@ services:
     image: postgres
     ports:
       - '5432:5432'
-    command: ["postgres", "-cshared_preload_libraries=pg_stat_statements"]
+    command: ['postgres', '-cshared_preload_libraries=pg_stat_statements']
     environment:
       POSTGRES_USER: graph-node
       POSTGRES_PASSWORD: let-me-in
