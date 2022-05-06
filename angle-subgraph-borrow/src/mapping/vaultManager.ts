@@ -463,7 +463,6 @@ export function handleLiquidatedVaults(event: LiquidatedVaults): void {
     let collateralAmount = vaultManager.vaultData(vaultID).value0
     let collateralBought = dataVault.collateralAmount.minus(collateralAmount)
 
-    action.liquidator = event.transaction.from.toHexString()
     action.collateralBought = collateralBought
     action.oraclePrice = oracle.read()
     // action.debtRemoved is going to be set later in `handleInternalDebtUpdated`
