@@ -14,8 +14,6 @@ import { BASE_TOKENS } from '../../../constants'
 
 // Handler used to periodically refresh Oracles and Vault's HF/debt
 export function handleAnswerUpdated(event: AnswerUpdated): void {
-  // log.warning('+++++ Chainlink Update', [])
-
   let dataOracle = OracleData.load(event.address.toHexString())
   if (dataOracle == null) {
     const feed = ChainlinkFeed.bind(event.address)
