@@ -7,12 +7,11 @@ import {
   SurplusManagerUpdated,
   VaultManagerToggled,
   NewTreasurySet
-} from '../../generated/TreasuryTemplate/Treasury'
-import { AgToken } from '../../generated/TreasuryTemplate/AgToken'
-import { TreasuryData, VaultManagerData } from '../../generated/schema'
+} from '../../generated/templates/TreasuryTemplate/Treasury'
+import { AgToken } from '../../generated/templates/TreasuryTemplate/AgToken'
+import { TreasuryData, VaultManagerData, VaultManagerList } from '../../generated/schema'
 import { _initTreasury, _addTreasuryDataToHistory, extractArray } from './treasuryHelpers'
 import { _initVaultManager, _addVaultManagerDataToHistory, _addVaultDataToHistory } from './vaultManagerHelpers'
-import { historicalSlice } from './utils'
 import { log } from '@graphprotocol/graph-ts'
 
 export function handleBadDebtUpdated(event: BadDebtUpdated): void {
@@ -73,26 +72,22 @@ export function handleSurplusManagerUpdated(event: SurplusManagerUpdated): void 
 export function handleVaultManagerToggled(event: VaultManagerToggled): void {
   log.warning('++++ VaultManagerToggled', [])
 
-  let dataTreasury = TreasuryData.load(event.address.toHexString())
-  // THIS IS ONLY FOR RINKEBY BECAUSE WE CAN'T TREASURY DEPLOYMENT
-  if (dataTreasury == null) {
-    _initTreasury(event.address, event.block)
-  } else {
-    // END OF RINKEBY CODE
-    dataTreasury.timestamp = event.block.timestamp
-    dataTreasury.blockNumber = event.block.number
-    dataTreasury.save()
-    _addTreasuryDataToHistory(dataTreasury, event.block)
-  }
+  let dataTreasury = TreasuryData.load(event.address.toHexString())!
+  dataTreasury.timestamp = event.block.timestamp
+  dataTreasury.blockNumber = event.block.number
+  dataTreasury.save()
+  _addTreasuryDataToHistory(dataTreasury, event.block)
 
   let data = VaultManagerData.load(event.params.vaultManager.toHexString())
   if (data == null) {
     _initVaultManager(event.params.vaultManager, event.block)
-  } else {
-    data.timestamp = event.block.timestamp
-    data.blockNumber = event.block.number
-    data.save()
-    _addVaultManagerDataToHistory(data, event.block)
+
+    // Add new VM to the VM list
+    const listVM = VaultManagerList.load("1")!
+    let vaultManagers = listVM.vaultManagers
+    vaultManagers.push(event.params.vaultManager.toHexString())
+    listVM.vaultManagers = vaultManagers
+    listVM.save()
   }
 }
 

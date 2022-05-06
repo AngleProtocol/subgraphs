@@ -10,7 +10,8 @@
   "chainlink_GBP_USD": "0x48ea192e08b823fdba7b6b5399f49c3a36b3844f",
   "chainlink_JPY_USD": "0x915659964309157e59c8052ffea0339988f7d897",
   "chainlink_ETH_USD": "0x28d757e89e38ee5eeff3eab330ad1ab99dd7c9eb",
-  "ageur_treasury": "0x5fa4c7f1DFDcdf3406A4473211A83d497018A869",
+  "chainlink_BTC_USD": "0xa3E0e468417741E5FCF16F43CD9031c928a55031",
+  "ageur": "0x35B13ac4Ad8450Fe721a80c8d1B98D87E1E11172",
   "block": 10201649,
-  "block_treasury": 10343830
+  "block_ageur": 10566800
 }

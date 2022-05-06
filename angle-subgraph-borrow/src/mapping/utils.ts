@@ -1,7 +1,5 @@
-import { ethereum, BigInt } from '@graphprotocol/graph-ts'
-import { ROUND_COEFF, BASE_PARAMS, BASE_TOKENS, BASE_INTEREST, MAX_UINT256 } from '../../../constants'
-
-import { log } from '@graphprotocol/graph-ts'
+import { ethereum, BigInt, log } from '@graphprotocol/graph-ts'
+import { ROUND_COEFF } from '../../../constants'
 
 export function historicalSlice(block: ethereum.Block): BigInt {
   const timestamp = block.timestamp
@@ -12,61 +10,18 @@ export function historicalSlice(block: ethereum.Block): BigInt {
   return hourStartTimestamp
 }
 
-export function computeDebt(
-  normalizedDebt: BigInt,
-  ratePerSecond: BigInt,
-  interestAccumulator: BigInt,
-  lastInterestAccumulatorUpdated: BigInt,
-  timestamp: BigInt
-): BigInt {
-  const exp = timestamp.minus(lastInterestAccumulatorUpdated)
-  let currentInterestAccumulator = interestAccumulator
-  if (!exp.isZero() && !ratePerSecond.isZero()) {
-    const ZERO = BigInt.fromI32(0)
-    const ONE = BigInt.fromI32(1)
-    const TWO = BigInt.fromI32(2)
-    const SIX = BigInt.fromI32(6)
-    const HALF_BASE_INTEREST = BASE_INTEREST.div(TWO)
-    const expMinusOne = exp.minus(ONE)
-    const expMinusTwo = exp.gt(TWO) ? exp.minus(TWO) : ZERO
-    const basePowerTwo = ratePerSecond
-      .times(ratePerSecond)
-      .plus(HALF_BASE_INTEREST)
-      .div(BASE_INTEREST)
-    const basePowerThree = basePowerTwo
-      .times(ratePerSecond)
-      .plus(HALF_BASE_INTEREST)
-      .div(BASE_INTEREST)
-    const secondTerm = exp
-      .times(expMinusOne)
-      .times(basePowerTwo)
-      .div(TWO)
-    const thirdTerm = exp
-      .times(expMinusOne)
-      .times(expMinusTwo)
-      .times(basePowerThree)
-      .div(SIX)
-    currentInterestAccumulator = interestAccumulator
-      .times(
-        BASE_INTEREST.plus(ratePerSecond.times(exp))
-          .plus(secondTerm)
-          .plus(thirdTerm)
-      )
-      .div(BASE_INTEREST)
-  }
-  return normalizedDebt.times(currentInterestAccumulator).div(BASE_PARAMS.times(BASE_TOKENS))
-}
+let wrappedTokens = new Map<string,string>()
+wrappedTokens.set("WBTC","BTC")
+wrappedTokens.set("wSTETH","ETH")
 
-export function computeHealthFactor(
-  collateral: BigInt,
-  collateralBase: BigInt,
-  oracleValue: BigInt,
-  debt: BigInt,
-  collateralFactor: BigInt
-): BigInt {
-  if (debt.isZero()) {
-    // avoid division by zero
-    return MAX_UINT256
+// Whitespaces are stripped first. Then, `description` must be in the format "(W)TOKEN1/TOKEN2" or "(W)TOKEN1/TOKEN2Oracle".
+export function parseOracleDescription(description: string, hasExtra: boolean): string[] {
+  description = description.replace(' ', '')
+  if(hasExtra) description = description.slice(0,-6)
+  let tokens = description.split('/')
+  // if token is wrapped, we're looking for underlying token
+  if(wrappedTokens.has(tokens[0])){
+    tokens[0] = wrappedTokens.get(tokens[0])
   }
-  return collateral.times(collateralFactor.times(oracleValue)).div(debt.times(collateralBase))
+  return tokens
 }
