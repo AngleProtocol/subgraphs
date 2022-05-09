@@ -481,8 +481,6 @@ type VaultLiquidation @entity {
   # Vault Id
   vaultID: BigInt!
 
-  # address of liquidator
-  liquidator: String!
   # collateral bought by liquidator
   collateralBought: BigInt!
   # oracle value at liquidation time
