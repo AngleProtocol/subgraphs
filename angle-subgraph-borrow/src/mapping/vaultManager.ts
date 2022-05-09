@@ -360,8 +360,9 @@ export function handleLiquidationBoostParametersUpdated(event: LiquidationBoostP
 
 export function handleTransfer(event: Transfer): void {
   log.warning('++++ Transfer', [])
+  const txHash = event.transaction.hash.toHexString()
   const id = event.address.toHexString() + '_' + event.params.tokenId.toString()
-  let data: VaultData
+  let dataVault: VaultData
   if (isMint(event)) {
     // Increase VM vault counter
     let dataVM = VaultManagerData.load(event.address.toHexString())!
@@ -371,37 +372,37 @@ export function handleTransfer(event: Transfer): void {
     dataVM.save()
     _addVaultManagerDataToHistory(dataVM, event.block)
     // Create a vault instance
-    data = new VaultData(id)
-    data.vaultManager = event.address.toHexString()
-    data.vaultID = event.params.tokenId
-    data.openingDate = event.block.timestamp
-    data.owner = event.params.to.toHexString()
+    dataVault = new VaultData(id)
+    dataVault.vaultManager = event.address.toHexString()
+    dataVault.vaultID = event.params.tokenId
+    dataVault.openingDate = event.block.timestamp
+    dataVault.owner = event.params.to.toHexString()
     // vaults are created empty
-    data.collateralAmount = ZERO
-    data.normalizedDebt = ZERO
-    data.debt = ZERO
-    data.fees = ZERO
+    dataVault.collateralAmount = ZERO
+    dataVault.normalizedDebt = ZERO
+    dataVault.debt = ZERO
+    dataVault.fees = ZERO
     // healthFactor of 2^256 when vault has no debt
-    data.healthFactor = MAX_UINT256
-    data.isActive = true
+    dataVault.healthFactor = MAX_UINT256
+    dataVault.isActive = true
   } else if (isBurn(event)) {
     // disable instance
-    data = VaultData.load(id)!
-    data.isActive = false
+    dataVault = VaultData.load(id)!
+    dataVault.isActive = false
     // save collateral and debt prior to vault closing
-    const vaultCollateral = data.collateralAmount
-    const vaultDebt = data.normalizedDebt
-    data.collateralAmount = ZERO
-    data.normalizedDebt = ZERO
-    data.debt = ZERO
+    const collateralRemoved = dataVault.collateralAmount
+    const normalizedDebtRemoved = dataVault.normalizedDebt
+    dataVault.collateralAmount = ZERO
+    dataVault.normalizedDebt = ZERO
+    dataVault.debt = ZERO
     // healthFactor of 2^256 when vault has no debt
-    data.healthFactor = MAX_UINT256
+    dataVault.healthFactor = MAX_UINT256
     // Decrease VM vault counter, collateralAmount and totalNormalizedDebt
     let dataVM = VaultManagerData.load(event.address.toHexString())!
     dataVM.activeVaultsCount = dataVM.activeVaultsCount.minus(BigInt.fromI32(1))
-    dataVM.collateralAmount = dataVM.collateralAmount.minus(vaultCollateral)
+    dataVM.collateralAmount = dataVM.collateralAmount.minus(collateralRemoved)
     dataVM.tvl = computeTVL(dataVM.collateralAmount, dataVM.collateralBase, dataVM.collateralTicker)
-    dataVM.totalNormalizedDebt = dataVM.totalNormalizedDebt.minus(vaultDebt)
+    dataVM.totalNormalizedDebt = dataVM.totalNormalizedDebt.minus(normalizedDebtRemoved)
     dataVM.totalDebt = computeDebt(
       dataVM.totalNormalizedDebt,
       dataVM.interestRate,
@@ -417,22 +418,52 @@ export function handleTransfer(event: Transfer): void {
     dataVM.blockNumber = event.block.number
     dataVM.save()
     _addVaultManagerDataToHistory(dataVM, event.block)
+
+    // save repayDebt and removeCollateral actions
+    const actionDebtUpdate = new DebtUpdate(_getActionId("debtUpdate", txHash, event.block.timestamp))
+    actionDebtUpdate.txHash = txHash
+    actionDebtUpdate.vaultManager = dataVM.vaultManager
+    actionDebtUpdate.vaultID = dataVault.vaultID
+    actionDebtUpdate.isIncrease = false
+    actionDebtUpdate.amountUpdate = computeDebt(
+      normalizedDebtRemoved,
+      dataVM.interestRate,
+      dataVM.interestAccumulator,
+      dataVM.lastInterestAccumulatorUpdated,
+      event.block.timestamp
+    )
+    actionDebtUpdate.sender = event.transaction.from.toHexString()
+    actionDebtUpdate.recipient = event.transaction.to!.toHexString()
+    actionDebtUpdate.timestamp = event.block.timestamp
+    actionDebtUpdate.blockNumber = event.block.number
+    actionDebtUpdate.save()
+
+    const actionCollateralUpdate = new CollateralUpdate(_getActionId("collateralUpdate", txHash, event.block.timestamp))
+    actionCollateralUpdate.txHash = txHash
+    actionCollateralUpdate.vaultManager = dataVM.vaultManager
+    actionCollateralUpdate.vaultID = dataVault.vaultID
+    actionCollateralUpdate.isIncrease = false
+    actionCollateralUpdate.amountUpdate = collateralRemoved
+    actionCollateralUpdate.sender = event.transaction.from.toHexString()
+    actionCollateralUpdate.recipient = event.transaction.to!.toHexString()
+    actionCollateralUpdate.timestamp = event.block.timestamp
+    actionCollateralUpdate.blockNumber = event.block.number
+    actionCollateralUpdate.save()
   } else {
-    data = VaultData.load(id)!
-    data.owner = event.params.to.toHexString()
+    dataVault = VaultData.load(id)!
+    dataVault.owner = event.params.to.toHexString()
   }
-  data.blockNumber = event.block.number
-  data.timestamp = event.block.timestamp
-  data.save()
-  _addVaultDataToHistory(data, event.block)
+  dataVault.blockNumber = event.block.number
+  dataVault.timestamp = event.block.timestamp
+  dataVault.save()
+  _addVaultDataToHistory(dataVault, event.block)
 
   // save action
-  const txHash = event.transaction.hash.toHexString()
   const idVaultTransfer = _getActionId("vaultTransfer", txHash, event.block.timestamp)
   const action = new VaultTransfer(idVaultTransfer)
   action.txHash = txHash
-  action.vaultManager = data.vaultManager
-  action.vaultID = data.vaultID
+  action.vaultManager = dataVault.vaultManager
+  action.vaultID = dataVault.vaultID
   action.from = event.params.from.toHexString()
   action.to = event.params.to.toHexString()
   action.sender = event.transaction.from.toHexString()
