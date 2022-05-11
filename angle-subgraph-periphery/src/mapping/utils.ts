@@ -4,7 +4,7 @@ import { ERC20 } from '../../generated/templates/StableMasterTemplate/ERC20'
 import { PoolManager } from '../../generated/templates/StableMasterTemplate/PoolManager'
 import { Oracle } from '../../generated/templates/StableMasterTemplate/Oracle'
 import { OracleAPRHistoricalData, OracleData } from '../../generated/schema'
-import { BASE_PARAMS, ROUND_COEFF } from '../../../constants'
+import { BASE_PARAMS, BLOCK_UPDATE_POOL_MANAGER_ESTIMATED_APR, ROUND_COEFF } from '../../../constants'
 
 export function historicalSlice(block: ethereum.Block, roundCoeff: BigInt = ROUND_COEFF): BigInt {
   const timestamp = block.timestamp
@@ -26,7 +26,7 @@ export function updateOracleData(poolManager: PoolManager, block: ethereum.Block
   const rates = oracle.readAll()
   const result = poolManager.try_interestsForSurplus()
   let apr: BigInt
-  if (result.reverted) {
+  if (result.reverted || block.number.gt(BLOCK_UPDATE_POOL_MANAGER_ESTIMATED_APR)) {
     const resultAPR = poolManager.try_estimatedAPR()
     apr = resultAPR.reverted ? BigInt.fromString('0') : resultAPR.value
   } else {
