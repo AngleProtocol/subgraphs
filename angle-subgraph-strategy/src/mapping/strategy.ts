@@ -16,7 +16,8 @@ export function handleHarvest(event: ethereum.Event): void {
   const stableName = agToken.symbol()
   const collatName = token.symbol()
   const strat = poolManager.strategies(strategy._address)
-  const apr = strategy.estimatedAPR()
+  const resultAPR = strategy.try_estimatedAPR()
+  const apr = resultAPR.reverted ? BigInt.fromString('0') : resultAPR.value
   const managerAddress = strategy.poolManager().toHexString()
 
   const id = event.address.toHexString()
