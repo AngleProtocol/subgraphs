@@ -420,35 +420,39 @@ export function handleTransfer(event: Transfer): void {
     _addVaultManagerDataToHistory(dataVM, event.block)
 
     // save repayDebt and removeCollateral actions
-    const actionDebtUpdate = new DebtUpdate(_getActionId("debtUpdate", txHash, event.block.timestamp))
-    actionDebtUpdate.txHash = txHash
-    actionDebtUpdate.vaultManager = dataVM.vaultManager
-    actionDebtUpdate.vaultID = dataVault.vaultID
-    actionDebtUpdate.isIncrease = false
-    actionDebtUpdate.amountUpdate = computeDebt(
-      normalizedDebtRemoved,
-      dataVM.interestRate,
-      dataVM.interestAccumulator,
-      dataVM.lastInterestAccumulatorUpdated,
-      event.block.timestamp
-    )
-    actionDebtUpdate.sender = event.transaction.from.toHexString()
-    actionDebtUpdate.recipient = event.transaction.to!.toHexString()
-    actionDebtUpdate.timestamp = event.block.timestamp
-    actionDebtUpdate.blockNumber = event.block.number
-    actionDebtUpdate.save()
+    if(!normalizedDebtRemoved.isZero()) {
+      const actionDebtUpdate = new DebtUpdate(_getActionId("debtUpdate", txHash, event.block.timestamp))
+      actionDebtUpdate.txHash = txHash
+      actionDebtUpdate.vaultManager = dataVM.vaultManager
+      actionDebtUpdate.vaultID = dataVault.vaultID
+      actionDebtUpdate.isIncrease = false
+      actionDebtUpdate.amountUpdate = computeDebt(
+        normalizedDebtRemoved,
+        dataVM.interestRate,
+        dataVM.interestAccumulator,
+        dataVM.lastInterestAccumulatorUpdated,
+        event.block.timestamp
+      )
+      actionDebtUpdate.sender = event.transaction.from.toHexString()
+      actionDebtUpdate.recipient = event.transaction.to!.toHexString()
+      actionDebtUpdate.timestamp = event.block.timestamp
+      actionDebtUpdate.blockNumber = event.block.number
+      actionDebtUpdate.save()
+    }
 
-    const actionCollateralUpdate = new CollateralUpdate(_getActionId("collateralUpdate", txHash, event.block.timestamp))
-    actionCollateralUpdate.txHash = txHash
-    actionCollateralUpdate.vaultManager = dataVM.vaultManager
-    actionCollateralUpdate.vaultID = dataVault.vaultID
-    actionCollateralUpdate.isIncrease = false
-    actionCollateralUpdate.amountUpdate = collateralRemoved
-    actionCollateralUpdate.sender = event.transaction.from.toHexString()
-    actionCollateralUpdate.recipient = event.transaction.to!.toHexString()
-    actionCollateralUpdate.timestamp = event.block.timestamp
-    actionCollateralUpdate.blockNumber = event.block.number
-    actionCollateralUpdate.save()
+    if(!collateralRemoved.isZero()) {
+      const actionCollateralUpdate = new CollateralUpdate(_getActionId("collateralUpdate", txHash, event.block.timestamp))
+      actionCollateralUpdate.txHash = txHash
+      actionCollateralUpdate.vaultManager = dataVM.vaultManager
+      actionCollateralUpdate.vaultID = dataVault.vaultID
+      actionCollateralUpdate.isIncrease = false
+      actionCollateralUpdate.amountUpdate = collateralRemoved
+      actionCollateralUpdate.sender = event.transaction.from.toHexString()
+      actionCollateralUpdate.recipient = event.transaction.to!.toHexString()
+      actionCollateralUpdate.timestamp = event.block.timestamp
+      actionCollateralUpdate.blockNumber = event.block.number
+      actionCollateralUpdate.save()
+    }
   } else {
     dataVault = VaultData.load(id)!
     dataVault.owner = event.params.to.toHexString()
