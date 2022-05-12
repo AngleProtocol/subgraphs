@@ -428,6 +428,7 @@ export function handleTransfer(event: Transfer): void {
       actionDebtUpdate.txHash = txHash
       actionDebtUpdate.vaultManager = dataVM.vaultManager
       actionDebtUpdate.vaultID = dataVault.vaultID
+      actionDebtUpdate.owner = dataVault.owner
       actionDebtUpdate.isIncrease = false
       actionDebtUpdate.amountUpdate = computeDebt(
         normalizedDebtRemoved,
@@ -448,6 +449,7 @@ export function handleTransfer(event: Transfer): void {
       actionCollateralUpdate.txHash = txHash
       actionCollateralUpdate.vaultManager = dataVM.vaultManager
       actionCollateralUpdate.vaultID = dataVault.vaultID
+      actionCollateralUpdate.owner = dataVault.owner
       actionCollateralUpdate.isIncrease = false
       actionCollateralUpdate.amountUpdate = collateralRemoved
       actionCollateralUpdate.txOrigin = event.transaction.from.toHexString()
