@@ -25,7 +25,7 @@ export function computeLiquidationDiscount(dataLiquidation: VaultLiquidation, da
   }
   else{
     const veBoostProxy = VeBoostProxy.bind(Address.fromString(dataVM.veBoostProxy))
-    const adjustedBalance = veBoostProxy.adjusted_balance_of(Address.fromString(dataLiquidation.sender))
+    const adjustedBalance = veBoostProxy.adjusted_balance_of(Address.fromString(dataLiquidation.txOrigin))
 
     if (adjustedBalance >= x[1]){
       liquidationBoost = y[1]

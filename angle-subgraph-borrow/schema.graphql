@@ -371,17 +371,17 @@ type VaultTransfer @entity {
   # Tx Hash
   txHash: String!
   # Tx origin
-  sender: String!
-  # Tx target
-  recipient: String!
+  txOrigin: String!
+  # Address of the first contract with which the Tx is interacting with
+  txTarget: String!
   # Address of vaultManager
   vaultManager: String!
   # Vault Id
   vaultID: BigInt!
   # Sender address
-  from: String!
+  previousOwner: String!
   # Receiver address
-  to: String!
+  newOwner: String!
 
   ## Time tracking
   # BlockNumber of last update
@@ -396,13 +396,15 @@ type CollateralUpdate @entity {
   # Tx Hash
   txHash: String!
   # Tx origin
-  sender: String!
-  # Tx target
-  recipient: String!
+  txOrigin: String!
+  # Address of the first contract with which the Tx is interacting with
+  txTarget: String!
   # Address of vaultManager
   vaultManager: String!
   # Vault Id
   vaultID: BigInt!
+  # Vault owner
+  owner: String!
   # flag to show if it's a deposit or removal of collateral
   isIncrease: Boolean!
   # Amount added to vault
@@ -421,13 +423,15 @@ type DebtUpdate @entity {
   # Tx Hash
   txHash: String!
   # Tx origin
-  sender: String!
-  # Tx target
-  recipient: String!
+  txOrigin: String!
+  # Address of the first contract with which the Tx is interacting with
+  txTarget: String!
   # Address of vaultManager
   vaultManager: String!
   # Vault Id
   vaultID: BigInt!
+  # Vault owner
+  owner: String!
   # flag to show if it's a debt increase or a debt repayment
   isIncrease: Boolean!
   # Amount added to vault
@@ -446,17 +450,21 @@ type DebtTransfer @entity {
   # Tx Hash
   txHash: String!
   # Tx origin
-  sender: String!
-  # Tx target
-  recipient: String!
+  txOrigin: String!
+  # Address of the first contract with which the Tx is interacting with
+  txTarget: String!
   # Address of vaultManager receiving the debt
   srcVaultManager: String!
-  # Receiving vault Id
+  # Id of the vault receiving its debt
   srcVaultID: BigInt!
+  # Owner of the vault receiving its debt
+  srcOwner: String!
   # Address of vaultManager sending the debt
   dstVaultManager: String!
-  # Sending vault Id
+  # Id of the vault sending its debt
   dstVaultID: BigInt!
+  # Owner of the vault sending its debt
+  dstOwner: String!
   # Amount transferred between vaults
   amount: BigInt!
 
@@ -473,13 +481,15 @@ type VaultLiquidation @entity {
   # Tx Hash
   txHash: String!
   # Tx origin
-  sender: String!
-  # Tx target
-  recipient: String!
+  txOrigin: String!
+  # Address of the first contract with which the Tx is interacting with
+  txTarget: String!
   # Address of vaultManager
   vaultManager: String!
   # Vault Id
   vaultID: BigInt!
+  # Vault owner
+  owner: String!
 
   # collateral bought by liquidator
   collateralBought: BigInt!
