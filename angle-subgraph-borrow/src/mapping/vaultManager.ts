@@ -507,6 +507,7 @@ export function handleLiquidatedVaults(event: LiquidatedVaults): void {
     action.oraclePrice = oracle.read()
     // action.debtRemoved is going to be set later in `handleInternalDebtUpdated`
 
+    action.vaultManager = dataVault.vaultManager
     action.vaultID = vaultID
     action.owner = dataVault.owner
     action.txOrigin = event.transaction.from.toHexString()
