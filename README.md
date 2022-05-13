@@ -37,3 +37,9 @@ yarn create-local && yarn deploy-local:rinkeby
 
 That's it, you can now make queries to your subgraph.
 A visual tool is available at http://localhost:8000/subgraphs/name/angle/sub/graphql
+
+## Fast Sync
+The borrow subgraph has the particularity of updating its entities on every oracle price update. This can be disabled to decrease crash recovery time by setting `FAST_SYNC_THRESHOLD` to a recent date in `constants.ts`.
+Oracle updates happening before this timestamp will be sampled to compute at most 1 oracle-induced refresh every 3 hours.
+Updates happening above this timestamp will be processed normally.
+Once crash is recovered, `FAST_SYNC_THRESHOLD` can be set back to `0`, and slower indexing can be relaunched in background to get better historical data.
