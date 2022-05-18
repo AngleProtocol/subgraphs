@@ -10,12 +10,10 @@ import {
 } from './vaultManagerHelpers'
 import { log, Address, ethereum, BigInt } from '@graphprotocol/graph-ts'
 import { parseOracleDescription } from './utils'
-import { BASE_TOKENS } from '../../../constants'
+import { BASE_TOKENS, FAST_SYNC_THRESHOLD, FAST_SYNC_TIME_INTERVAL } from '../../../constants'
 
 // Handler used to periodically refresh Oracles and Vault's HF/debt
 export function handleAnswerUpdated(event: AnswerUpdated): void {
-  // log.warning('+++++ Chainlink Update', [])
-
   let dataOracle = OracleData.load(event.address.toHexString())
   if (dataOracle == null) {
     const feed = ChainlinkFeed.bind(event.address)
@@ -42,8 +40,9 @@ export function handleAnswerUpdated(event: AnswerUpdated): void {
     const listVM = VaultManagerList.load("1")!
     for (let i = 0; i < listVM.vaultManagers.length; i++) {
       const dataVM = VaultManagerData.load(listVM.vaultManagers[i])!
-      // Is this VM concerned by price change ?
-      if(dataVM.collateralTicker == dataOracle.tokenTicker || dataVM.agTokenTicker == dataOracle.tokenTicker){
+      // Check if fast sync is applicable at this block and if this VM is concerned by price change
+      // The following call is computing intensive when there is a large amount of vaults
+      if((FAST_SYNC_THRESHOLD.lt(event.block.timestamp) || event.block.timestamp.minus(dataVM.timestamp).gt(FAST_SYNC_TIME_INTERVAL)) && dataVM.collateralTicker == dataOracle.tokenTicker || dataVM.agTokenTicker == dataOracle.tokenTicker){
         const collateralOracle = OracleByTicker.load(dataVM.collateralTicker)
         const agTokenOracle = OracleByTicker.load(dataVM.agTokenTicker)
         if(collateralOracle == null || agTokenOracle == null){

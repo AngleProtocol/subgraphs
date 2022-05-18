@@ -9,9 +9,12 @@ import { BASE_PARAMS, BASE_TOKENS, BASE_INTEREST, MAX_UINT256 } from '../../../c
 import {
   VeBoostProxy
 } from '../../generated/templates/VaultManagerTemplate/VeBoostProxy'
+import { ActionCounter } from '../../generated/schema'
 
 import { log } from '@graphprotocol/graph-ts'
 
+const ZERO = BigInt.fromI32(0)
+const ONE = BigInt.fromI32(1)
 
 export function computeLiquidationDiscount(dataLiquidation: VaultLiquidation, dataVault: VaultData, dataVM: VaultManagerData): BigInt {
   let liquidationBoost: BigInt;
@@ -22,7 +25,7 @@ export function computeLiquidationDiscount(dataLiquidation: VaultLiquidation, da
   }
   else{
     const veBoostProxy = VeBoostProxy.bind(Address.fromString(dataVM.veBoostProxy))
-    const adjustedBalance = veBoostProxy.adjusted_balance_of(Address.fromString(dataLiquidation.liquidator))
+    const adjustedBalance = veBoostProxy.adjusted_balance_of(Address.fromString(dataLiquidation.txOrigin))
 
     if (adjustedBalance >= x[1]){
       liquidationBoost = y[1]
@@ -269,3 +272,35 @@ export function _addVaultDataToHistory(data: VaultData, block: ethereum.Block): 
   dataHistorical.save()
 }
 
+// Helper to get an ID for actions that could happen more than once in a single Tx and can't be distinguished from each other
+// e.g: borrowing the same amount on the same vault
+// To avoid this issue, we count the actions of each vulnerable category in a given transaction and build a unique ID from txHash + counter
+export function _getActionId(action: string, txHash: string, timestamp: BigInt): string{
+  let actionCounter = ActionCounter.load("1")
+  if(actionCounter == null){
+    actionCounter = new ActionCounter("1")
+  } else if(actionCounter.timestamp != timestamp || actionCounter.txHash != txHash){
+    // overwrite previous actionCounter if we're in a different block or in a different transaction
+    actionCounter.timestamp = timestamp
+    actionCounter.txHash = txHash
+    actionCounter.collateralUpdate = ZERO
+    actionCounter.debtUpdate = ZERO
+    actionCounter.debtTransfer = ZERO
+    actionCounter.vaultTransfer  = ZERO
+  }
+  let counter: BigInt;
+  if(action === "collateralUpdate"){
+    counter = actionCounter.collateralUpdate = actionCounter.collateralUpdate.plus(ONE)
+  } else if(action === "debtUpdate"){
+    counter = actionCounter.debtUpdate = actionCounter.debtUpdate.plus(ONE)
+  } else if(action === "debtTransfer"){
+    counter = actionCounter.debtTransfer = actionCounter.debtTransfer.plus(ONE)
+  } else if(action === "vaultTransfer"){
+    counter = actionCounter.vaultTransfer = actionCounter.vaultTransfer.plus(ONE)
+  } else {
+    log.error('Unknown action', [])
+  }
+
+  actionCounter.save()
+  return txHash + '_' + counter.toString()
+}
