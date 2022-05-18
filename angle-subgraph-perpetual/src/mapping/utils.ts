@@ -7,7 +7,7 @@ import { PoolManager } from '../../generated/templates/StableMasterTemplate/Pool
 import { PerpetualManagerFront } from '../../generated/templates/StableMasterTemplate/PerpetualManagerFront'
 import { Oracle } from '../../generated/templates/StableMasterTemplate/Oracle'
 import { PoolData, StableData, StableHistoricalData, PoolHistoricalData } from '../../generated/schema'
-import { BASE_PARAMS, ROUND_COEFF } from '../../../constants'
+import { BASE_PARAMS, BLOCK_UPDATE_POOL_MANAGER_ESTIMATED_APR, ROUND_COEFF } from '../../../constants'
 
 export function historicalSlice(block: ethereum.Block): BigInt {
   const timestamp = block.timestamp
@@ -145,7 +145,7 @@ export function _updatePoolData(
   let interestsForSLPs: BigInt
   let apr: BigInt
   const result = poolManager.try_interestsForSurplus()
-  if (result.reverted) {
+  if (result.reverted || block.number.gt(BLOCK_UPDATE_POOL_MANAGER_ESTIMATED_APR)) {
     interestsForSLPs = slpInfo.interestsForSLPs
     const resultAPR = poolManager.try_estimatedAPR()
     apr = resultAPR.reverted ? BigInt.fromString('0') : resultAPR.value
