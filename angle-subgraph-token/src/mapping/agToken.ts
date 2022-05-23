@@ -1,7 +1,27 @@
-import { Address, store, BigInt } from '@graphprotocol/graph-ts'
+import { Address, store, BigInt, ethereum } from '@graphprotocol/graph-ts'
 import { Transfer } from '../../generated/Angle/ERC20Votes'
 import { ERC20 } from '../../generated/templates/AgTokenTemplate/ERC20'
-import { agToken as AgToken } from '../../generated/schema'
+import { agToken as AgToken, UtilisationData, UtilisationHistoricalData } from '../../generated/schema'
+import { historicalSlice } from './utils'
+
+const ONE = BigInt.fromI32(1)
+
+function _addUtilisationDataToHistory(data: UtilisationData, block: ethereum.Block): void {
+  const idHistorical = data.id + '_' + historicalSlice(block).toString()
+  let dataHistorical = UtilisationHistoricalData.load(idHistorical)
+  if (dataHistorical == null) {
+    dataHistorical = new UtilisationHistoricalData(idHistorical)
+  }
+
+  dataHistorical.circulationSupply = data.circulationSupply
+  dataHistorical.volume = data.volume
+  dataHistorical.txCount = data.txCount
+  dataHistorical.holderCount = data.holderCount
+
+  dataHistorical.blockNumber = data.blockNumber
+  dataHistorical.timestamp = data.timestamp
+  dataHistorical.save()
+}
 
 function isBurn(event: Transfer): boolean {
   return event.params.to.equals(Address.fromString('0x0000000000000000000000000000000000000000'))
@@ -21,32 +41,56 @@ export function handleTransfer(event: Transfer): void {
   const toId = event.params.to.toHexString() + '_' + event.address.toHexString()
   const fromId = event.params.from.toHexString() + '_' + event.address.toHexString()
 
-  let data: AgToken | null
+  let dataUtilisation = UtilisationData.load(stableName)
+  if(dataUtilisation == null){
+    dataUtilisation = new UtilisationData(stableName)
+  }
+
+  let dataToken: AgToken | null
 
   if (!isMint(event)) {
-    data = AgToken.load(fromId)
-    if (data != null) {
-      data.balance = data.balance.minus(event.params.value)
-      if (data.balance.equals(BigInt.fromString('0')) && data.staked.equals(BigInt.fromString('0'))) {
+    dataToken = AgToken.load(fromId)
+    if (dataToken != null) {
+      dataToken.balance = dataToken.balance.minus(event.params.value)
+      if (dataToken.balance.equals(BigInt.fromString('0')) && dataToken.staked.equals(BigInt.fromString('0'))) {
         store.remove('agToken', fromId)
+        dataUtilisation.holderCount = dataUtilisation.holderCount.minus(ONE)
       } else {
-        data.save()
+        dataToken.save()
       }
     }
   }
+  else{
+    dataUtilisation.circulationSupply = dataUtilisation.circulationSupply.plus(event.params.value)
+  }
 
   if (!isBurn(event)) {
-    data = AgToken.load(toId)
-    if (data == null) {
-      data = new AgToken(toId)
-      data.owner = event.params.to.toHexString()
-      data.token = event.address.toHexString()
-      data.stableName = stableName
-      data.balance = event.params.value
-      data.staked = BigInt.fromString('0')
+    dataToken = AgToken.load(toId)
+    if (dataToken == null) {
+      dataToken = new AgToken(toId)
+      dataToken.owner = event.params.to.toHexString()
+      dataToken.token = event.address.toHexString()
+      dataToken.stableName = stableName
+      dataToken.balance = event.params.value
+      dataToken.staked = BigInt.fromString('0')
+      dataUtilisation.holderCount = dataUtilisation.holderCount.plus(ONE)
     } else {
-      data.balance = data.balance.plus(event.params.value)
+      dataToken.balance = dataToken.balance.plus(event.params.value)
     }
-    data.save()
+    dataToken.save()
   }
+  else{
+    dataUtilisation.circulationSupply = dataUtilisation.circulationSupply.minus(event.params.value)
+  }
+
+  dataUtilisation.volume = dataUtilisation.volume.plus(event.params.value)
+
+  const tx = event.transaction.hash.toHexString()
+  if(tx != dataUtilisation._lastTx){
+    dataUtilisation._lastTx = tx
+    dataUtilisation.txCount = dataUtilisation.txCount.plus(ONE)
+  }
+
+  dataUtilisation.save()
+  _addUtilisationDataToHistory(dataUtilisation, event.block)
 }
