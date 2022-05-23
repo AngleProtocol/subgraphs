@@ -155,8 +155,10 @@ type GaugeRewardHistoricalData @entity {
 
 
 type UtilisationData @entity {
-  # agToken ticker
+  # agToken address
   id: ID!
+  # agToken ticker
+  stableName: String!
 
   # Internal variable to avoid tx double counting
   _lastTx: String!
@@ -178,8 +180,10 @@ type UtilisationData @entity {
 }
 
 type UtilisationHistoricalData @entity {
-  # agToken ticker + '_' + timestamp
+  # agToken address + '_' + timestamp
   id: ID!
+  # agToken ticker
+  stableName: String!
 
   # Number of agToken available
   circulationSupply: BigInt!

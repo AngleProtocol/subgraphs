@@ -40,15 +40,19 @@ export function handleTransfer(event: Transfer): void {
 
   const toId = event.params.to.toHexString() + '_' + event.address.toHexString()
   const fromId = event.params.from.toHexString() + '_' + event.address.toHexString()
-
-  let dataUtilisation = UtilisationData.load(stableName)
+  const utilisationId = event.address.toHexString()
+  let dataUtilisation = UtilisationData.load(utilisationId)
   if(dataUtilisation == null){
-    dataUtilisation = new UtilisationData(stableName)
+    dataUtilisation = new UtilisationData(utilisationId)
+    dataUtilisation.stableName = stableName
   }
 
   let dataToken: AgToken | null
 
-  if (!isMint(event)) {
+  if (isMint(event)) {
+    dataUtilisation.circulationSupply = dataUtilisation.circulationSupply.plus(event.params.value)
+  }
+  else{
     dataToken = AgToken.load(fromId)
     if (dataToken != null) {
       dataToken.balance = dataToken.balance.minus(event.params.value)
@@ -60,11 +64,11 @@ export function handleTransfer(event: Transfer): void {
       }
     }
   }
-  else{
-    dataUtilisation.circulationSupply = dataUtilisation.circulationSupply.plus(event.params.value)
-  }
 
-  if (!isBurn(event)) {
+  if (isBurn(event)) {
+    dataUtilisation.circulationSupply = dataUtilisation.circulationSupply.minus(event.params.value)
+  }
+  else{
     dataToken = AgToken.load(toId)
     if (dataToken == null) {
       dataToken = new AgToken(toId)
@@ -79,9 +83,6 @@ export function handleTransfer(event: Transfer): void {
     }
     dataToken.save()
   }
-  else{
-    dataUtilisation.circulationSupply = dataUtilisation.circulationSupply.minus(event.params.value)
-  }
 
   dataUtilisation.volume = dataUtilisation.volume.plus(event.params.value)
 
@@ -91,6 +92,8 @@ export function handleTransfer(event: Transfer): void {
     dataUtilisation.txCount = dataUtilisation.txCount.plus(ONE)
   }
 
+  dataUtilisation.timestamp = event.block.timestamp
+  dataUtilisation.blockNumber = event.block.number
   dataUtilisation.save()
   _addUtilisationDataToHistory(dataUtilisation, event.block)
 }
