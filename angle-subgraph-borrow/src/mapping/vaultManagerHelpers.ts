@@ -181,6 +181,14 @@ export function _initVaultManager(address: Address, block: ethereum.Block): void
   data.profits = BigInt.fromI32(0)
   data.pendingSurplus = BigInt.fromI32(0)
   data.pendingBadDebt = BigInt.fromI32(0)
+  data.liquidationRepayments = BigInt.fromI32(0)
+  // liquidations
+  data.liquidationDebtsRepayed = []
+  data.liquidationDebtsRemoved = []
+  data.liquidationDebtsRemaining = []
+  data.liquidationCollateralsBought = []
+  data.liquidationCollateralsRemaining = []
+  data.liquidationTimestamps = []
 
   data.oracleValue = oracle.read()
   data.totalNormalizedDebt = vaultManager.totalNormalizedDebt()
@@ -233,6 +241,8 @@ export function _addVaultManagerDataToHistory(data: VaultManagerData, block: eth
   dataHistorical.pendingSurplus = data.pendingSurplus
   dataHistorical.pendingBadDebt = data.pendingBadDebt
   dataHistorical.oracleValue = data.oracleValue
+  dataHistorical.liquidationRepayments = data.liquidationRepayments
+  dataHistorical.liquidationCount = BigInt.fromI32(data.liquidationDebtsRepayed.length)
   dataHistorical.totalNormalizedDebt = data.totalNormalizedDebt
   dataHistorical.debtCeiling = data.debtCeiling
   dataHistorical.veBoostProxy = data.veBoostProxy

@@ -21,6 +21,8 @@ import { VaultManagerData,
   DebtUpdate,
   DebtTransfer,
   VaultLiquidation,
+  OracleByTicker,
+  OracleData,
 } from '../../generated/schema'
 import {
   isBurn,
@@ -34,7 +36,7 @@ import {
   _addVaultDataToHistory,
   _getActionId,
 } from './vaultManagerHelpers'
-import { BASE_INTEREST, BASE_PARAMS, MAX_UINT256 } from '../../../constants'
+import { BASE_INTEREST, BASE_PARAMS, BASE_TOKENS, MAX_UINT256 } from '../../../constants'
 import { log } from '@graphprotocol/graph-ts'
 
 const ZERO = BigInt.fromI32(0)
@@ -230,11 +232,12 @@ export function handleInternalDebtUpdated(event: InternalDebtUpdated): void {
         actionLiquidation.txHash = txHash
         actionLiquidation.debtRemoved = debtVariation
         actionLiquidation.liquidatorDiscount = computeLiquidationDiscount(actionLiquidation, dataVault, dataVM)
-        actionLiquidation.liquidatorDeposit = actionLiquidation.collateralBought.times(actionLiquidation.oraclePrice).times(actionLiquidation.liquidatorDiscount!).div(dataVM.collateralBase).div(BASE_PARAMS)
+        actionLiquidation.liquidatorDeposit = actionLiquidation.collateralBought.times(actionLiquidation.oraclePrice).times(BASE_PARAMS.minus(actionLiquidation.liquidatorDiscount!)).div(dataVM.collateralBase).div(BASE_PARAMS)
         actionLiquidation.debtRepayed = actionLiquidation.liquidatorDeposit!.times(dataVM.liquidationSurcharge).div(BASE_PARAMS)
         actionLiquidation.surcharge = actionLiquidation.liquidatorDeposit!.minus(actionLiquidation.debtRepayed!)
         dataVault.fees = dataVault.fees.plus(actionLiquidation.surcharge!)
         dataVM.surplusFromLiquidationSurcharges = dataVM.surplusFromLiquidationSurcharges.plus(actionLiquidation.surcharge!)
+        dataVM.liquidationRepayments = dataVM.liquidationRepayments.plus(actionLiquidation.debtRepayed!)
         // Case where bad debt has been created
         if(dataVault.normalizedDebt.isZero() && dataVault.collateralAmount.isZero()){
           actionLiquidation.badDebt = debtVariation.minus(actionLiquidation.liquidatorDeposit!).plus(actionLiquidation.surcharge!)
@@ -242,6 +245,30 @@ export function handleInternalDebtUpdated(event: InternalDebtUpdated): void {
           actionLiquidation.badDebt = ZERO
         }
         actionLiquidation.save()
+        // Add to liquidations stats
+        const oracleUSD = OracleData.load(OracleByTicker.load(dataVM.agTokenTicker)!.oracle)!.price
+        const debtsRepayed = dataVM.liquidationDebtsRepayed
+        const debtsRemoved = dataVM.liquidationDebtsRemoved
+        const debtsRemaining = dataVM.liquidationDebtsRemaining
+        const collateralsBought = dataVM.liquidationCollateralsBought
+        const collateralsRemaining = dataVM.liquidationCollateralsRemaining
+        const timestamps = dataVM.liquidationTimestamps
+        debtsRepayed.push(actionLiquidation.debtRepayed!.times(oracleUSD).div(BASE_TOKENS))
+        debtsRemoved.push(actionLiquidation.debtRemoved!.times(oracleUSD).div(BASE_TOKENS))
+        let debtRemaining = dataVault.debt.minus(debtVariation)
+        if(debtRemaining.lt(ZERO)) debtRemaining = ZERO
+        debtsRemaining.push(debtRemaining.times(oracleUSD).div(BASE_TOKENS))
+        collateralsBought.push(actionLiquidation.collateralBought.times(dataVM.oracleValue).div(BASE_TOKENS))
+        let collateralRemaining = dataVault.collateralAmount.minus(actionLiquidation.collateralBought)
+        if(collateralRemaining.lt(ZERO)) collateralRemaining = ZERO
+        collateralsRemaining.push(collateralRemaining.times(dataVM.oracleValue).div(BASE_TOKENS))
+        timestamps.push(event.block.timestamp)
+        dataVM.liquidationDebtsRepayed = debtsRepayed
+        dataVM.liquidationDebtsRemoved = debtsRemoved
+        dataVM.liquidationDebtsRemaining = debtsRemaining
+        dataVM.liquidationCollateralsBought = collateralsBought
+        dataVM.liquidationCollateralsRemaining = collateralsRemaining
+        dataVM.liquidationTimestamps = timestamps
       }
     }
     else if(dataOngoingDebtTransfer.dstVaultManager == event.address.toHexString() && dataOngoingDebtTransfer.dstVaultID == event.params.vaultID){

@@ -123,6 +123,22 @@ type VaultManagerData @entity {
   pendingBadDebt: BigInt!
   # Current value of the oracle
   oracleValue: BigInt!
+  # sum of debt repayed by liquidators on the vaults of this manager
+  liquidationRepayments: BigInt!
+
+  ## liquidation data
+  # List of USD amounts of debt repayedthrough liquidation
+  liquidationDebtsRepayed: [BigInt!]!
+  # List of USD amounts of debt removed through liquidation
+  liquidationDebtsRemoved: [BigInt!]!
+  # List of debts remaining in liquidated vault
+  liquidationDebtsRemaining: [BigInt!]!
+  # List of USD amounts of collateral bought through liquidation
+  liquidationCollateralsBought: [BigInt!]!
+  # List of USD amounts of collateral remaining in liquidated vault
+  liquidationCollateralsRemaining: [BigInt!]!
+  # List of liquidation timestamps
+  liquidationTimestamps: [BigInt!]!
 
   ## Governance parameters
   # Maximum debt this VaultManager can handle
@@ -209,6 +225,10 @@ type VaultManagerHistoricalData @entity {
   pendingBadDebt: BigInt!
   # Current value of the oracle
   oracleValue: BigInt!
+  # sum of debt repayed by liquidators on the vaults of this manager
+  liquidationRepayments: BigInt!
+  # total number of liquidation that ever occured to the vaults of this manager
+  liquidationCount: BigInt!
 
   ## Governance parameters
   # Maximum debt this VaultManager can handle
