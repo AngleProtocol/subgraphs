@@ -152,3 +152,55 @@ type GaugeRewardHistoricalData @entity {
   blockNumber: BigInt!
   timestamp: BigInt!
 }
+
+
+type UtilisationData @entity {
+  # agToken address
+  id: ID!
+  # agToken address
+  stablecoin: String!
+  # agToken ticker
+  stableName: String!
+
+  # Internal variable to avoid tx double counting
+  _lastTx: String!
+
+  # Number of agToken available
+  circulationSupply: BigInt!
+  # Total transfer volume
+  volume: BigInt!
+  # Number of transfer transactions for this agToken
+  txCount: BigInt!
+  # Number of different addresses holding a positive balance of this agToken
+  holderCount: BigInt!
+
+  ## Time tracking
+  # BlockNumber of last update
+  blockNumber: BigInt!
+  # Timestamp of last update
+  timestamp: BigInt!
+}
+
+type UtilisationHistoricalData @entity {
+  # agToken address + '_' + timestamp
+  id: ID!
+  # agToken address
+  stablecoin: String!
+  # agToken ticker
+  stableName: String!
+
+  # Number of agToken available
+  circulationSupply: BigInt!
+  # Total transfer volume
+  volume: BigInt!
+  # Number of transfer transactions for this agToken
+  txCount: BigInt!
+  # Number of different addresses holding a positive balance of this agToken
+  holderCount: BigInt!
+
+  ## Time tracking
+  # BlockNumber of last update, modulo 30 minutes worth of blocks
+  blockNumber: BigInt!
+  # Timestamp of last update, modulo 30 minutes
+  timestamp: BigInt!
+}
