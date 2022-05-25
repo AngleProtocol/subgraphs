@@ -13,6 +13,8 @@ function _addUtilisationDataToHistory(data: UtilisationData, block: ethereum.Blo
     dataHistorical = new UtilisationHistoricalData(idHistorical)
   }
 
+  dataHistorical.stablecoin = data.stablecoin
+  dataHistorical.stableName = data.stableName
   dataHistorical.circulationSupply = data.circulationSupply
   dataHistorical.volume = data.volume
   dataHistorical.txCount = data.txCount
@@ -44,6 +46,7 @@ export function handleTransfer(event: Transfer): void {
   let dataUtilisation = UtilisationData.load(utilisationId)
   if(dataUtilisation == null){
     dataUtilisation = new UtilisationData(utilisationId)
+    dataUtilisation.stablecoin = event.address.toHexString()
     dataUtilisation.stableName = stableName
   }
 

@@ -157,6 +157,8 @@ type GaugeRewardHistoricalData @entity {
 type UtilisationData @entity {
   # agToken address
   id: ID!
+  # agToken address
+  stablecoin: String!
   # agToken ticker
   stableName: String!
 
@@ -182,6 +184,8 @@ type UtilisationData @entity {
 type UtilisationHistoricalData @entity {
   # agToken address + '_' + timestamp
   id: ID!
+  # agToken address
+  stablecoin: String!
   # agToken ticker
   stableName: String!
 
