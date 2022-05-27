@@ -110,6 +110,38 @@ type PoolData @entity {
   keeperFeesLiquidationRatio: BigInt
   # maintenance margin
   maintenanceMargin: BigInt
+  # Thresholds mint fee array
+  xFeeMint: [BigInt!]!
+  # Values mint fees array
+  yFeeMint: [BigInt!]!
+  # Thresholds burn fee array
+  xFeeBurn: [BigInt!]!
+  # Values burn fees array
+  yFeeBurn: [BigInt!]!
+  # Thresholds deposit HA fee array
+  xHAFeesDeposit: [BigInt!]!
+  # Values deposit HA fees array
+  yHAFeesDeposit: [BigInt!]!
+  # Thresholds withdraw HA fee array
+  xHAFeesWithdraw: [BigInt!]!
+  # Values withdraw HA fees array
+  yHAFeesWithdraw: [BigInt!]!
+  # Thresholds Bonus/Malus mint array
+  xBonusMalusMint: [BigInt!]!
+  # Values Bonus/Malus mint array
+  yBonusMalusMint: [BigInt!]!
+  # Thresholds Bonus/Malus burn array
+  xBonusMalusBurn: [BigInt!]!
+  # Values Bonus/Malus burn array
+  yBonusMalusBurn: [BigInt!]!
+  # Thresholds slippage array
+  xSlippage: [BigInt!]!
+  # Values slippage array
+  ySlippage: [BigInt!]!
+  # Thresholds slippage on fees array
+  xSlippageFee: [BigInt!]!
+  # Values slippage on fees  array
+  ySlippageFee: [BigInt!]!
   # BlockNumber of last update
   blockNumber: BigInt
   # Timestamp of last update

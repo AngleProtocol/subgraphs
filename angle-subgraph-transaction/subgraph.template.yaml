@@ -119,6 +119,8 @@ templates:
           handler: handlePause
         - event: Unpaused(bytes32)
           handler: handleUnpause
+        - event: FeeArrayUpdated(indexed address,uint64[],uint64[],uint8)
+          handler: handleUserFeeUpdate
       file: ./src/mapping/stableMaster.ts
   - kind: ethereum/contract
     name: PerpetualManagerFrontTemplate
@@ -165,6 +167,8 @@ templates:
           handler: handlePausePerp
         - event: Transfer(indexed address,indexed address,indexed uint256)
           handler: handleTransfer
+        - event: HAFeesUpdated(uint64[],uint64[],uint8)
+          handler: handleHAFeesUpdated
       file: ./src/mapping/perpetualManager.ts
   - kind: ethereum/contract
     name: ERCManagerFrontTemplate
@@ -239,3 +243,31 @@ templates:
         - event: Transfer(indexed address,indexed address,uint256)
           handler: handleTransfer
       file: ./src/mapping/staking.ts
+  - kind: ethereum/contract
+    name: FeeManagerTemplate
+    network: {{network}}
+    source:
+      abi: FeeManager
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - PoolData
+      abis:
+        - name: StableMaster
+          file: ../abis/StableMasterFront.json
+        - name: FeeManager
+          file: ../abis/FeeManager.json
+        - name: PerpetualManagerFront
+          file: ../abis/PerpetualManagerFront.json
+      eventHandlers:
+        - event: FeeMintUpdated(uint256[],uint64[])
+          handler: handleFeeMintUpdated
+        - event: FeeBurnUpdated(uint256[],uint64[])
+          handler: handleFeeBurnUpdated
+        - event: SlippageUpdated(uint256[],uint64[])
+          handler: handleSlippageUpdated
+        - event: SlippageFeeUpdated(uint256[],uint64[])
+          handler: handleSlippageFeeUpdated
+      file: ./src/mapping/feeManager.ts

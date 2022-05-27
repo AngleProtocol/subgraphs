@@ -8,7 +8,10 @@ import {
   Transfer
 } from '../../generated/templates/PerpetualManagerFrontTemplate/PerpetualManagerFront'
 import { PoolManager } from '../../generated/templates/StableMasterTemplate/PoolManager'
-import { PerpetualManagerFront } from '../../generated/templates/StableMasterTemplate/PerpetualManagerFront'
+import {
+  HAFeesUpdated,
+  PerpetualManagerFront
+} from '../../generated/templates/StableMasterTemplate/PerpetualManagerFront'
 import { ERC20 } from '../../generated/templates/PerpetualManagerFrontTemplate/ERC20'
 import { StableMaster } from '../../generated/templates/StableMasterTemplate/StableMaster'
 import { Perpetual, PerpetualOpen, PerpetualUpdate, PoolData, PauseData, PerpetualClose } from '../../generated/schema'
@@ -299,5 +302,21 @@ export function handlePausePerp(event: ethereum.Event): void {
 
   data.pauseData = id
 
+  data.save()
+}
+
+export function handleHAFeesUpdated(event: HAFeesUpdated): void {
+  // Bind contracts
+  const perpetualManager = PerpetualManagerFront.bind(Address.fromString(event.address.toHexString()))
+  let inputPool = perpetualManager.poolManager().toHexString()
+
+  let data = PoolData.load(inputPool)!
+  if (event.params.deposit > 0) {
+    data.xHAFeesDeposit = event.params._xHAFees
+    data.yHAFeesDeposit = event.params._yHAFees
+  } else {
+    data.xHAFeesWithdraw = event.params._xHAFees
+    data.yHAFeesWithdraw = event.params._yHAFees
+  }
   data.save()
 }
