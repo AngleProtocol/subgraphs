@@ -5,7 +5,7 @@ import { SanToken } from '../../generated/templates/StableMasterTemplate/SanToke
 import { AgToken as AgTokenContract } from '../../generated/templates/StableMasterTemplate/AgToken'
 import { PoolManager } from '../../generated/templates/StableMasterTemplate/PoolManager'
 import { PerpetualManagerFront } from '../../generated/templates/StableMasterTemplate/PerpetualManagerFront'
-import { Oracle } from '../../generated/templates/StableMasterTemplate/Oracle'
+import { Oracle, Oracle__readAllResult } from '../../generated/templates/StableMasterTemplate/Oracle'
 import { PoolData, StableData, StableHistoricalData, PoolHistoricalData, Perpetual } from '../../generated/schema'
 import { BASE_PARAMS, BLOCK_UPDATE_POOL_MANAGER_ESTIMATED_APR, ROUND_COEFF } from '../../../constants'
 // import { StableMaster__collateralMapResultFeeDataStruct } from '../../generated/Core/StableMaster'
@@ -237,7 +237,16 @@ export function _updatePoolData(
 
   data.totalMargin = totalMargin
 
-  const rates = oracle.readAll()
+  const resultRates = oracle.try_readAll()
+  let rates: Oracle__readAllResult
+  if (resultRates.reverted) {
+    const rateLower = data.rateLower ? data.rateLower : BigInt.fromString('0')
+    const rateUpper = data.rateUpper ? data.rateUpper : BigInt.fromString('0')
+    rates = new Oracle__readAllResult(rateLower!, rateUpper!)
+  } else {
+    rates = resultRates.value
+  }
+
   data.rateLower = rates.value0
   data.rateUpper = rates.value1
 
@@ -260,7 +269,6 @@ export function _updatePoolData(
   data.maintenanceMargin = maintenanceMargin
 
   data.blockNumber = block.number
-
   data.timestamp = block.timestamp
 
   let dataHistorical = PoolHistoricalData.load(idHistorical)

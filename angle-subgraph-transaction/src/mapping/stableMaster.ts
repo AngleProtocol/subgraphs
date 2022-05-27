@@ -5,13 +5,14 @@ import {
   StableMaster,
   CollateralDeployed,
   MintedStablecoins,
-  BurntStablecoins
+  BurntStablecoins,
+  FeeArrayUpdated
 } from '../../generated/templates/StableMasterTemplate/StableMaster'
 import { ERC20 } from '../../generated/templates/StableMasterTemplate/ERC20'
 import { PoolManager } from '../../generated/templates/StableMasterTemplate/PoolManager'
 import { AgToken as AgTokenContract } from '../../generated/templates/StableMasterTemplate/AgToken'
 import { PerpetualManagerFront } from '../../generated/templates/StableMasterTemplate/PerpetualManagerFront'
-import { PerpetualManagerFrontTemplate, SanTokenTemplate } from '../../generated/templates'
+import { FeeManagerTemplate, PerpetualManagerFrontTemplate, SanTokenTemplate } from '../../generated/templates'
 import { PauseData, PoolData, Contracts, Mint, Burn } from '../../generated/schema'
 
 import { updateStableData, _getBurnFee, _getMintFee, _updateGainPoolData, _updatePoolData } from './utils'
@@ -46,6 +47,9 @@ export function handleCollateralDeployed(event: CollateralDeployed): void {
   const stableMaster = StableMaster.bind(poolManager.stableMaster())
   const collatData = stableMaster.collateralMap(poolManager._address)
   const perpetualManager = PerpetualManagerFront.bind(collatData.value2)
+
+  const feeManager = poolManager.feeManager()
+  FeeManagerTemplate.create(feeManager)
 
   const data = _updatePoolData(poolManager, block)
 
@@ -240,4 +244,18 @@ export function handleBurn(event: BurntStablecoins): void {
   burnData.stableName = stableName
 
   burnData.save()
+}
+
+export function handleUserFeeUpdate(event: FeeArrayUpdated): void {
+  // Bind contracts
+  let inputPool = event.params._poolManager.toHexString()
+  let data = PoolData.load(inputPool)!
+  if (event.params._type > 0) {
+    data.xFeeMint = event.params._xFee
+    data.yFeeMint = event.params._yFee
+  } else {
+    data.xFeeBurn = event.params._xFee
+    data.yFeeBurn = event.params._yFee
+  }
+  data.save()
 }

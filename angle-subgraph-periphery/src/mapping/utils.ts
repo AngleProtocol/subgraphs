@@ -2,7 +2,7 @@ import { ethereum, BigInt } from '@graphprotocol/graph-ts'
 import { StableMaster } from '../../generated/templates/StableMasterTemplate/StableMaster'
 import { ERC20 } from '../../generated/templates/StableMasterTemplate/ERC20'
 import { PoolManager } from '../../generated/templates/StableMasterTemplate/PoolManager'
-import { Oracle } from '../../generated/templates/StableMasterTemplate/Oracle'
+import { Oracle, Oracle__readAllResult } from '../../generated/templates/StableMasterTemplate/Oracle'
 import { OracleAPRHistoricalData, OracleData } from '../../generated/schema'
 import { BASE_PARAMS, BLOCK_UPDATE_POOL_MANAGER_ESTIMATED_APR, ROUND_COEFF } from '../../../constants'
 
@@ -23,7 +23,7 @@ export function updateOracleData(poolManager: PoolManager, block: ethereum.Block
   const oracle = Oracle.bind(collatData.value3)
   const stableName = agToken.symbol()
   const collatName = token.symbol()
-  const rates = oracle.readAll()
+  const resultRates = oracle.try_readAll()
   const result = poolManager.try_interestsForSurplus()
   let apr: BigInt
   if (result.reverted || block.number.gt(BLOCK_UPDATE_POOL_MANAGER_ESTIMATED_APR)) {
@@ -44,6 +44,12 @@ export function updateOracleData(poolManager: PoolManager, block: ethereum.Block
   let data = OracleData.load(id)
   if (data == null) {
     data = new OracleData(id)
+  }
+  let rates: Oracle__readAllResult
+  if (resultRates.reverted) {
+    rates = new Oracle__readAllResult(data.rateLower, data.rateUpper)
+  } else {
+    rates = resultRates.value
   }
 
   data.oracle = oracle._address.toHexString()
