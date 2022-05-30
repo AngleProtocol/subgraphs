@@ -224,6 +224,8 @@ export function _addVaultManagerDataToHistory(data: VaultManagerData, block: eth
   dataHistorical.collateral = data.collateral
   dataHistorical.collateralBase = data.collateralBase
   dataHistorical.dust = data.dust
+  dataHistorical.agTokenTicker = data.agTokenTicker
+  dataHistorical.collateralTicker = data.collateralTicker
   dataHistorical.treasury = data.treasury
   dataHistorical.collateralAmount = data.collateralAmount
   dataHistorical.interestAccumulator = data.interestAccumulator
