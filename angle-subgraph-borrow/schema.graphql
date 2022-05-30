@@ -185,6 +185,10 @@ type VaultManagerHistoricalData @entity {
   collateralBase: BigInt!
   # Minimum debt of a healthy vault
   dust: BigInt!
+  # Ticker of agToken target (e.g: EUR)
+  agTokenTicker: String!
+  # Ticker of collateral (e.g: ETH)
+  collateralTicker: String!
 
   ## State
   # Address of treasury
