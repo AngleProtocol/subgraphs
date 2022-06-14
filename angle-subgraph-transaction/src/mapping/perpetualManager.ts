@@ -189,12 +189,16 @@ export function handleForceClose(event: PerpetualsForceClosed): void {
 
   const fees = _getForceCloseFees(perpetualManager, hedgeRatio, totalCloseFee)
 
-  _updateGainPoolData(
-    poolManager,
-    event.block,
-    fees[0].plus(totalProtocolLiquidationFee),
-    fees[1].plus(totalKeeperLiquidationFee)
+  if (
+    fees[0].plus(totalProtocolLiquidationFee).gt(BigInt.fromString('0')) ||
+    fees[1].plus(totalKeeperLiquidationFee).gt(BigInt.fromString('0'))
   )
+    _updateGainPoolData(
+      poolManager,
+      event.block,
+      fees[0].plus(totalProtocolLiquidationFee),
+      fees[1].plus(totalKeeperLiquidationFee)
+    )
 }
 
 export function handleLiquidatePerpetuals(event: KeeperTransferred): void {
@@ -206,7 +210,8 @@ export function handleLiquidatePerpetuals(event: KeeperTransferred): void {
     .times(BASE_PARAMS.minus(keeperFeesLiquidationRatio))
     .div(keeperFeesLiquidationRatio)
 
-  _updateGainPoolData(poolManager, event.block, approxProtocolLiquidateFee, event.params.liquidationFees)
+  if (approxProtocolLiquidateFee.gt(BigInt.fromString('0')) || event.params.liquidationFees.gt(BigInt.fromString('0')))
+    _updateGainPoolData(poolManager, event.block, approxProtocolLiquidateFee, event.params.liquidationFees)
 }
 
 export function handleTransfer(event: Transfer): void {
