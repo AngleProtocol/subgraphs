@@ -70,7 +70,7 @@ export function handleSurplusManagerUpdated(event: SurplusManagerUpdated): void 
 }
 
 export function handleVaultManagerToggled(event: VaultManagerToggled): void {
-  log.warning('++++ VaultManagerToggled', [])
+  log.warning('++++ VaultManagerToggled:{}', [event.params.vaultManager.toHexString()])
 
   let dataTreasury = TreasuryData.load(event.address.toHexString())!
   dataTreasury.timestamp = event.block.timestamp
@@ -83,7 +83,7 @@ export function handleVaultManagerToggled(event: VaultManagerToggled): void {
     _initVaultManager(event.params.vaultManager, event.block)
 
     // Add new VM to the VM list
-    const listVM = VaultManagerList.load("1")!
+    const listVM = VaultManagerList.load('1')!
     let vaultManagers = listVM.vaultManagers
     vaultManagers.push(event.params.vaultManager.toHexString())
     listVM.vaultManagers = vaultManagers

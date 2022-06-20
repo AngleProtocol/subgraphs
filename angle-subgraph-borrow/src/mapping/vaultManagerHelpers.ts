@@ -3,12 +3,18 @@ import { ERC20 } from '../../generated/templates/VaultManagerTemplate/ERC20'
 import { VaultManager, Transfer } from '../../generated/templates/VaultManagerTemplate/VaultManager'
 import { Oracle } from '../../generated/templates/VaultManagerTemplate/Oracle'
 import { VaultManagerTemplate } from '../../generated/templates'
-import { VaultManagerData, VaultManagerHistoricalData, VaultData, VaultHistoricalData, VaultLiquidation, OracleByTicker, OracleData, } from '../../generated/schema'
+import {
+  VaultManagerData,
+  VaultManagerHistoricalData,
+  VaultData,
+  VaultHistoricalData,
+  VaultLiquidation,
+  OracleByTicker,
+  OracleData
+} from '../../generated/schema'
 import { historicalSlice, parseOracleDescription } from './utils'
 import { BASE_PARAMS, BASE_TOKENS, BASE_INTEREST, MAX_UINT256 } from '../../../constants'
-import {
-  VeBoostProxy
-} from '../../generated/templates/VaultManagerTemplate/VeBoostProxy'
+import { VeBoostProxy } from '../../generated/templates/VaultManagerTemplate/VeBoostProxy'
 import { ActionCounter } from '../../generated/schema'
 
 import { log } from '@graphprotocol/graph-ts'
@@ -16,33 +22,40 @@ import { log } from '@graphprotocol/graph-ts'
 const ZERO = BigInt.fromI32(0)
 const ONE = BigInt.fromI32(1)
 
-export function computeLiquidationDiscount(dataLiquidation: VaultLiquidation, dataVault: VaultData, dataVM: VaultManagerData): BigInt {
-  let liquidationBoost: BigInt;
+export function computeLiquidationDiscount(
+  dataLiquidation: VaultLiquidation,
+  dataVault: VaultData,
+  dataVM: VaultManagerData
+): BigInt {
+  let liquidationBoost: BigInt
   const x = dataVM.xLiquidationBoost
   const y = dataVM.yLiquidationBoost
-  if(dataVM.veBoostProxy == "0x0000000000000000000000000000000000000000"){
+  if (dataVM.veBoostProxy == '0x0000000000000000000000000000000000000000') {
     liquidationBoost = y[0]
-  }
-  else{
+  } else {
     const veBoostProxy = VeBoostProxy.bind(Address.fromString(dataVM.veBoostProxy))
     const adjustedBalance = veBoostProxy.adjusted_balance_of(Address.fromString(dataLiquidation.txOrigin))
 
-    if (adjustedBalance >= x[1]){
+    if (adjustedBalance >= x[1]) {
       liquidationBoost = y[1]
-    }
-    else if(adjustedBalance <= x[0]){
+    } else if (adjustedBalance <= x[0]) {
       liquidationBoost = y[0]
-    }
-    else{
+    } else {
       liquidationBoost = y[0].plus(y[1].minus(y[0]).times(adjustedBalance.minus(x[0]))).div(x[1].minus(x[0]))
     }
   }
 
   const collateralBeforeLiquidation = dataLiquidation.collateralBought.plus(dataVault.collateralAmount)
   // log.warning(" === {} {} {} {} {}", [collateralBeforeLiquidation.toString(), dataVM.collateralBase.toString(), dataLiquidation.oraclePrice.toString(), dataVault.debt.toString(), dataVM.collateralFactor.toString()])
-  const healthFactor = computeHealthFactor(collateralBeforeLiquidation, dataVM.collateralBase, dataLiquidation.oraclePrice, dataVault.debt, dataVM.collateralFactor)
+  const healthFactor = computeHealthFactor(
+    collateralBeforeLiquidation,
+    dataVM.collateralBase,
+    dataLiquidation.oraclePrice,
+    dataVault.debt,
+    dataVM.collateralFactor
+  )
   let liquidationDiscount = liquidationBoost.times(BASE_PARAMS.minus(healthFactor)).div(BASE_PARAMS)
-  if(liquidationDiscount.gt(dataVM.maxLiquidationDiscount)){
+  if (liquidationDiscount.gt(dataVM.maxLiquidationDiscount)) {
     liquidationDiscount = dataVM.maxLiquidationDiscount
   }
   return liquidationDiscount
@@ -108,11 +121,7 @@ export function computeHealthFactor(
 }
 
 // Computes USD value of a collateral amount
-export function computeTVL(
-  collateralAmount: BigInt,
-  collateralBase: BigInt,
-  collateralTicker: string
-): BigInt {
+export function computeTVL(collateralAmount: BigInt, collateralBase: BigInt, collateralTicker: string): BigInt {
   const collateralPriceUSD = OracleData.load(OracleByTicker.load(collateralTicker)!.oracle)!.price
   return collateralAmount.times(collateralPriceUSD).div(collateralBase)
 }
@@ -144,8 +153,7 @@ export function _initVaultManager(address: Address, block: ethereum.Block): void
   const vaultManager = VaultManager.bind(address)
   const collateralContract = ERC20.bind(vaultManager.collateral())
   const oracle = Oracle.bind(vaultManager.oracle())
-  const tokens = parseOracleDescription(oracle.description(), true)
-
+  const tokens = parseOracleDescription(oracle.DESCRIPTION(), true)
 
   log.warning('+++++ New VaultManager: {}', [address.toHexString()])
   // Start indexing and tracking new contracts
@@ -287,27 +295,27 @@ export function _addVaultDataToHistory(data: VaultData, block: ethereum.Block): 
 // Helper to get an ID for actions that could happen more than once in a single Tx and can't be distinguished from each other
 // e.g: borrowing the same amount on the same vault
 // To avoid this issue, we count the actions of each vulnerable category in a given transaction and build a unique ID from txHash + counter
-export function _getActionId(action: string, txHash: string, timestamp: BigInt): string{
-  let actionCounter = ActionCounter.load("1")
-  if(actionCounter == null){
-    actionCounter = new ActionCounter("1")
-  } else if(actionCounter.timestamp != timestamp || actionCounter.txHash != txHash){
+export function _getActionId(action: string, txHash: string, timestamp: BigInt): string {
+  let actionCounter = ActionCounter.load('1')
+  if (actionCounter == null) {
+    actionCounter = new ActionCounter('1')
+  } else if (actionCounter.timestamp != timestamp || actionCounter.txHash != txHash) {
     // overwrite previous actionCounter if we're in a different block or in a different transaction
     actionCounter.timestamp = timestamp
     actionCounter.txHash = txHash
     actionCounter.collateralUpdate = ZERO
     actionCounter.debtUpdate = ZERO
     actionCounter.debtTransfer = ZERO
-    actionCounter.vaultTransfer  = ZERO
+    actionCounter.vaultTransfer = ZERO
   }
-  let counter: BigInt;
-  if(action === "collateralUpdate"){
+  let counter: BigInt
+  if (action === 'collateralUpdate') {
     counter = actionCounter.collateralUpdate = actionCounter.collateralUpdate.plus(ONE)
-  } else if(action === "debtUpdate"){
+  } else if (action === 'debtUpdate') {
     counter = actionCounter.debtUpdate = actionCounter.debtUpdate.plus(ONE)
-  } else if(action === "debtTransfer"){
+  } else if (action === 'debtTransfer') {
     counter = actionCounter.debtTransfer = actionCounter.debtTransfer.plus(ONE)
-  } else if(action === "vaultTransfer"){
+  } else if (action === 'vaultTransfer') {
     counter = actionCounter.vaultTransfer = actionCounter.vaultTransfer.plus(ONE)
   } else {
     log.error('Unknown action', [])
