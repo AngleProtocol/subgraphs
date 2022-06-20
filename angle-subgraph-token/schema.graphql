@@ -153,7 +153,6 @@ type GaugeRewardHistoricalData @entity {
   timestamp: BigInt!
 }
 
-
 type UtilisationData @entity {
   # agToken address
   id: ID!

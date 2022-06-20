@@ -31,26 +31,30 @@ export function handleAnswerUpdated(event: AnswerUpdated): void {
     const dataOracleByTicker = new OracleByTicker(dataOracle.tokenTicker)
     dataOracleByTicker.oracle = dataOracle.id
     dataOracleByTicker.save()
-  }
-  else{
+  } else {
     dataOracle.price = event.params.current
     dataOracle.save()
 
     // Browse all vault managers concerned by the price change
-    const listVM = VaultManagerList.load("1")!
+    const listVM = VaultManagerList.load('1')!
     for (let i = 0; i < listVM.vaultManagers.length; i++) {
       const dataVM = VaultManagerData.load(listVM.vaultManagers[i])!
       // Check if fast sync is applicable at this block and if this VM is concerned by price change
       // The following call is computing intensive when there is a large amount of vaults
-      if((FAST_SYNC_THRESHOLD.lt(event.block.timestamp) || event.block.timestamp.minus(dataVM.timestamp).gt(FAST_SYNC_TIME_INTERVAL)) && dataVM.collateralTicker == dataOracle.tokenTicker || dataVM.agTokenTicker == dataOracle.tokenTicker){
+      if (
+        ((FAST_SYNC_THRESHOLD.lt(event.block.timestamp) ||
+          event.block.timestamp.minus(dataVM.timestamp).gt(FAST_SYNC_TIME_INTERVAL)) &&
+          dataVM.collateralTicker == dataOracle.tokenTicker) ||
+        dataVM.agTokenTicker == dataOracle.tokenTicker
+      ) {
         const collateralOracle = OracleByTicker.load(dataVM.collateralTicker)
         const agTokenOracle = OracleByTicker.load(dataVM.agTokenTicker)
-        if(collateralOracle == null || agTokenOracle == null){
+        if (collateralOracle == null || agTokenOracle == null) {
           continue
         }
         const currentOracleValue = getCollateralPriceInAgToken(collateralOracle, agTokenOracle)
         // update vaults only if the oracle value has actually moved
-        if(currentOracleValue.notEqual(dataVM.oracleValue)){
+        if (currentOracleValue.notEqual(dataVM.oracleValue)) {
           updateVaults(event.block, currentOracleValue, dataVM)
         }
       }
@@ -58,7 +62,10 @@ export function handleAnswerUpdated(event: AnswerUpdated): void {
   }
 }
 
-function getCollateralPriceInAgToken(collateralOracleByTicker: OracleByTicker, agTokenOracleByTicker: OracleByTicker): BigInt {
+function getCollateralPriceInAgToken(
+  collateralOracleByTicker: OracleByTicker,
+  agTokenOracleByTicker: OracleByTicker
+): BigInt {
   const collateralPriceInUSD = OracleData.load(collateralOracleByTicker.oracle)!.price
   // log.warning('=== colateral value in USD {}', [collateralPriceInUSD.toString()])
   const agTokenPriceInUSD = OracleData.load(agTokenOracleByTicker.oracle)!.price
@@ -74,7 +81,7 @@ function updateVaults(block: ethereum.Block, newOracleValue: BigInt, dataVM: Vau
     const idVault = dataVM.vaultManager.toString() + '_' + i.toString()
     const dataVault = VaultData.load(idVault)!
     // let's skip burned vaults
-    if(dataVault.isActive){
+    if (dataVault.isActive) {
       const previousDebt = dataVault.debt
       // update debt with interests
       dataVault.debt = computeDebt(

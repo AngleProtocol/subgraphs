@@ -290,7 +290,7 @@ type VaultData @entity {
   # Vault's health factor (in base 1e9)
   healthFactor: BigInt
   # sum of all fees (borrow, repay, interests, liquidation) accrued by this vault
-  fees: BigInt !
+  fees: BigInt!
 
   ## Time tracking
   # BlockNumber of last update
@@ -323,7 +323,7 @@ type VaultHistoricalData @entity {
   # Vault's health factor (in base 1e9)
   healthFactor: BigInt
   # sum of all fees (borrow, repay, interests, liquidation) accrued by this vault
-  fees: BigInt !
+  fees: BigInt!
 
   ## Time tracking
   # BlockNumber of last update
@@ -369,7 +369,6 @@ type OracleData @entity {
   # Price reported by oracle
   price: BigInt!
 }
-
 
 ## These entities are used to track transactions related to vaults
 
@@ -538,5 +537,16 @@ type VaultLiquidation @entity {
   # BlockNumber of last update
   blockNumber: BigInt!
   # Timestamp of last update
+  timestamp: BigInt!
+}
+
+type FlashLoanData @entity {
+  # Address of the stablecoin flash loaned + receiver + amount +hashTx (this is not enough to express multiple flashLoan in same tx)
+  id: ID!
+  stablecoin: String!
+  amount: BigInt
+  receiver: String!
+  # Block Number of last update
+  blockNumber: BigInt!
   timestamp: BigInt!
 }
