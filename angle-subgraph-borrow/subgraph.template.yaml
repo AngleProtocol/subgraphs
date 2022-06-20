@@ -113,6 +113,26 @@ dataSources:
         - event: MinterToggled(indexed address)
           handler: handleMinterToggled
       file: ./src/mapping/agToken.ts
+  - kind: ethereum/contract
+    name: FlashAngle
+    network: {{network}}
+    source:
+      address: '{{flashAngle}}'
+      abi: FlashAngle
+      startBlock: {{block_ageur}}
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - FlashLoanData
+      abis:
+        - name: FlashAngle
+          file: ../abis/FlashAngle.json
+      eventHandlers:
+        - event: FlashLoan(indexed address,uint256,indexed address)
+          handler: handleFlashLoan
+      file: ./src/mapping/flashAngle.ts
 templates:
   # - kind: ethereum/contract
   #     name: AgTokenTemplate
