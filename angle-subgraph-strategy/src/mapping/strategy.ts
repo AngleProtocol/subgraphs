@@ -1,8 +1,8 @@
-import { ethereum, BigInt } from '@graphprotocol/graph-ts'
+import { ethereum, BigInt, store } from '@graphprotocol/graph-ts'
 import { PoolManager } from '../../generated/templates/StableMasterTemplate/PoolManager'
 import { ERC20 } from '../../generated/templates/StrategyTemplate/ERC20'
 import { Lender } from '../../generated/templates/StrategyTemplate/Lender'
-import { Strategy } from '../../generated/templates/StrategyTemplate/Strategy'
+import { RemoveLender, Strategy } from '../../generated/templates/StrategyTemplate/Strategy'
 import { StableMaster } from '../../generated/templates/StrategyTemplate/StableMaster'
 import { StrategyData, StrategyHistoricalData, LenderData } from '../../generated/schema'
 import { historicalSlice } from './utils'
@@ -84,4 +84,8 @@ export function handleHarvest(event: ethereum.Event): void {
       data.save()
     }
   }
+}
+
+export function handleLenderRemoved(event: RemoveLender): void {
+  store.remove('LenderData', event.params.lender.toHexString())
 }
