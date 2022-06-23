@@ -18,11 +18,13 @@ export function handleAnswerUpdated(event: AnswerUpdated): void {
   if (dataOracle == null) {
     const feed = ChainlinkFeed.bind(event.address)
     const tokens = parseOracleDescription(feed.description(), false)
+    const decimals = BigInt.fromI32(feed.decimals())
 
     dataOracle = new OracleData(event.address.toHexString())
     // here we assume that Chainlink always put the non-USD token first
     dataOracle.tokenTicker = tokens[0]
     dataOracle.price = event.params.current
+    dataOracle.decimals = decimals
     dataOracle.save()
 
     log.warning('=== new Oracle: {} {}', [tokens[0], tokens[1]])
