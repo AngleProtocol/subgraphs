@@ -48,6 +48,7 @@ export function handleCollateralDeployed(event: CollateralDeployed): void {
 
   data.save()
 }
+
 export function handlePause(event: Paused): void {
   const pausing = changetype<Bytes>(crypto.keccak256(ByteArray.fromUTF8('pause(bytes32,address)')).subarray(0, 4))
   const header = changetype<Bytes>(event.transaction.input.subarray(0, 4))

@@ -125,6 +125,8 @@ export function handleLiquidatePerpetuals(event: KeeperTransferred): void {
   keeperData.save()
 }
 
+/// @dev This event will always be handle before any other event on a perpetual
+/// The chronology is core to track any close/liquidation/force close.
 export function handleTransfer(event: Transfer): void {
   const PerpetualManager = PerpetualManagerFront.bind(event.address)
   const poolManager = PoolManager.bind(PerpetualManager.poolManager())

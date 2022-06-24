@@ -6,6 +6,7 @@ import {
 import { FeeDistribution, FeesEarned, WeeklyDistribution } from '../../generated/schema'
 import { WEEK } from '../../../constants'
 
+/// @notice Keeps track of all revenue earned by a veANGLE owner since genesis
 export function handleClaim(event: Claimed): void {
   const feeDistributor = FeeDistributor.bind(event.address)
   const rewardToken = feeDistributor.token().toHexString()
@@ -25,6 +26,8 @@ export function handleClaim(event: Claimed): void {
   data.save()
 }
 
+/// @notice It will fill all weeks revenue distribution since genesis by
+/// tracking the event CheckpointToken
 export function handleCheckpoint(event: CheckpointToken): void {
   let feeDistributionData = FeeDistribution.load(event.address.toHexString())!
   const feeDistributor = FeeDistributor.bind(event.address)

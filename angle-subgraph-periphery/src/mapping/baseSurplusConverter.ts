@@ -5,6 +5,8 @@ import { FeeDistributorUpdated } from '../../generated/templates/BaseSurplusConv
 import { FeeDistributor } from '../../generated/templates/BaseSurplusConverterTemplate/FeeDistributor'
 import { ERC20 } from '../../generated/templates/BaseSurplusConverterTemplate/ERC20'
 
+/// @notice Function triggered when a new fee distributor is set up
+/// It will have the role to distribute revenue to veANGLE owners
 export function handleUpdateFeeDistributor(event: FeeDistributorUpdated): void {
   const newFeeDistributorAddress = event.params.newFeeDistributor
   const feeDistributor = FeeDistributor.bind(newFeeDistributorAddress)

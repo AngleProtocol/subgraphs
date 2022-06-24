@@ -6,6 +6,7 @@ import { Oracle, Oracle__readAllResult } from '../../generated/templates/StableM
 import { OracleAPRHistoricalData, OracleData } from '../../generated/schema'
 import { BASE_PARAMS, BLOCK_UPDATE_POOL_MANAGER_ESTIMATED_APR, ROUND_COEFF } from '../../../constants'
 
+/// @notice Useful to store historical data every ROUND_COEFF in UTC
 export function historicalSlice(block: ethereum.Block, roundCoeff: BigInt = ROUND_COEFF): BigInt {
   const timestamp = block.timestamp
   // we round to the closest hour
@@ -15,6 +16,7 @@ export function historicalSlice(block: ethereum.Block, roundCoeff: BigInt = ROUN
   return hourStartTimestamp
 }
 
+/// @notice Update a pool manager oracle datas and APR
 export function updateOracleData(poolManager: PoolManager, block: ethereum.Block): void {
   const stableMaster = StableMaster.bind(poolManager.stableMaster())
   const token = ERC20.bind(poolManager.token())
