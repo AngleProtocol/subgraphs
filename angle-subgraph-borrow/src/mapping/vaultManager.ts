@@ -13,7 +13,8 @@ import {
   DebtTransferred
 } from '../../generated/templates/VaultManagerTemplate/VaultManager'
 import { Oracle } from '../../generated/templates/VaultManagerTemplate/Oracle'
-import { VaultManagerData,
+import {
+  VaultManagerData,
   VaultData,
   OngoingDebtTransfer,
   VaultTransfer,
@@ -22,7 +23,7 @@ import { VaultManagerData,
   DebtTransfer,
   VaultLiquidation,
   OracleByTicker,
-  OracleData,
+  OracleData
 } from '../../generated/schema'
 import {
   isBurn,
@@ -34,7 +35,7 @@ import {
   _initVaultManager,
   _addVaultManagerDataToHistory,
   _addVaultDataToHistory,
-  _getActionId,
+  _getActionId
 } from './vaultManagerHelpers'
 import { BASE_INTEREST, BASE_PARAMS, BASE_TOKENS, MAX_UINT256 } from '../../../constants'
 import { log } from '@graphprotocol/graph-ts'
@@ -64,7 +65,7 @@ export function handleCollateralAmountUpdated(event: CollateralAmountUpdated): v
   const oracle = Oracle.bind(vaultManager.oracle())
   const idVM = event.address.toHexString()
   const idVault = idVM + '_' + event.params.vaultID.toString()
-  const actionID = _getActionId("collateralUpdate", txHash, event.block.timestamp)
+  const actionID = _getActionId('collateralUpdate', txHash, event.block.timestamp)
   const dataVM = VaultManagerData.load(idVM)!
   const dataVault = VaultData.load(idVault)!
   const action = new CollateralUpdate(actionID)
@@ -119,7 +120,12 @@ export function handleInterestAccumulatorUpdated(event: InterestAccumulatorUpdat
   let data = VaultManagerData.load(event.address.toHexString())!
 
   // add new interests earned
-  data.surplusFromInterests = data.surplusFromInterests.plus(event.params.value.minus(data.interestAccumulator).times(data.totalNormalizedDebt).div(BASE_INTEREST))
+  data.surplusFromInterests = data.surplusFromInterests.plus(
+    event.params.value
+      .minus(data.interestAccumulator)
+      .times(data.totalNormalizedDebt)
+      .div(BASE_INTEREST)
+  )
 
   data.interestAccumulator = event.params.value
   data.lastInterestAccumulatorUpdated = event.block.timestamp
@@ -157,14 +163,14 @@ export function handleInternalDebtUpdated(event: InternalDebtUpdated): void {
     dataVM.totalNormalizedDebt = dataVM.totalNormalizedDebt.plus(event.params.internalAmount)
     dataVM.totalDebt = dataVM.totalDebt.plus(debtVariation)
     dataVault.normalizedDebt = dataVault.normalizedDebt.plus(event.params.internalAmount)
-    if(dataOngoingDebtTransfer == null){
+    if (dataOngoingDebtTransfer == null) {
       // General case: compute borrow fee and add it to VM surplus
       const borrowFee = debtVariation.times(dataVM.borrowFee).div(BASE_PARAMS)
       dataVault.fees = dataVault.fees.plus(borrowFee)
       dataVM.surplusFromBorrowFees = dataVM.surplusFromBorrowFees.plus(borrowFee)
 
       // save action
-      const idDebtUpdate = _getActionId("debtUpdate", txHash, event.block.timestamp)
+      const idDebtUpdate = _getActionId('debtUpdate', txHash, event.block.timestamp)
       const actionDebtUpdate = new DebtUpdate(idDebtUpdate)
       actionDebtUpdate.txHash = txHash
       actionDebtUpdate.vaultManager = dataVM.vaultManager
@@ -177,23 +183,26 @@ export function handleInternalDebtUpdated(event: InternalDebtUpdated): void {
       actionDebtUpdate.timestamp = event.block.timestamp
       actionDebtUpdate.blockNumber = event.block.number
       actionDebtUpdate.save()
-    }
-    else if(dataOngoingDebtTransfer.srcVaultManager == event.address.toHexString() && dataOngoingDebtTransfer.srcVaultID == event.params.vaultID){
+    } else if (
+      dataOngoingDebtTransfer.srcVaultManager == event.address.toHexString() &&
+      dataOngoingDebtTransfer.srcVaultID == event.params.vaultID
+    ) {
       // Debt transfer case, on srcVault:
-      if(dataOngoingDebtTransfer.srcVaultManager != dataOngoingDebtTransfer.dstVaultManager){
+      if (dataOngoingDebtTransfer.srcVaultManager != dataOngoingDebtTransfer.dstVaultManager) {
         // compute difference in borrow fee and add it to VM surplus if positive
         const dataDstVM = VaultManagerData.load(dataOngoingDebtTransfer.dstVaultManager)!
-        if(dataVM.borrowFee.gt(dataDstVM.borrowFee)){
-          const ongoingdebttransferBorrowFee = dataVM.borrowFee.minus(dataDstVM.borrowFee).times(debtVariation).div(BASE_PARAMS)
+        if (dataVM.borrowFee.gt(dataDstVM.borrowFee)) {
+          const ongoingdebttransferBorrowFee = dataVM.borrowFee
+            .minus(dataDstVM.borrowFee)
+            .times(debtVariation)
+            .div(BASE_PARAMS)
           dataVault.fees = dataVault.fees.plus(ongoingdebttransferBorrowFee)
           dataVM.surplusFromBorrowFees = dataVM.surplusFromBorrowFees.plus(ongoingdebttransferBorrowFee)
         }
-      }
-      else{
+      } else {
         // don't do anything, no borrow fees are charged when transferring debt under the same vaultManager
       }
-    }
-    else{
+    } else {
       log.error("InternalDebtUpdated (increase) event doesn't match DebtTransferred record !", [])
     }
   } else {
@@ -202,7 +211,7 @@ export function handleInternalDebtUpdated(event: InternalDebtUpdated): void {
     dataVM.totalDebt = dataVM.totalDebt.minus(debtVariation)
     dataVault.normalizedDebt = dataVault.normalizedDebt.minus(event.params.internalAmount)
 
-    if(dataOngoingDebtTransfer == null){
+    if (dataOngoingDebtTransfer == null) {
       // Check if this debt decrease is caused by a liquidation
       const idLiquidation = idVault + '_' + event.block.timestamp.toString()
       let actionLiquidation = VaultLiquidation.load(idLiquidation)
@@ -213,7 +222,7 @@ export function handleInternalDebtUpdated(event: InternalDebtUpdated): void {
         dataVM.surplusFromRepayFees = dataVM.surplusFromRepayFees.plus(repayFee)
 
         // save action
-        const idDebtUpdate = _getActionId("debtUpdate", txHash, event.block.timestamp)
+        const idDebtUpdate = _getActionId('debtUpdate', txHash, event.block.timestamp)
         const actionDebtUpdate = new DebtUpdate(idDebtUpdate)
         actionDebtUpdate.txHash = txHash
         actionDebtUpdate.vaultManager = dataVM.vaultManager
@@ -226,22 +235,31 @@ export function handleInternalDebtUpdated(event: InternalDebtUpdated): void {
         actionDebtUpdate.timestamp = event.block.timestamp
         actionDebtUpdate.blockNumber = event.block.number
         actionDebtUpdate.save()
-      }
-      else{
+      } else {
         // Liquidation case:
         actionLiquidation.txHash = txHash
         actionLiquidation.debtRemoved = debtVariation
         actionLiquidation.liquidatorDiscount = computeLiquidationDiscount(actionLiquidation, dataVault, dataVM)
-        actionLiquidation.liquidatorDeposit = actionLiquidation.collateralBought.times(actionLiquidation.oraclePrice).times(BASE_PARAMS.minus(actionLiquidation.liquidatorDiscount!)).div(dataVM.collateralBase).div(BASE_PARAMS)
-        actionLiquidation.debtRepayed = actionLiquidation.liquidatorDeposit!.times(dataVM.liquidationSurcharge).div(BASE_PARAMS)
+        actionLiquidation.liquidatorDeposit = actionLiquidation.collateralBought
+          .times(actionLiquidation.oraclePrice)
+          .times(BASE_PARAMS.minus(actionLiquidation.liquidatorDiscount!))
+          .div(dataVM.collateralBase)
+          .div(BASE_PARAMS)
+        actionLiquidation.debtRepayed = actionLiquidation
+          .liquidatorDeposit!.times(dataVM.liquidationSurcharge)
+          .div(BASE_PARAMS)
         actionLiquidation.surcharge = actionLiquidation.liquidatorDeposit!.minus(actionLiquidation.debtRepayed!)
         dataVault.fees = dataVault.fees.plus(actionLiquidation.surcharge!)
-        dataVM.surplusFromLiquidationSurcharges = dataVM.surplusFromLiquidationSurcharges.plus(actionLiquidation.surcharge!)
+        dataVM.surplusFromLiquidationSurcharges = dataVM.surplusFromLiquidationSurcharges.plus(
+          actionLiquidation.surcharge!
+        )
         dataVM.liquidationRepayments = dataVM.liquidationRepayments.plus(actionLiquidation.debtRepayed!)
         // Case where bad debt has been created
-        if(dataVault.normalizedDebt.isZero() && dataVault.collateralAmount.isZero()){
-          actionLiquidation.badDebt = debtVariation.minus(actionLiquidation.liquidatorDeposit!).plus(actionLiquidation.surcharge!)
-        } else{
+        if (dataVault.normalizedDebt.isZero() && dataVault.collateralAmount.isZero()) {
+          actionLiquidation.badDebt = debtVariation
+            .minus(actionLiquidation.liquidatorDeposit!)
+            .plus(actionLiquidation.surcharge!)
+        } else {
           actionLiquidation.badDebt = ZERO
         }
         actionLiquidation.save()
@@ -256,12 +274,25 @@ export function handleInternalDebtUpdated(event: InternalDebtUpdated): void {
         debtsRepayed.push(actionLiquidation.debtRepayed!.times(oracleUSD).div(BASE_TOKENS))
         debtsRemoved.push(actionLiquidation.debtRemoved!.times(oracleUSD).div(BASE_TOKENS))
         let debtRemaining = dataVault.debt.minus(debtVariation)
-        if(debtRemaining.lt(ZERO)) debtRemaining = ZERO
+        if (debtRemaining.lt(ZERO)) debtRemaining = ZERO
         debtsRemaining.push(debtRemaining.times(oracleUSD).div(BASE_TOKENS))
-        collateralsBought.push(actionLiquidation.collateralBought.times(dataVM.oracleValue).div(BASE_TOKENS))
-        let collateralRemaining = dataVault.collateralAmount.minus(actionLiquidation.collateralBought)
-        if(collateralRemaining.lt(ZERO)) collateralRemaining = ZERO
-        collateralsRemaining.push(collateralRemaining.times(dataVM.oracleValue).div(BASE_TOKENS))
+        collateralsBought.push(
+          actionLiquidation.collateralBought
+            .times(oracleUSD)
+            .div(dataVM.collateralBase)
+            .times(dataVM.oracleValue)
+            .div(BASE_TOKENS)
+        )
+
+        let collateralRemaining = dataVault.collateralAmount
+        if (collateralRemaining.lt(ZERO)) collateralRemaining = ZERO
+        collateralsRemaining.push(
+          collateralRemaining
+            .times(oracleUSD)
+            .div(dataVM.collateralBase)
+            .times(dataVM.oracleValue)
+            .div(BASE_TOKENS)
+        )
         timestamps.push(event.block.timestamp)
         dataVM.liquidationDebtsRepayed = debtsRepayed
         dataVM.liquidationDebtsRemoved = debtsRemoved
@@ -270,25 +301,28 @@ export function handleInternalDebtUpdated(event: InternalDebtUpdated): void {
         dataVM.liquidationCollateralsRemaining = collateralsRemaining
         dataVM.liquidationTimestamps = timestamps
       }
-    }
-    else if(dataOngoingDebtTransfer.dstVaultManager == event.address.toHexString() && dataOngoingDebtTransfer.dstVaultID == event.params.vaultID){
+    } else if (
+      dataOngoingDebtTransfer.dstVaultManager == event.address.toHexString() &&
+      dataOngoingDebtTransfer.dstVaultID == event.params.vaultID
+    ) {
       // Debt transfer case, on dstVault:
-      if(dataOngoingDebtTransfer.srcVaultManager != dataOngoingDebtTransfer.dstVaultManager){
+      if (dataOngoingDebtTransfer.srcVaultManager != dataOngoingDebtTransfer.dstVaultManager) {
         // compute difference in repay fee and add it to VM surplus if positive
         const dataSrcVM = VaultManagerData.load(dataOngoingDebtTransfer.srcVaultManager)!
-        if(dataVM.repayFee.gt(dataSrcVM.repayFee)){
-          const ongoingdebttransferRepayFee = dataVM.repayFee.minus(dataSrcVM.repayFee).times(debtVariation).div(BASE_PARAMS)
+        if (dataVM.repayFee.gt(dataSrcVM.repayFee)) {
+          const ongoingdebttransferRepayFee = dataVM.repayFee
+            .minus(dataSrcVM.repayFee)
+            .times(debtVariation)
+            .div(BASE_PARAMS)
           dataVM.surplusFromRepayFees = dataVM.surplusFromRepayFees.plus(ongoingdebttransferRepayFee)
           dataVault.fees = dataVault.fees.plus(ongoingdebttransferRepayFee)
         }
-      }
-      else{
-         // don't do anything, no repay fees are charged when transferring debt under the same vaultManager
+      } else {
+        // don't do anything, no repay fees are charged when transferring debt under the same vaultManager
       }
       // End of life for OngoingDebtTransfer entity: DebtTransferred -> InternalDebtUpdated (increase) -> InternalDebtUpdated (decrease) -> EoL
       store.remove('OngoingDebtTransfer', idOngoingDebtTransfer)
-    }
-    else{
+    } else {
       log.error("InternalDebtUpdated (decrease) event doesn't match DebtTransferred record !", [])
     }
   }
@@ -355,8 +389,7 @@ export function handleFiledUint64(event: FiledUint64): void {
     data.liquidationSurcharge = paramValue
   } else if (paramName == 'MLD') {
     data.maxLiquidationDiscount = paramValue
-  }
-  else{
+  } else {
     log.error('++++ Unknown parameter {}: {}', [paramName, paramValue.toString()])
   }
 
@@ -450,8 +483,8 @@ export function handleTransfer(event: Transfer): void {
     _addVaultManagerDataToHistory(dataVM, event.block)
 
     // save repayDebt and removeCollateral actions
-    if(!normalizedDebtRemoved.isZero()) {
-      const actionDebtUpdate = new DebtUpdate(_getActionId("debtUpdate", txHash, event.block.timestamp))
+    if (!normalizedDebtRemoved.isZero()) {
+      const actionDebtUpdate = new DebtUpdate(_getActionId('debtUpdate', txHash, event.block.timestamp))
       actionDebtUpdate.txHash = txHash
       actionDebtUpdate.vaultManager = dataVM.vaultManager
       actionDebtUpdate.vaultID = dataVault.vaultID
@@ -471,8 +504,10 @@ export function handleTransfer(event: Transfer): void {
       actionDebtUpdate.save()
     }
 
-    if(!collateralRemoved.isZero()) {
-      const actionCollateralUpdate = new CollateralUpdate(_getActionId("collateralUpdate", txHash, event.block.timestamp))
+    if (!collateralRemoved.isZero()) {
+      const actionCollateralUpdate = new CollateralUpdate(
+        _getActionId('collateralUpdate', txHash, event.block.timestamp)
+      )
       actionCollateralUpdate.txHash = txHash
       actionCollateralUpdate.vaultManager = dataVM.vaultManager
       actionCollateralUpdate.vaultID = dataVault.vaultID
@@ -495,7 +530,7 @@ export function handleTransfer(event: Transfer): void {
   _addVaultDataToHistory(dataVault, event.block)
 
   // save action
-  const idVaultTransfer = _getActionId("vaultTransfer", txHash, event.block.timestamp)
+  const idVaultTransfer = _getActionId('vaultTransfer', txHash, event.block.timestamp)
   const action = new VaultTransfer(idVaultTransfer)
   action.txHash = txHash
   action.vaultManager = dataVault.vaultManager
@@ -567,9 +602,9 @@ export function handleDebtTransferred(event: DebtTransferred): void {
   log.warning('++++ DebtTransferred', [])
   const txHash = event.transaction.hash.toHexString()
   const idOngoingDebtTransferred = event.block.timestamp.toString()
-  const idDebtTransfer = _getActionId("debtTransfer", txHash, event.block.timestamp)
+  const idDebtTransfer = _getActionId('debtTransfer', txHash, event.block.timestamp)
   let data = OngoingDebtTransfer.load(idOngoingDebtTransferred)
-  if(data == null){
+  if (data == null) {
     data = new OngoingDebtTransfer(idOngoingDebtTransferred)
   }
   data.srcVaultID = event.params.srcVaultID

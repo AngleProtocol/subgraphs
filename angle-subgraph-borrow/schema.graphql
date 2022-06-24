@@ -368,6 +368,8 @@ type OracleData @entity {
   tokenTicker: String!
   # Price reported by oracle
   price: BigInt!
+  # Decimal used by the Chainlink oracle
+  decimals: BigInt!
 }
 
 ## These entities are used to track transactions related to vaults
