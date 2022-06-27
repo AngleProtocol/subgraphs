@@ -20,8 +20,6 @@ type StableHistoricalData @entity {
   id: ID!
   # Name of the stable asset
   name: String!
-  # tvl
-  tvl: BigInt!
   # Collateral Ratio
   collatRatio: BigInt!
   # Total assets minted

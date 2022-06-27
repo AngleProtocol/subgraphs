@@ -51,10 +51,8 @@ export function updateStableData(stableMaster: StableMaster, block: ethereum.Blo
     dataHistoricalHour = new StableHistoricalData(idHistorical)
     dataHistoricalHour.name = name
     if (!resultCollatRatio.reverted) {
-      dataHistoricalHour.tvl = resultCollatRatio.value.times(totalMinted)
       dataHistoricalHour.collatRatio = resultCollatRatio.value
     } else {
-      dataHistoricalHour.tvl = data.collatRatio.times(totalMinted)
       dataHistoricalHour.collatRatio = data.collatRatio
     }
     dataHistoricalHour.totalMinted = totalMinted
@@ -64,10 +62,8 @@ export function updateStableData(stableMaster: StableMaster, block: ethereum.Blo
     // for the moment we just update with the last value in the hour but we could easier takes the first in the hour
     // or takes the mean (by adding a field to the struct to track the nuber of points so far) or more advanced metrics
     if (!resultCollatRatio.reverted) {
-      dataHistoricalHour.tvl = resultCollatRatio.value.times(totalMinted)
       dataHistoricalHour.collatRatio = resultCollatRatio.value
     } else {
-      dataHistoricalHour.tvl = data.collatRatio.times(totalMinted)
       dataHistoricalHour.collatRatio = data.collatRatio
     }
     dataHistoricalHour.totalMinted = totalMinted
