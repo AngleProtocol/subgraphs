@@ -4,7 +4,11 @@ import {
   FeeDistributor
 } from '../../generated/templates/FeeDistributorTemplate/FeeDistributor'
 import { FeeDistribution, FeesEarned, WeeklyDistribution } from '../../generated/schema'
-import { WEEK } from '../../../constants'
+import { BASE_TOKENS, WEEK } from '../../../constants'
+import { SanToken } from '../../generated/templates/SanTokenTemplate/SanToken'
+import { Address } from '@graphprotocol/graph-ts'
+import { PoolManager } from '../../generated/templates/ERCManagerFrontTemplate/PoolManager'
+import { StableMaster } from '../../generated/Core/StableMaster'
 
 /// @notice Keeps track of all revenue earned by a veANGLE owner since genesis
 export function handleClaim(event: Claimed): void {
@@ -55,7 +59,16 @@ export function handleCheckpoint(event: CheckpointToken): void {
       data.week = curWeek
     }
 
-    data.distributed = feeDistributor.tokens_per_week(curWeek)
+    const sanToken = SanToken.bind(Address.fromString(feeDistributionData.tokenName))
+    const poolManagerAddress = sanToken.poolManager()
+    const poolManager = PoolManager.bind(poolManagerAddress)
+    const stableMaster = StableMaster.bind(poolManager.stableMaster())
+    const resultPool = stableMaster.collateralMap(poolManagerAddress)
+
+    data.distributed = feeDistributor
+      .tokens_per_week(curWeek)
+      .times(resultPool.value5)
+      .div(BASE_TOKENS)
 
     data.save()
     curWeek = curWeek.plus(WEEK)
