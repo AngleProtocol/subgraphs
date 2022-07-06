@@ -3,6 +3,7 @@ import { Transfer } from '../../generated/Angle/ERC20Votes'
 import { ANGLE, ANGLEHistorical } from '../../generated/schema'
 import { historicalSlice } from './utils'
 
+// @notice Track balances of all ANGLE holders
 export function handleTransfer(event: Transfer): void {
   const fromId = event.params.from.toHexString()
   const toId = event.params.to.toHexString()

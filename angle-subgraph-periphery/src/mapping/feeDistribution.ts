@@ -59,7 +59,7 @@ export function handleCheckpoint(event: CheckpointToken): void {
       data.week = curWeek
     }
 
-    const sanToken = SanToken.bind(Address.fromString(feeDistributionData.tokenName))
+    const sanToken = SanToken.bind(Address.fromString(feeDistributionData.token))
     const poolManagerAddress = sanToken.poolManager()
     const poolManager = PoolManager.bind(poolManagerAddress)
     const stableMaster = StableMaster.bind(poolManager.stableMaster())

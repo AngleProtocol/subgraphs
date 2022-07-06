@@ -229,6 +229,10 @@ export function handleUpdatePerpStaking(event: ethereum.Event): void {
   dataHistorical.save()
 }
 
+// @notice Handles tracking tokens balances in case of staking
+// @dev We first need to figure what type of tokens it is: agTokens, sanTokens, others.
+// @dev Then special cases arise, there has been 2 migration from GUni pools to another ones
+// @dev We need to look at both contract addresses, which explains the hardcoded addresses
 export function handleStaked(token: Address, event: Transfer): void {
   const tokenDataId = event.params._to.toHexString() + '_' + token.toHexString()
 
