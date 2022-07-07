@@ -44,7 +44,7 @@ export function handleTransfer(event: Transfer): void {
   const fromId = event.params.from.toHexString() + '_' + event.address.toHexString()
   const utilisationId = event.address.toHexString()
   let dataUtilisation = UtilisationData.load(utilisationId)
-  if(dataUtilisation == null){
+  if (dataUtilisation == null) {
     dataUtilisation = new UtilisationData(utilisationId)
     dataUtilisation.stablecoin = event.address.toHexString()
     dataUtilisation.stableName = stableName
@@ -54,8 +54,7 @@ export function handleTransfer(event: Transfer): void {
 
   if (isMint(event)) {
     dataUtilisation.circulationSupply = dataUtilisation.circulationSupply.plus(event.params.value)
-  }
-  else{
+  } else {
     dataToken = AgToken.load(fromId)
     if (dataToken != null) {
       dataToken.balance = dataToken.balance.minus(event.params.value)
@@ -70,8 +69,7 @@ export function handleTransfer(event: Transfer): void {
 
   if (isBurn(event)) {
     dataUtilisation.circulationSupply = dataUtilisation.circulationSupply.minus(event.params.value)
-  }
-  else{
+  } else {
     dataToken = AgToken.load(toId)
     if (dataToken == null) {
       dataToken = new AgToken(toId)
@@ -90,7 +88,7 @@ export function handleTransfer(event: Transfer): void {
   dataUtilisation.volume = dataUtilisation.volume.plus(event.params.value)
 
   const tx = event.transaction.hash.toHexString()
-  if(tx != dataUtilisation._lastTx){
+  if (tx != dataUtilisation._lastTx) {
     dataUtilisation._lastTx = tx
     dataUtilisation.txCount = dataUtilisation.txCount.plus(ONE)
   }

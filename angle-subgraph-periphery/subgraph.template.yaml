@@ -290,6 +290,12 @@ templates:
       abis:
         - name: FeeDistributor
           file: ../abis/FeeDistribution.json
+        - name: SanToken
+          file: ../abis/SanToken.json
+        - name: StableMaster
+          file: ../abis/StableMasterFront.json
+        - name: PoolManager
+          file: ../abis/PoolManager.json
       eventHandlers:
         - event: Claimed(indexed address,uint256,uint256,uint256)
           handler: handleClaim

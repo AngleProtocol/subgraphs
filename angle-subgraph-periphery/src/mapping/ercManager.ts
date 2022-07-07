@@ -6,6 +6,9 @@ import { FeeDistributor } from '../../generated/templates/ERCManagerFrontTemplat
 import { SurplusConverterUpdated } from '../../generated/templates/ERCManagerFrontTemplate/PoolManager'
 import { ERC20 } from '../../generated/templates/ERCManagerFrontTemplate/ERC20'
 
+/// @notice Function triggered when a new surplus converter is added
+/// It links pool managers to the fee distributor
+/// @dev It also have the responsibility to create the initial fee distributor entity
 export function handleUpdateSurplusConverter(event: SurplusConverterUpdated): void {
   // Start indexing and tracking new contracts
   BaseSurplusConverterTemplate.create(event.params.newSurplusConverter)

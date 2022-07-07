@@ -4,6 +4,7 @@ import { lockedANGLE, lockedANGLEHistorical, veANGLEData, veANGLEHistorical } fr
 import { Deposit, Withdraw, veANGLE } from '../../generated/veAngle/veANGLE'
 import { historicalSlice } from './utils'
 
+// @notice Tracking of veANGLE balances
 export function handleDeposit(event: Deposit): void {
   const veANGLEAddress = event.address.toHexString()
   const veANGLEContract = veANGLE.bind(event.address)

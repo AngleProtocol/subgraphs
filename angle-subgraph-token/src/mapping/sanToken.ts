@@ -16,6 +16,7 @@ function isMint(event: Transfer): boolean {
   return event.params.from.equals(Address.fromString('0x0000000000000000000000000000000000000000'))
 }
 
+// @notice Track balances and earned interest of sanToken holders
 export function handleTransfer(event: Transfer): void {
   // Do nothing if the transfer is void
   if (event.params.value.equals(BigInt.fromString('0'))) return

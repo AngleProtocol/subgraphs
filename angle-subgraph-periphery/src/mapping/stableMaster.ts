@@ -11,6 +11,9 @@ import { updateOracleData } from './utils'
 import { Address, Bytes } from '@graphprotocol/graph-ts'
 import { ERCManagerFrontTemplate } from '../../../angle-subgraph-strategy/generated/templates'
 
+// This file is not used to track any user action, but to keep track of oracle values and aprs
+// Whenever someone interacts with the protocol all periphery values linked to the pool manager are updated
+
 export function handleCollateralDeployed(event: CollateralDeployed): void {
   // Start indexing and tracking new contracts
   PerpetualManagerFrontTemplate.create(event.params._perpetualManager)

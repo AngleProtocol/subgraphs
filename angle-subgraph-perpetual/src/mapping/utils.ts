@@ -45,7 +45,6 @@ export function updateStableData(stableMaster: StableMaster, block: ethereum.Blo
   if (dataHistoricalHour == null) {
     dataHistoricalHour = new StableHistoricalData(idHistorical)
     dataHistoricalHour.name = name
-    dataHistoricalHour.tvl = collatRatio.times(totalMinted)
     dataHistoricalHour.collatRatio = collatRatio
     dataHistoricalHour.totalMinted = totalMinted
     dataHistoricalHour.blockNumber = block.number
@@ -53,7 +52,6 @@ export function updateStableData(stableMaster: StableMaster, block: ethereum.Blo
   } else {
     // for the moment we just update with the last value in the hour but we could easier takes the first in the hour
     // or takes the mean (by adding a field to the struct to track the nuber of points so far) or more advanced metrics
-    dataHistoricalHour.tvl = collatRatio.times(totalMinted)
     dataHistoricalHour.collatRatio = collatRatio
     dataHistoricalHour.totalMinted = totalMinted
     dataHistoricalHour.timestamp = block.timestamp

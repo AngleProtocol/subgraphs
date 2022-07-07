@@ -7,6 +7,10 @@ import { StableMaster } from '../../generated/templates/StrategyTemplate/StableM
 import { StrategyData, StrategyHistoricalData, LenderData } from '../../generated/schema'
 import { historicalSlice } from './utils'
 
+/// @dev Harvest events are used to uodate APRs of the strategy and the lenders (if any)
+/// @dev Most strategies won't have any lenders
+/// @dev Handler is well suited for current strategies, if a new strategy is added
+/// this function could be broken
 export function handleHarvest(event: ethereum.Event): void {
   const strategy = Strategy.bind(event.address)
   const poolManager = PoolManager.bind(strategy.poolManager())
