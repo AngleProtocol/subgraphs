@@ -24,5 +24,6 @@ export const WEEK = BigInt.fromString('7').times(BigInt.fromString('86400'))
 export const FAST_SYNC_THRESHOLD = BigInt.fromString('0')
 // 3 hours minimal interval between vault refresh (see above)
 export const FAST_SYNC_TIME_INTERVAL = BigInt.fromString('10800')
+export const ORACLE_SYNC_TIME_INTERVAL = BigInt.fromString('3600')
 
 export const BLOCK_UPDATE_POOL_MANAGER_ESTIMATED_APR = BigInt.fromString('14665999')

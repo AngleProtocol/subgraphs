@@ -370,6 +370,8 @@ type OracleData @entity {
   price: BigInt!
   # Decimal used by the Chainlink oracle
   decimals: BigInt!
+  # Timestamp of current block
+  timestamp: BigInt!
 }
 
 ## These entities are used to track transactions related to vaults

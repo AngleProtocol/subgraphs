@@ -10,7 +10,12 @@ import {
 } from './vaultManagerHelpers'
 import { log, Address, ethereum, BigInt } from '@graphprotocol/graph-ts'
 import { parseOracleDescription } from './utils'
-import { BASE_TOKENS, FAST_SYNC_THRESHOLD, FAST_SYNC_TIME_INTERVAL } from '../../../constants'
+import {
+  BASE_TOKENS,
+  FAST_SYNC_THRESHOLD,
+  FAST_SYNC_TIME_INTERVAL,
+  ORACLE_SYNC_TIME_INTERVAL
+} from '../../../constants'
 
 // Handler used to periodically refresh Oracles and Vault's HF/debt
 export function handleAnswerUpdated(event: AnswerUpdated): void {
@@ -25,6 +30,7 @@ export function handleAnswerUpdated(event: AnswerUpdated): void {
     dataOracle.tokenTicker = tokens[0]
     dataOracle.price = event.params.current
     dataOracle.decimals = decimals
+    dataOracle.timestamp = event.block.timestamp
     dataOracle.save()
 
     log.warning('=== new Oracle: {} {}', [tokens[0], tokens[1]])
@@ -33,21 +39,25 @@ export function handleAnswerUpdated(event: AnswerUpdated): void {
     const dataOracleByTicker = new OracleByTicker(dataOracle.tokenTicker)
     dataOracleByTicker.oracle = dataOracle.id
     dataOracleByTicker.save()
+    // mostly used for high frequency block blockchain
+  } else if (event.block.timestamp.minus(dataOracle.timestamp).lt(ORACLE_SYNC_TIME_INTERVAL)) {
+    return
   } else {
     dataOracle.price = event.params.current
+    dataOracle.timestamp = event.block.timestamp
     dataOracle.save()
 
     // Browse all vault managers concerned by the price change
-    const listVM = VaultManagerList.load('1')!
+    const listVM = VaultManagerList.load('1')
+    if (listVM == null) return
     for (let i = 0; i < listVM.vaultManagers.length; i++) {
       const dataVM = VaultManagerData.load(listVM.vaultManagers[i])!
       // Check if fast sync is applicable at this block and if this VM is concerned by price change
       // The following call is computing intensive when there is a large amount of vaults
       if (
-        ((FAST_SYNC_THRESHOLD.lt(event.block.timestamp) ||
-          event.block.timestamp.minus(dataVM.timestamp).gt(FAST_SYNC_TIME_INTERVAL)) &&
-          dataVM.collateralTicker == dataOracle.tokenTicker) ||
-        dataVM.agTokenTicker == dataOracle.tokenTicker
+        FAST_SYNC_THRESHOLD.lt(event.block.timestamp) &&
+        event.block.timestamp.minus(dataVM.timestamp).gt(FAST_SYNC_TIME_INTERVAL) &&
+        (dataVM.collateralTicker == dataOracle.tokenTicker || dataVM.agTokenTicker == dataOracle.tokenTicker)
       ) {
         const collateralOracle = OracleByTicker.load(dataVM.collateralTicker)
         const agTokenOracle = OracleByTicker.load(dataVM.agTokenTicker)
