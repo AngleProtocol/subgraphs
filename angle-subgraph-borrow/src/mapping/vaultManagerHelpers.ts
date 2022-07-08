@@ -122,6 +122,8 @@ export function computeHealthFactor(
 
 // Computes USD value of a collateral amount
 export function computeTVL(collateralAmount: BigInt, collateralBase: BigInt, collateralTicker: string): BigInt {
+  log.warning('=== computeTVL: ticker {}', [collateralTicker.toString()])
+  log.warning('=== computeTVL: oracle {}', [OracleByTicker.load(collateralTicker)!.oracle.toString()])
   const collateralPriceUSD = OracleData.load(OracleByTicker.load(collateralTicker)!.oracle)!.price
   return collateralAmount.times(collateralPriceUSD).div(collateralBase)
 }

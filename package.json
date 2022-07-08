@@ -10,6 +10,7 @@
     "deploy:token": "cd angle-subgraph-token && yarn deploy",
     "deploy:transaction": "cd angle-subgraph-transaction && yarn deploy",
     "deploy:all": "yarn deploy:periphery && yarn deploy:perpetual && yarn deploy:strategy && yarn deploy:token && yarn deploy:transaction && yarn deploy:borrow",
+    "deploy:polygon:borrow": "cd angle-subgraph-borrow && yarn deploy:polygon",
     "deploy:rinkeby:periphery": "cd angle-subgraph-periphery && yarn deploy:rinkeby",
     "deploy:rinkeby:perpetual": "cd angle-subgraph-perpetual && yarn deploy:rinkeby",
     "deploy:rinkeby:strategy": "cd angle-subgraph-strategy && yarn deploy:rinkeby",
