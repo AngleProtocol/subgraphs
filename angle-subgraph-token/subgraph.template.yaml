@@ -91,29 +91,29 @@ dataSources:
         - event: VoteForGauge(uint256,address,address,uint256)
           handler: handleGaugeVote
       file: ./src/mapping/gaugeController.ts
-  - kind: ethereum/contract
-    # agEUR has been deployed in a standalone fashion on polygon, so we have to hardcode it here
-    name: AgEUR
-    network: {{network}}
-    source:
-      address: '{{ageur}}'
-      abi: AgToken
-      startBlock: {{block_ageur}}
-    mapping:
-      kind: ethereum/events
-      apiVersion: 0.0.5
-      language: wasm/assemblyscript
-      entities:
-        - AgToken
-      abis:
-        - name: AgToken
-          file: ../abis/AgToken.json
-        - name: ERC20
-          file: ../abis/ERC20.json
-      eventHandlers:
-        - event: Transfer(indexed address,indexed address,uint256)
-          handler: handleTransfer
-      file: ./src/mapping/agToken.ts
+  # - kind: ethereum/contract
+  #   # agEUR has been deployed in a standalone fashion on polygon, so we have to hardcode it here
+  #   name: AgEUR
+  #   network: {{network}}
+  #   source:
+  #     address: '{{ageur}}'
+  #     abi: AgToken
+  #     startBlock: {{block_ageur}}
+  #   mapping:
+  #     kind: ethereum/events
+  #     apiVersion: 0.0.5
+  #     language: wasm/assemblyscript
+  #     entities:
+  #       - AgToken
+  #     abis:
+  #       - name: AgToken
+  #         file: ../abis/AgToken.json
+  #       - name: ERC20
+  #         file: ../abis/ERC20.json
+  #     eventHandlers:
+  #       - event: Transfer(indexed address,indexed address,uint256)
+  #         handler: handleTransfer
+  #     file: ./src/mapping/agToken.ts
 templates:
   - kind: ethereum/contract
     name: AgTokenTemplate
