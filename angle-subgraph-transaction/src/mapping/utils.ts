@@ -275,40 +275,40 @@ export function _updatePoolData(
     dataHistorical.stableMaster = stableMasterAddress
     dataHistorical.stableName = stableName
     dataHistorical.collatName = collatName
-    dataHistorical.totalAsset = totalAsset
-    dataHistorical.availableAsset = availableAsset
-    dataHistorical.stockUser = stockUser
-    dataHistorical.stockSLP = stockSLP
-    dataHistorical.sanRate = sanRate
-    dataHistorical.lastBlockUpdated = lastBlockUpadted
-    dataHistorical.lockedInterests = lockedInterests
-    dataHistorical.maxInterestsDistributed = maxInterestsDistributed
-    dataHistorical.totalProtocolFees = data.totalProtocolFees
-    dataHistorical.totalKeeperFees = data.totalKeeperFees
-    dataHistorical.totalSLPFees = data.totalSLPFees
-    dataHistorical.totalProtocolInterests = data.totalProtocolInterests
-    dataHistorical.totalSLPInterests = data.totalSLPInterests
-    dataHistorical.feesAside = feesAside
-    dataHistorical.feesForSLPs = feesForSLPs
-    dataHistorical.interestsForSurplus = interestsForSurplus
-    dataHistorical.interestsForSLPs = interestsForSLPs
-    dataHistorical.totalHedgeAmount = totalHedgeAmount
-    dataHistorical.totalMargin = totalMargin
-    dataHistorical.rateLower = rates.value0
-    dataHistorical.rateUpper = rates.value1
-    dataHistorical.targetHAHedge = targetHAHedge
-    dataHistorical.keeperFeesLiquidationCap = keeperFeesLiquidationCap
-    dataHistorical.limitHAHedge = limitHAHedge
-    dataHistorical.keeperFeesClosingCap = keeperFeesClosingCap
-    dataHistorical.keeperFeesLiquidationRatio = keeperFeesLiquidationRatio
-    dataHistorical.maintenanceMargin = maintenanceMargin
-    dataHistorical.blockNumber = block.number
-    dataHistorical.timestamp = roundedTimestamp
-
-    if (!apr.equals(BigInt.fromString('0'))) {
-      dataHistorical.apr = apr
-    }
   }
+  dataHistorical.totalAsset = totalAsset
+  dataHistorical.availableAsset = availableAsset
+  dataHistorical.stockUser = stockUser
+  dataHistorical.stockSLP = stockSLP
+  dataHistorical.sanRate = sanRate
+  dataHistorical.lastBlockUpdated = lastBlockUpadted
+  dataHistorical.lockedInterests = lockedInterests
+  dataHistorical.maxInterestsDistributed = maxInterestsDistributed
+  dataHistorical.totalProtocolFees = data.totalProtocolFees
+  dataHistorical.totalKeeperFees = data.totalKeeperFees
+  dataHistorical.totalSLPFees = data.totalSLPFees
+  dataHistorical.totalProtocolInterests = data.totalProtocolInterests
+  dataHistorical.totalSLPInterests = data.totalSLPInterests
+  dataHistorical.feesAside = feesAside
+  dataHistorical.feesForSLPs = feesForSLPs
+  dataHistorical.interestsForSurplus = interestsForSurplus
+  dataHistorical.interestsForSLPs = interestsForSLPs
+  dataHistorical.totalHedgeAmount = totalHedgeAmount
+  dataHistorical.totalMargin = totalMargin
+  dataHistorical.rateLower = rates.value0
+  dataHistorical.rateUpper = rates.value1
+  dataHistorical.targetHAHedge = targetHAHedge
+  dataHistorical.keeperFeesLiquidationCap = keeperFeesLiquidationCap
+  dataHistorical.limitHAHedge = limitHAHedge
+  dataHistorical.keeperFeesClosingCap = keeperFeesClosingCap
+  dataHistorical.keeperFeesLiquidationRatio = keeperFeesLiquidationRatio
+  dataHistorical.maintenanceMargin = maintenanceMargin
+  dataHistorical.blockNumber = block.number
+  dataHistorical.timestamp = roundedTimestamp
+  if (!apr.equals(BigInt.fromString('0'))) {
+    dataHistorical.apr = apr
+  }
+
   dataHistorical.save()
 
   return data
