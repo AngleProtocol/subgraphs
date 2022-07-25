@@ -1,5 +1,5 @@
 import { Address, store, BigInt } from '@graphprotocol/graph-ts'
-import { Transfer } from '../../generated/Angle/ERC20Votes'
+import { Transfer } from '../../generated/AgEUR/ERC20'
 import { sanToken, CapitalGain } from '../../generated/schema'
 import { PoolManager } from '../../generated/templates/StableMasterTemplate/PoolManager'
 import { ERC20 } from '../../generated/templates/SanTokenTemplate/ERC20'
