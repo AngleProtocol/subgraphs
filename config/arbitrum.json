@@ -2,7 +2,7 @@
   "network": "arbitrum-one",
   "chainlink_ETH_USD": "0x3607e46698d218b3a5cae44bf381475c0a5e2ca7",
   "chainlink_USDC_USD": "0x2946220288dbbf77df0030fcecc2a8348cbbe32c",
-  "chainlink_EUR_USD": "0xA14d53bC1F1c0F31B4aA3BD109344E5009051a84",
+  "chainlink_EUR_USD": "0x7aaee6ad40a947a162deab5afd0a1e12be6ff871",
   "ageur": "0xFA5Ed56A203466CbBC2430a43c66b9D8723528E7",
   "flashAngle": "0x59153e939c5b4721543251ff3049Ea04c755373B",
   "block_ageur": 16962105
