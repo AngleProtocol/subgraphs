@@ -289,9 +289,9 @@ export function handleStaked(token: Address, event: Transfer): void {
         data.balance = ERC20.bind(token).balanceOf(event.params._to)
         data.owner = event.params._to.toHexString()
         data.token = token.toHexString()
-        data.staked = event.params._value.times(BASE_PARAMS).div(scalingFactor)
+        data.staked = event.params._value.times(BASE_TOKENS).div(scalingFactor)
       } else {
-        data.staked = data.staked.plus(event.params._value.times(BASE_PARAMS).div(scalingFactor))
+        data.staked = data.staked.plus(event.params._value.times(BASE_TOKENS).div(scalingFactor))
       }
       data.save()
     }
