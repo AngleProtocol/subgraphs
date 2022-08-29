@@ -1,9 +1,9 @@
-import { TreasuryUpdated, MinterToggled, Transfer } from '../../generated/AgTokenTemplate/AgToken'
 import { TreasuryTemplate } from '../../generated/templates'
 import { TreasuryData, VaultManagerList } from '../../generated/schema'
 import { _initTreasury } from './treasuryHelpers'
 
 import { log } from '@graphprotocol/graph-ts'
+import { TreasuryUpdated, MinterToggled } from '../../generated/templates/AgTokenTemplate/AgToken'
 
 export function handleTreasuryUpdated(event: TreasuryUpdated): void {
   log.warning('+++++ TreasuryUpdated for agToken:{}, treasury:{}', [event.address.toHexString(), event.params._treasury.toHexString()])
@@ -19,7 +19,7 @@ export function handleTreasuryUpdated(event: TreasuryUpdated): void {
 
   // should be put in core borrow init
   let listVM = VaultManagerList.load("1")
-  if(listVM == null){
+  if (listVM == null) {
     let listVM = new VaultManagerList("1")
     listVM.vaultManagers = []
     listVM.save()
