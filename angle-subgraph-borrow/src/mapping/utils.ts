@@ -13,7 +13,6 @@ export function historicalSlice(block: ethereum.Block): BigInt {
 let wrappedTokens = new Map<string, string>()
 wrappedTokens.set('WBTC', 'BTC')
 wrappedTokens.set('wETH', 'ETH')
-// wrappedTokens.set('wstETH', 'stETH')
 
 // Whitespaces are stripped first. Then, `description` must be in the format "(W)TOKEN1/TOKEN2" or "(W)TOKEN1/TOKEN2Oracle".
 export function parseOracleDescription(description: string, hasExtra: boolean): string[] {
