@@ -1,5 +1,5 @@
 import { Address, BigInt, store } from '@graphprotocol/graph-ts'
-import { Transfer } from '../../generated/AgEUR/ERC20'
+import { Transfer } from '../../generated/Angle/ERC20Votes'
 import { ANGLE, ANGLEHistorical } from '../../generated/schema'
 import { historicalSlice } from './utils'
 
