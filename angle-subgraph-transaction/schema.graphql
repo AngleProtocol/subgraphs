@@ -1,61 +1,3 @@
-type FeeData @entity {
-  # fee data id
-  id: ID!
-  # Total protocol fees
-  totalProtocolFees: BigInt!
-  # Total SLP fees
-  totalSLPFees: BigInt!
-  # Total keeper fees
-  totalKeeperFees: BigInt!
-  # Total protocol interest
-  totalProtocolInterests: BigInt!
-  # Total SLP interest
-  totalSLPInterests: BigInt!
-  # BlockNumber of last update
-  blockNumber: BigInt!
-  # Timestamp of last update
-  timestamp: BigInt!
-}
-
-type FeeHistoricalData @entity {
-  # fee data id
-  id: ID!
-  # Total protocol fees
-  totalProtocolFees: BigInt!
-  # Total SLP fees
-  totalSLPFees: BigInt!
-  # Total keeper fees
-  totalKeeperFees: BigInt!
-  # Total protocol interest
-  totalProtocolInterests: BigInt!
-  # Total SLP interest
-  totalSLPInterests: BigInt!
-  # BlockNumber of last update
-  blockNumber: BigInt!
-  # Timestamp of last update
-  timestamp: BigInt!
-}
-
-type OracleByTicker @entity {
-  # Ticker of non-USD token
-  id: ID!
-  # Address of oracle which allows to load the matching `OracleData` entity
-  oracle: String!
-}
-
-type OracleData @entity {
-  # Address of oracle
-  id: ID!
-  # Ticker of non-USD token
-  tokenTicker: String!
-  # Price reported by oracle
-  price: BigInt!
-  # Decimal used by the Chainlink oracle
-  decimals: BigInt!
-  # Timestamp of current block
-  timestamp: BigInt!
-}
-
 type StableData @entity {
   # Address of the stableMaster
   id: ID!
@@ -459,4 +401,62 @@ type Unstake @entity {
 
 type Contracts @entity {
   id: ID!
+}
+
+type FeeData @entity {
+  # fee data id
+  id: ID!
+  # Total protocol fees
+  totalProtocolFees: BigInt!
+  # Total SLP fees
+  totalSLPFees: BigInt!
+  # Total keeper fees
+  totalKeeperFees: BigInt!
+  # Total protocol interest
+  totalProtocolInterests: BigInt!
+  # Total SLP interest
+  totalSLPInterests: BigInt!
+  # BlockNumber of last update
+  blockNumber: BigInt!
+  # Timestamp of last update
+  timestamp: BigInt!
+}
+
+type FeeHistoricalData @entity {
+  # fee data id
+  id: ID!
+  # Total protocol fees
+  totalProtocolFees: BigInt!
+  # Total SLP fees
+  totalSLPFees: BigInt!
+  # Total keeper fees
+  totalKeeperFees: BigInt!
+  # Total protocol interest
+  totalProtocolInterests: BigInt!
+  # Total SLP interest
+  totalSLPInterests: BigInt!
+  # BlockNumber of last update
+  blockNumber: BigInt!
+  # Timestamp of last update
+  timestamp: BigInt!
+}
+
+type OracleByTicker @entity {
+  # Ticker of non-USD token
+  id: ID!
+  # Address of oracle which allows to load the matching `OracleData` entity
+  oracle: String!
+}
+
+type OracleData @entity {
+  # Address of oracle
+  id: ID!
+  # Ticker of non-USD token
+  tokenTicker: String!
+  # Price reported by oracle
+  price: BigInt!
+  # Decimal used by the Chainlink oracle
+  decimals: BigInt!
+  # Timestamp of current block
+  timestamp: BigInt!
 }
