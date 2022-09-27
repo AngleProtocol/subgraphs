@@ -50,6 +50,27 @@ dataSources:
       file: ./src/mapping/gaugeController.ts
 templates:
   - kind: ethereum/contract
+    name: ChainlinkTemplate
+    network: {{network}}
+    source:
+      abi: ChainlinkFeed
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - TokenPrice
+        - OracleData
+      abis:
+        - name: ChainlinkFeed
+          file: ../abis/Chainlink.json
+        - name: ChainlinkProxy
+          file: ../abis/EACAggregatorProxy.json
+      eventHandlers:
+        - event: AnswerUpdated(indexed int256,indexed uint256,uint256)
+          handler: handleAnswerUpdated
+      file: ./src/mapping/chainlink.ts
+  - kind: ethereum/contract
     name: SanTokenTemplate
     network: {{network}}
     source:

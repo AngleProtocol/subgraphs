@@ -6,6 +6,8 @@ export const BASE_INTEREST = BigInt.fromString('10').pow(27)
 
 export const ROUND_COEFF = BigInt.fromString('43200') //  1/2 day
 export const LARGE_ROUND_COEFF = BigInt.fromString('86400') // 1 day
+export const ZERO = BigInt.fromString('0')
+
 
 const _max = new Bytes(32)
 for (let i = 0; i < _max.length; i++) {
