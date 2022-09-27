@@ -27,3 +27,5 @@ export const FAST_SYNC_TIME_INTERVAL = BigInt.fromString('10800')
 export const ORACLE_SYNC_TIME_INTERVAL = BigInt.fromString('3600')
 
 export const BLOCK_UPDATE_POOL_MANAGER_ESTIMATED_APR = BigInt.fromString('14665999')
+
+export const STETH_ADDRESS = "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84"

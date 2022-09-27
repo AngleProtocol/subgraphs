@@ -9,7 +9,7 @@ dataSources:
     source:
       address: '{{core}}'
       abi: Core
-      startBlock: {{block_ageur}}
+      startBlock: {{block}}
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.5
@@ -108,6 +108,29 @@ dataSources:
           handler: handleAnswerUpdated
       file: ./src/mapping/chainlink.ts
   - kind: ethereum/contract
+    name: Chainlink8
+    network: {{network}}
+    source:
+      address: '{{chainlink_stETH_USD}}'
+      abi: ChainlinkFeed
+      startBlock: {{block_ageur}}
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - TokenPrice
+        - OracleData
+      abis:
+        - name: ChainlinkFeed
+          file: ../abis/Chainlink.json
+        - name: stETH
+          file: ../abis/stETH.json
+      eventHandlers:
+        - event: AnswerUpdated(indexed int256,indexed uint256,uint256)
+          handler: handleAnswerUpdated
+      file: ./src/mapping/chainlink.ts
+  - kind: ethereum/contract
     name: FlashAngle
     network: {{network}}
     source:
@@ -129,30 +152,30 @@ dataSources:
       file: ./src/mapping/flashAngle.ts
 templates:
   - kind: ethereum/contract
-      name: AgTokenTemplate
-      network: {{network}}
-      source:
-        abi: AgToken
-      mapping:
-        kind: ethereum/events
-        apiVersion: 0.0.5
-        language: wasm/assemblyscript
-        entities:
-          - VaultManagerData
-          - VaultManagerHistoricalData
-        abis:
-          - name: AgToken
-            file: ../abis/AgToken.json
-          - name: Treasury
-            file: ../abis/Treasury.json
-          - name: Oracle
-            file: ../abis/OracleBorrowingModule.json
-        eventHandlers:
-          - event: TreasuryUpdated(indexed address)
-            handler: handleTreasuryUpdated
-          - event: MinterToggled(indexed address)
-            handler: handleMinterToggled
-        file: ./src/mapping/agToken.ts
+    name: AgTokenTemplate
+    network: {{network}}
+    source:
+      abi: AgToken
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - VaultManagerData
+        - VaultManagerHistoricalData
+      abis:
+        - name: AgToken
+          file: ../abis/AgToken.json
+        - name: Treasury
+          file: ../abis/Treasury.json
+        - name: Oracle
+          file: ../abis/OracleBorrowingModule.json
+      eventHandlers:
+        - event: TreasuryUpdated(indexed address)
+          handler: handleTreasuryUpdated
+        - event: MinterToggled(indexed address)
+          handler: handleMinterToggled
+      file: ./src/mapping/agToken.ts
   - kind: ethereum/contract
     name: TreasuryTemplate
     network: {{network}}

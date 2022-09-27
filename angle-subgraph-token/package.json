@@ -20,7 +20,7 @@
     "create-local": "graph create --node http://localhost:8020/ angle/sub",
     "remove-local": "graph remove --node http://localhost:8020/ angle/sub",
     "deploy-local": "yarn clean && yarn prepare && graph codegen && graph build && graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 angle/sub",
-    "prepare": "mustache ../config/mainnet.json subgraph.template.yaml > subgraph.yaml",
+    "prepare": "mustache ../config/mainnet.json subgraphEthereum.template.yaml > subgraph.yaml",
     "prepare:arbitrum": "mustache ../config/arbitrum.json subgraphArbitrum.template.yaml > subgraph.yaml",
     "prepare:optimism": "mustache ../config/optimism.json subgraphOptimism.template.yaml > subgraph.yaml",
     "prepare:polygon": "mustache ../config/polygon.json subgraphPolygon.template.yaml > subgraph.yaml",

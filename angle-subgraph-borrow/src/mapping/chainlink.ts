@@ -8,14 +8,16 @@ import {
   _addVaultManagerDataToHistory,
   _addVaultDataToHistory
 } from './vaultManagerHelpers'
-import { log, Address, ethereum, BigInt } from '@graphprotocol/graph-ts'
+import { log, ethereum, BigInt, Address } from '@graphprotocol/graph-ts'
 import { parseOracleDescription } from './utils'
 import {
   BASE_TOKENS,
   FAST_SYNC_THRESHOLD,
   FAST_SYNC_TIME_INTERVAL,
-  ORACLE_SYNC_TIME_INTERVAL
+  ORACLE_SYNC_TIME_INTERVAL,
+  STETH_ADDRESS
 } from '../../../constants'
+import { stETH } from '../../generated/Chainlink8/stETH'
 
 // Handler used to periodically refresh Oracles and Vault's HF/debt
 export function handleAnswerUpdated(event: AnswerUpdated): void {
@@ -28,7 +30,16 @@ export function handleAnswerUpdated(event: AnswerUpdated): void {
     dataOracle = new OracleData(event.address.toHexString())
     // here we assume that Chainlink always put the non-USD token first
     dataOracle.tokenTicker = tokens[0]
-    dataOracle.price = event.params.current
+    // The borrowing module does not handle rebasing tokens, so the only accepted token is wstETH
+    // if the in token is wstETH we also need to multiply by the rate wstETH to stETH - as we are looking at the stETH oracle because on 
+    // mainnet the oracle wstETH-stETH does not exist
+    let quoteAmount = BASE_TOKENS;
+    if (tokens[0] == "STETH") {
+      dataOracle.tokenTicker = "wSTETH"
+      quoteAmount = stETH.bind(Address.fromString(STETH_ADDRESS)).getPooledEthByShares(BASE_TOKENS)
+
+    }
+    dataOracle.price = quoteAmount.times(event.params.current).div(BASE_TOKENS)
     dataOracle.decimals = decimals
     dataOracle.timestamp = event.block.timestamp
     dataOracle.save()
@@ -43,7 +54,13 @@ export function handleAnswerUpdated(event: AnswerUpdated): void {
   } else if (event.block.timestamp.minus(dataOracle.timestamp).lt(ORACLE_SYNC_TIME_INTERVAL)) {
     return
   } else {
-    dataOracle.price = event.params.current
+    // if the in token is wstETH we also need to multiply by the rate wstETH to stETH - as we are looking at the stETH oracle because on 
+    // mainnet the oracle wstETH-stETH does not exist
+    let quoteAmount = BASE_TOKENS;
+    if (dataOracle.tokenTicker == "wSTETH") {
+      quoteAmount = stETH.bind(Address.fromString(STETH_ADDRESS)).getPooledEthByShares(BASE_TOKENS)
+    }
+    dataOracle.price = quoteAmount.times(event.params.current).div(BASE_TOKENS)
     dataOracle.timestamp = event.block.timestamp
     dataOracle.save()
 

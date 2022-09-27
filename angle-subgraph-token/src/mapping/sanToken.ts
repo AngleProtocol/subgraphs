@@ -1,8 +1,7 @@
 import { Address, store, BigInt } from '@graphprotocol/graph-ts'
-import { Transfer } from '../../generated/AgEUR/ERC20'
 import { sanToken, CapitalGain } from '../../generated/schema'
 import { PoolManager } from '../../generated/templates/StableMasterTemplate/PoolManager'
-import { ERC20 } from '../../generated/templates/SanTokenTemplate/ERC20'
+import { ERC20, Transfer } from '../../generated/templates/SanTokenTemplate/ERC20'
 import { StableMaster } from '../../generated/templates/StableMasterTemplate/StableMaster'
 import { SanToken } from '../../generated/templates/SanTokenTemplate/SanToken'
 
@@ -46,27 +45,29 @@ export function handleTransfer(event: Transfer): void {
   let gainData: CapitalGain | null
 
   if (!isMint(event)) {
-    data = sanToken.load(fromId)!
-    gainData = CapitalGain.load(addressFromId)!
+    data = sanToken.load(fromId)
+    if (data != null) {
+      gainData = CapitalGain.load(addressFromId)!
 
-    // In the lastPosition we store the value of sanToken after the transfer
-    const lastPosition = data.balance
-      .minus(event.params.value)
-      .times(sanRate)
-      .div(BASE_TOKENS)
-    // In the gains we store the gains since last time this address was seen
-    gainData.gains = gainData.gains.plus(data.balance.times(sanRate).div(BASE_TOKENS)).minus(gainData.lastPosition)
-    gainData.lastPosition = lastPosition
-    gainData.save()
+      // In the lastPosition we store the value of sanToken after the transfer
+      const lastPosition = data.balance
+        .minus(event.params.value)
+        .times(sanRate)
+        .div(BASE_TOKENS)
+      // In the gains we store the gains since last time this address was seen
+      gainData.gains = gainData.gains.plus(data.balance.times(sanRate).div(BASE_TOKENS)).minus(gainData.lastPosition)
+      gainData.lastPosition = lastPosition
+      gainData.save()
 
-    // Store the updated balance
-    data.balance = data.balance.minus(event.params.value)
+      // Store the updated balance
+      data.balance = data.balance.minus(event.params.value)
 
-    // If the address as no more tokens or staked token, remove the entity
-    if (data.balance.equals(BigInt.fromString('0')) && data.staked.equals(BigInt.fromString('0'))) {
-      store.remove('sanToken', fromId)
-    } else {
-      data.save()
+      // If the address as no more tokens or staked token, remove the entity
+      if (data.balance.equals(BigInt.fromString('0')) && data.staked.equals(BigInt.fromString('0'))) {
+        store.remove('sanToken', fromId)
+      } else {
+        data.save()
+      }
     }
   }
 
