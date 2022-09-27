@@ -125,8 +125,7 @@ export function _updateGainPoolData(
   dataHistorical.save()
   data.save()
 
-  // Update the global values
-  // always call after _updatePoolData
+  // Update the global revenue values
   const feeData = FeeData.load('0')!
   let feeDataHistorical = FeeHistoricalData.load(roundedTimestamp.toString())
   if (feeDataHistorical == null) {

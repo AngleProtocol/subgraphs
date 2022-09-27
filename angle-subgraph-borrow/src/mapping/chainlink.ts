@@ -143,5 +143,5 @@ function updateVaults(block: ethereum.Block, newOracleValue: BigInt, dataVM: Vau
   dataVM.timestamp = block.timestamp
   dataVM.blockNumber = block.number
   dataVM.save()
-  _addVaultManagerDataToHistory(dataVM, block)
+  _addVaultManagerDataToHistory(dataVM, block, null)
 }

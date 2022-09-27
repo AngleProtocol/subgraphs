@@ -29,7 +29,7 @@ dataSources:
     source:
       address: '{{chainlink_EUR_USD}}'
       abi: ChainlinkFeed
-      startBlock: {{block_ageur}}
+      startBlock: {{block_oracle}}
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.5
@@ -71,7 +71,7 @@ dataSources:
     source:
       address: '{{chainlink_BTC_USD}}'
       abi: ChainlinkFeed
-      startBlock: {{block_ageur}}
+      startBlock: {{block_oracle}}
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.5
@@ -92,7 +92,7 @@ dataSources:
     source:
       address: '{{chainlink_USDC_USD}}'
       abi: ChainlinkFeed
-      startBlock: {{block_ageur}}
+      startBlock: {{block_oracle}}
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.5
@@ -113,7 +113,7 @@ dataSources:
     source:
       address: '{{chainlink_stETH_USD}}'
       abi: ChainlinkFeed
-      startBlock: {{block_ageur}}
+      startBlock: {{block_oracle}}
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.5
@@ -136,7 +136,7 @@ dataSources:
     source:
       address: '{{flashAngle}}'
       abi: FlashAngle
-      startBlock: {{block_ageur}}
+      startBlock: {{block_oracle}}
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.5

@@ -17,5 +17,6 @@
   "ageur": "0x1a7e4e63778B4f12a199C062f3eFdD288afCBce8",
   "flashAngle": "0x4A2FF9bC686A0A23DA13B6194C69939189506F7F",
   "block": 13472780,
-  "block_ageur": 14978516
+  "block_ageur": 14978516,
+  "block_oracle": 14888516
 }

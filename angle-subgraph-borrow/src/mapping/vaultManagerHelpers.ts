@@ -10,7 +10,9 @@ import {
   VaultHistoricalData,
   VaultLiquidation,
   OracleByTicker,
-  OracleData
+  OracleData,
+  FeeHistoricalData,
+  FeeData
 } from '../../generated/schema'
 import { historicalSlice, parseOracleDescription } from './utils'
 import { BASE_PARAMS, BASE_TOKENS, BASE_INTEREST, MAX_UINT256 } from '../../../constants'
@@ -218,11 +220,12 @@ export function _initVaultManager(address: Address, block: ethereum.Block): void
   data.save()
 
   // Add historical data point
-  _addVaultManagerDataToHistory(data, block)
+  _addVaultManagerDataToHistory(data, block, null)
 }
 
-export function _addVaultManagerDataToHistory(data: VaultManagerData, block: ethereum.Block): void {
-  const idHistorical = data.id + '_' + historicalSlice(block).toString()
+export function _addVaultManagerDataToHistory(data: VaultManagerData, block: ethereum.Block, feeData: FeeData | null): void {
+  const roundedTimestamp = historicalSlice(block).toString()
+  const idHistorical = data.id + '_' + roundedTimestamp
   let dataHistorical = VaultManagerHistoricalData.load(idHistorical)
   if (dataHistorical == null) {
     dataHistorical = new VaultManagerHistoricalData(idHistorical)
@@ -270,6 +273,23 @@ export function _addVaultManagerDataToHistory(data: VaultManagerData, block: eth
   dataHistorical.blockNumber = data.blockNumber
   dataHistorical.timestamp = data.timestamp
   dataHistorical.save()
+
+  // Update the global revenue values
+  if (feeData) {
+    let feeDataHistorical = FeeHistoricalData.load(roundedTimestamp)
+    if (feeDataHistorical == null) {
+      feeDataHistorical = new FeeHistoricalData(roundedTimestamp)
+    }
+    dataHistorical.surplusFromInterests = feeData.surplusFromInterests
+    dataHistorical.surplusFromBorrowFees = feeData.surplusFromBorrowFees
+    dataHistorical.surplusFromRepayFees = feeData.surplusFromRepayFees
+    dataHistorical.surplusFromLiquidationSurcharges = feeData.surplusFromLiquidationSurcharges
+    feeDataHistorical.timestamp = block.timestamp
+    feeDataHistorical.blockNumber = block.number
+
+    feeDataHistorical.save()
+  }
+
 }
 
 export function _addVaultDataToHistory(data: VaultData, block: ethereum.Block): void {

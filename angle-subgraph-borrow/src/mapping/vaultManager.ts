@@ -23,7 +23,9 @@ import {
   DebtTransfer,
   VaultLiquidation,
   OracleByTicker,
-  OracleData
+  OracleData,
+  FeeData,
+  FeeHistoricalData
 } from '../../generated/schema'
 import {
   isBurn,
@@ -55,7 +57,7 @@ export function handleAccruedToTreasury(event: AccruedToTreasury): void {
   data.timestamp = event.block.timestamp
   data.blockNumber = event.block.number
   data.save()
-  _addVaultManagerDataToHistory(data, event.block)
+  _addVaultManagerDataToHistory(data, event.block, null)
 }
 
 export function handleCollateralAmountUpdated(event: CollateralAmountUpdated): void {
@@ -112,7 +114,7 @@ export function handleCollateralAmountUpdated(event: CollateralAmountUpdated): v
   dataVM.save()
   dataVault.save()
   action.save()
-  _addVaultManagerDataToHistory(dataVM, event.block)
+  _addVaultManagerDataToHistory(dataVM, event.block, null)
   _addVaultDataToHistory(dataVault, event.block)
 }
 export function handleInterestAccumulatorUpdated(event: InterestAccumulatorUpdated): void {
@@ -120,12 +122,12 @@ export function handleInterestAccumulatorUpdated(event: InterestAccumulatorUpdat
   let data = VaultManagerData.load(event.address.toHexString())!
 
   // add new interests earned
-  data.surplusFromInterests = data.surplusFromInterests.plus(
+  const interestEarned =
     event.params.value
       .minus(data.interestAccumulator)
       .times(data.totalNormalizedDebt)
       .div(BASE_INTEREST)
-  )
+  data.surplusFromInterests = data.surplusFromInterests.plus(interestEarned)
 
   data.interestAccumulator = event.params.value
   data.lastInterestAccumulatorUpdated = event.block.timestamp
@@ -137,7 +139,16 @@ export function handleInterestAccumulatorUpdated(event: InterestAccumulatorUpdat
   data.timestamp = event.block.timestamp
   data.blockNumber = event.block.number
   data.save()
-  _addVaultManagerDataToHistory(data, event.block)
+
+  // Update the global revenue values
+  const feeData = FeeData.load('0')!
+  const agTokenPriceInUSD = OracleData.load(OracleByTicker.load(data.agTokenTicker)!.oracle)!
+  const decimalNormalizer = BigInt.fromString('10').pow(agTokenPriceInUSD.decimals.toI32() as u8)
+  feeData.surplusFromInterests = feeData.surplusFromInterests.plus(interestEarned.times(agTokenPriceInUSD.price).div(decimalNormalizer))
+  feeData.save()
+
+  _addVaultManagerDataToHistory(data, event.block, feeData)
+
 }
 export function handleInternalDebtUpdated(event: InternalDebtUpdated): void {
   log.warning('++++ InternalDebtUpdated ', [])
@@ -159,15 +170,22 @@ export function handleInternalDebtUpdated(event: InternalDebtUpdated): void {
     event.block.timestamp
   )
 
+  // Update the global revenue values
+  const feeData = FeeData.load('0')!
+  const agTokenPriceInUSD = OracleData.load(OracleByTicker.load(dataVM.agTokenTicker)!.oracle)!
+  const decimalNormalizer = BigInt.fromString('10').pow(agTokenPriceInUSD.decimals.toI32() as u8)
+
   if (event.params.isIncrease) {
     dataVM.totalNormalizedDebt = dataVM.totalNormalizedDebt.plus(event.params.internalAmount)
     dataVM.totalDebt = dataVM.totalDebt.plus(debtVariation)
     dataVault.normalizedDebt = dataVault.normalizedDebt.plus(event.params.internalAmount)
+
     if (dataOngoingDebtTransfer == null) {
-      // General case: compute borrow fee and add it to VM surplus
+      // General case: compute borrow fee and add it to VM surplus and global surplus
       const borrowFee = debtVariation.times(dataVM.borrowFee).div(BASE_PARAMS)
       dataVault.fees = dataVault.fees.plus(borrowFee)
       dataVM.surplusFromBorrowFees = dataVM.surplusFromBorrowFees.plus(borrowFee)
+      feeData.surplusFromBorrowFees = feeData.surplusFromBorrowFees.plus(borrowFee.times(agTokenPriceInUSD.price).div(decimalNormalizer))
 
       // save action
       const idDebtUpdate = _getActionId('debtUpdate', txHash, event.block.timestamp)
@@ -189,7 +207,7 @@ export function handleInternalDebtUpdated(event: InternalDebtUpdated): void {
     ) {
       // Debt transfer case, on srcVault:
       if (dataOngoingDebtTransfer.srcVaultManager != dataOngoingDebtTransfer.dstVaultManager) {
-        // compute difference in borrow fee and add it to VM surplus if positive
+        // compute difference in borrow fee and add it to VM/global surplus if positive
         const dataDstVM = VaultManagerData.load(dataOngoingDebtTransfer.dstVaultManager)!
         if (dataVM.borrowFee.gt(dataDstVM.borrowFee)) {
           const ongoingdebttransferBorrowFee = dataVM.borrowFee
@@ -198,6 +216,7 @@ export function handleInternalDebtUpdated(event: InternalDebtUpdated): void {
             .div(BASE_PARAMS)
           dataVault.fees = dataVault.fees.plus(ongoingdebttransferBorrowFee)
           dataVM.surplusFromBorrowFees = dataVM.surplusFromBorrowFees.plus(ongoingdebttransferBorrowFee)
+          feeData.surplusFromBorrowFees = feeData.surplusFromBorrowFees.plus(ongoingdebttransferBorrowFee.times(agTokenPriceInUSD.price).div(decimalNormalizer))
         }
       } else {
         // don't do anything, no borrow fees are charged when transferring debt under the same vaultManager
@@ -220,6 +239,7 @@ export function handleInternalDebtUpdated(event: InternalDebtUpdated): void {
         const repayFee = debtVariation.times(dataVM.repayFee).div(BASE_PARAMS)
         dataVault.fees = dataVault.fees.plus(repayFee)
         dataVM.surplusFromRepayFees = dataVM.surplusFromRepayFees.plus(repayFee)
+        feeData.surplusFromRepayFees = feeData.surplusFromRepayFees.plus(repayFee.times(agTokenPriceInUSD.price).div(decimalNormalizer))
 
         // save action
         const idDebtUpdate = _getActionId('debtUpdate', txHash, event.block.timestamp)
@@ -253,6 +273,7 @@ export function handleInternalDebtUpdated(event: InternalDebtUpdated): void {
         dataVM.surplusFromLiquidationSurcharges = dataVM.surplusFromLiquidationSurcharges.plus(
           actionLiquidation.surcharge!
         )
+        feeData.surplusFromLiquidationSurcharges = feeData.surplusFromLiquidationSurcharges.plus(actionLiquidation.surcharge!)
         dataVM.liquidationRepayments = dataVM.liquidationRepayments.plus(actionLiquidation.debtRepayed!)
         // Case where bad debt has been created
         if (dataVault.normalizedDebt.isZero() && dataVault.collateralAmount.isZero()) {
@@ -307,7 +328,7 @@ export function handleInternalDebtUpdated(event: InternalDebtUpdated): void {
     ) {
       // Debt transfer case, on dstVault:
       if (dataOngoingDebtTransfer.srcVaultManager != dataOngoingDebtTransfer.dstVaultManager) {
-        // compute difference in repay fee and add it to VM surplus if positive
+        // compute difference in repay fee and add it to VM/global surplus if positive
         const dataSrcVM = VaultManagerData.load(dataOngoingDebtTransfer.srcVaultManager)!
         if (dataVM.repayFee.gt(dataSrcVM.repayFee)) {
           const ongoingdebttransferRepayFee = dataVM.repayFee
@@ -316,6 +337,7 @@ export function handleInternalDebtUpdated(event: InternalDebtUpdated): void {
             .div(BASE_PARAMS)
           dataVM.surplusFromRepayFees = dataVM.surplusFromRepayFees.plus(ongoingdebttransferRepayFee)
           dataVault.fees = dataVault.fees.plus(ongoingdebttransferRepayFee)
+          feeData.surplusFromRepayFees = feeData.surplusFromRepayFees.plus(ongoingdebttransferRepayFee.times(agTokenPriceInUSD.price).div(decimalNormalizer))
         }
       } else {
         // don't do anything, no repay fees are charged when transferring debt under the same vaultManager
@@ -366,7 +388,8 @@ export function handleInternalDebtUpdated(event: InternalDebtUpdated): void {
   dataVault.blockNumber = event.block.number
   dataVM.save()
   dataVault.save()
-  _addVaultManagerDataToHistory(dataVM, event.block)
+  feeData.save()
+  _addVaultManagerDataToHistory(dataVM, event.block, feeData)
   _addVaultDataToHistory(dataVault, event.block)
 }
 
@@ -396,7 +419,7 @@ export function handleFiledUint64(event: FiledUint64): void {
   data.timestamp = event.block.timestamp
   data.blockNumber = event.block.number
   data.save()
-  _addVaultManagerDataToHistory(data, event.block)
+  _addVaultManagerDataToHistory(data, event.block, null)
 }
 
 export function handleDebtCeilingUpdated(event: DebtCeilingUpdated): void {
@@ -406,7 +429,7 @@ export function handleDebtCeilingUpdated(event: DebtCeilingUpdated): void {
   data.timestamp = event.block.timestamp
   data.blockNumber = event.block.number
   data.save()
-  _addVaultManagerDataToHistory(data, event.block)
+  _addVaultManagerDataToHistory(data, event.block, null)
 }
 
 export function handleLiquidationBoostParametersUpdated(event: LiquidationBoostParametersUpdated): void {
@@ -418,7 +441,7 @@ export function handleLiquidationBoostParametersUpdated(event: LiquidationBoostP
   data.timestamp = event.block.timestamp
   data.blockNumber = event.block.number
   data.save()
-  _addVaultManagerDataToHistory(data, event.block)
+  _addVaultManagerDataToHistory(data, event.block, null)
 }
 
 export function handleTransfer(event: Transfer): void {
@@ -433,7 +456,7 @@ export function handleTransfer(event: Transfer): void {
     dataVM.timestamp = event.block.timestamp
     dataVM.blockNumber = event.block.number
     dataVM.save()
-    _addVaultManagerDataToHistory(dataVM, event.block)
+    _addVaultManagerDataToHistory(dataVM, event.block, null)
     // Create a vault instance
     dataVault = new VaultData(id)
     dataVault.vaultManager = event.address.toHexString()
@@ -480,7 +503,7 @@ export function handleTransfer(event: Transfer): void {
     dataVM.timestamp = event.block.timestamp
     dataVM.blockNumber = event.block.number
     dataVM.save()
-    _addVaultManagerDataToHistory(dataVM, event.block)
+    _addVaultManagerDataToHistory(dataVM, event.block, null)
 
     // save repayDebt and removeCollateral actions
     if (!normalizedDebtRemoved.isZero()) {
@@ -591,7 +614,7 @@ export function handleLiquidatedVaults(event: LiquidatedVaults): void {
   dataVM.timestamp = timestamp
   dataVM.blockNumber = event.block.number
   dataVM.save()
-  _addVaultManagerDataToHistory(dataVM, event.block)
+  _addVaultManagerDataToHistory(dataVM, event.block, null)
 }
 
 // Stores getDebtIn/Out data to help further InternalDebtUpdated events
