@@ -280,10 +280,10 @@ export function _addVaultManagerDataToHistory(data: VaultManagerData, block: eth
     if (feeDataHistorical == null) {
       feeDataHistorical = new FeeHistoricalData(roundedTimestamp)
     }
-    dataHistorical.surplusFromInterests = feeData.surplusFromInterests
-    dataHistorical.surplusFromBorrowFees = feeData.surplusFromBorrowFees
-    dataHistorical.surplusFromRepayFees = feeData.surplusFromRepayFees
-    dataHistorical.surplusFromLiquidationSurcharges = feeData.surplusFromLiquidationSurcharges
+    feeDataHistorical.surplusFromInterests = feeData.surplusFromInterests
+    feeDataHistorical.surplusFromBorrowFees = feeData.surplusFromBorrowFees
+    feeDataHistorical.surplusFromRepayFees = feeData.surplusFromRepayFees
+    feeDataHistorical.surplusFromLiquidationSurcharges = feeData.surplusFromLiquidationSurcharges
     feeDataHistorical.timestamp = block.timestamp
     feeDataHistorical.blockNumber = block.number
 

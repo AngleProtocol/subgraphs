@@ -24,8 +24,7 @@ import {
   VaultLiquidation,
   OracleByTicker,
   OracleData,
-  FeeData,
-  FeeHistoricalData
+  FeeData
 } from '../../generated/schema'
 import {
   isBurn,
