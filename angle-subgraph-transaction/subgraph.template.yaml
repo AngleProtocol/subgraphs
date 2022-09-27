@@ -97,6 +97,8 @@ templates:
           file: ../abis/PerpetualManagerFront.json
         - name: AgToken
           file: ../abis/AgToken.json
+        - name: ChainlinkProxy
+          file: ../abis/ChainlinkProxy.json
       eventHandlers:
         - event: Transfer(indexed address,indexed address,uint256)
           handler: handleTransfer
@@ -129,6 +131,8 @@ templates:
           file: ../abis/SanToken.json
         - name: AgToken
           file: ../abis/AgToken.json
+        - name: ChainlinkProxy
+          file: ../abis/ChainlinkProxy.json
       eventHandlers:
         - event: CollateralDeployed(indexed address,indexed address,indexed address,address)
           handler: handleCollateralDeployed
@@ -142,6 +146,8 @@ templates:
           handler: handleUnpause
         - event: FeeArrayUpdated(indexed address,uint64[],uint64[],uint8)
           handler: handleUserFeeUpdate
+        - event: OracleUpdated(indexed address,indexed address)
+          handler: handleSetOracle
       file: ./src/mapping/stableMaster.ts
   - kind: ethereum/contract
     name: PerpetualManagerFrontTemplate
@@ -171,6 +177,8 @@ templates:
           file: ../abis/SanToken.json
         - name: Oracle
           file: ../abis/OracleMulti.json
+        - name: ChainlinkProxy
+          file: ../abis/ChainlinkProxy.json
       eventHandlers:
         - event: PerpetualUpdated(uint256,uint256)
           handler: handleUpdatingPerpetual
@@ -239,6 +247,8 @@ templates:
           file: ../abis/SanToken.json
         - name: Oracle
           file: ../abis/OracleMulti.json
+        - name: ChainlinkProxy
+          file: ../abis/ChainlinkProxy.json
       eventHandlers:
         - event: Harvested(uint256,uint256,uint256,uint256)
           handler: handleHarvest

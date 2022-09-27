@@ -2,8 +2,8 @@ import { StableMasterTemplate } from '../../generated/templates'
 import { StableMasterDeployed } from '../../generated/Core/Core'
 import { StableMaster } from '../../generated/templates/StableMasterTemplate/StableMaster'
 
-import { updateStableData } from './utils'
-import { FeeData } from '../../generated/schema'
+import { historicalSlice, updateStableData } from './utils'
+import { FeeData, FeeHistoricalData } from '../../generated/schema'
 
 export function handleStableMasterDeployed(event: StableMasterDeployed): void {
   // Start indexing and tracking new contracts
@@ -14,7 +14,12 @@ export function handleStableMasterDeployed(event: StableMasterDeployed): void {
 
   // Start indexing global fees
   const data = new FeeData('0')
+  const feeDataHistorical = new FeeHistoricalData(historicalSlice(event.block).toString())
   data.blockNumber = event.block.number
   data.timestamp = event.block.timestamp
+  feeDataHistorical.timestamp = event.block.timestamp
+  feeDataHistorical.blockNumber = event.block.number
+
   data.save()
+  feeDataHistorical.save()
 }

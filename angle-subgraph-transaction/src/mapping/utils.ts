@@ -1,4 +1,4 @@
-import { ethereum, BigInt } from '@graphprotocol/graph-ts'
+import { ethereum, BigInt, log } from '@graphprotocol/graph-ts'
 import { StableMaster } from '../../generated/templates/StableMasterTemplate/StableMaster'
 import { ERC20 } from '../../generated/templates/StableMasterTemplate/ERC20'
 import { SanToken } from '../../generated/templates/StableMasterTemplate/SanToken'
@@ -102,7 +102,6 @@ export function _updateGainPoolData(
   // always call after _updatePoolData
   let data = PoolData.load(id)!
   let dataHistorical = PoolHistoricalData.load(idHistorical)!
-  let globalFee = FeeData.load('1')
 
   let tmpTotalProtocolFees = data.totalProtocolFees.plus(totalProtocolFees)
   let tmpTotalKeeperFees = data.totalKeeperFees.plus(totalKeeperFees)
@@ -132,10 +131,23 @@ export function _updateGainPoolData(
     feeDataHistorical = new FeeHistoricalData(roundedTimestamp.toString())
   }
   const collatName = token.symbol()
-  const collateralOracle = OracleByTicker.load(collatName)!
-  const collateralPrice = getCollateralPrice(collateralOracle)
-
+  const collateralOracle = OracleByTicker.load(collatName)
   const decimalNormalizer = BigInt.fromString('10').pow(data.decimals!.toI32() as u8)
+  let collateralPrice: BigInt
+  if (collateralOracle == null) {
+    if (collatName == "USDC") {
+      collateralPrice = BASE_TOKENS
+    } else {
+      log.warning('=== we have to read the oracle from contract: {}', [collatName])
+      const stableMaster = StableMaster.bind(poolManager.stableMaster())
+      const collatData = stableMaster.collateralMap(poolManager._address)
+      const oracle = Oracle.bind(collatData.value3)
+      collateralPrice = oracle.readLower()
+    }
+  }
+  else collateralPrice = getCollateralPrice(collateralOracle)
+
+
   tmpTotalProtocolFees = feeData.totalProtocolFees.plus(totalProtocolFees.times(collateralPrice).div(decimalNormalizer))
   tmpTotalKeeperFees = feeData.totalKeeperFees.plus(totalKeeperFees.times(collateralPrice).div(decimalNormalizer))
   tmpTotalSLPFees = feeData.totalSLPFees.plus(totalSLPFees.times(collateralPrice).div(decimalNormalizer))
@@ -189,21 +201,7 @@ export function _updatePoolData(
   if (data == null) {
     data = new PoolData(id)
     totalMargin = ZERO
-
-    // if the strategy doesn't have sub jobs via lender --> lender entity will be empty
-    let i = 0
-    let find = true
-    while (find) {
-      const result = oracle.try_circuitChainlink(BigInt.fromString(i.toString()))
-      if (result.reverted) {
-        find = false
-      } else {
-        i = i + 1
-        const oracleProxyAddress = result.value
-        const proxy = ChainlinkProxy.bind(oracleProxyAddress)
-        ChainlinkTemplate.create(proxy.aggregator())
-      }
-    }
+    _trackNewChainlinkOracle(oracle);
   }
 
   totalMargin = add ? data.totalMargin.plus(margin) : data.totalMargin.minus(margin)
@@ -629,4 +627,22 @@ export function _getForceCloseFees(
   const protocolFees = closeFee.minus(keeperFees)
 
   return [protocolFees, keeperFees]
+}
+
+
+export function _trackNewChainlinkOracle(oracle: Oracle): void {
+  // check all 
+  let i = 0
+  let find = true
+  while (find) {
+    const result = oracle.try_circuitChainlink(BigInt.fromString(i.toString()))
+    if (result.reverted) {
+      find = false
+    } else {
+      i = i + 1
+      const oracleProxyAddress = result.value
+      const proxy = ChainlinkProxy.bind(oracleProxyAddress)
+      ChainlinkTemplate.create(proxy.aggregator())
+    }
+  }
 }
