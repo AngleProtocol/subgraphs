@@ -1,9 +1,10 @@
 import { TreasuryTemplate } from '../../generated/templates'
-import { TreasuryData, VaultManagerList } from '../../generated/schema'
+import { FeeData, FeeHistoricalData, TreasuryData, VaultManagerList } from '../../generated/schema'
 import { _initTreasury } from './treasuryHelpers'
 
 import { log } from '@graphprotocol/graph-ts'
 import { TreasuryUpdated, MinterToggled } from '../../generated/templates/AgTokenTemplate/AgToken'
+import { historicalSlice } from './utils'
 
 export function handleTreasuryUpdated(event: TreasuryUpdated): void {
   log.warning('+++++ TreasuryUpdated for agToken:{}, treasury:{}', [event.address.toHexString(), event.params._treasury.toHexString()])
@@ -23,6 +24,20 @@ export function handleTreasuryUpdated(event: TreasuryUpdated): void {
     let listVM = new VaultManagerList("1")
     listVM.vaultManagers = []
     listVM.save()
+  }
+
+  // Start indexing global fees
+  let feeData = FeeData.load('0')
+  if (feeData == null) {
+    feeData = new FeeData('0')
+    const feeDataHistorical = new FeeHistoricalData(historicalSlice(event.block).toString())
+    feeData.blockNumber = event.block.number
+    feeData.timestamp = event.block.timestamp
+    feeDataHistorical.timestamp = event.block.timestamp
+    feeDataHistorical.blockNumber = event.block.number
+
+    feeData.save()
+    feeDataHistorical.save()
   }
 }
 
