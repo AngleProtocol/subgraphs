@@ -33,31 +33,34 @@ export function updateStableData(stableMaster: StableMaster, block: ethereum.Blo
   const name = agToken.symbol()
   data.name = name
 
-  const collatRatio = stableMaster.getCollateralRatio()
-  data.collatRatio = collatRatio
+  const resultCollatRatio = stableMaster.try_getCollateralRatio()
+  if (!resultCollatRatio.reverted) {
+    data.collatRatio = resultCollatRatio.value
+  }
 
   const totalMinted = agToken.totalSupply()
   data.totalMinted = totalMinted
   data.blockNumber = block.number
   data.timestamp = block.timestamp
 
+  data.save()
+
   let dataHistoricalHour = StableHistoricalData.load(idHistorical)
   if (dataHistoricalHour == null) {
     dataHistoricalHour = new StableHistoricalData(idHistorical)
     dataHistoricalHour.name = name
-    dataHistoricalHour.collatRatio = collatRatio
+    dataHistoricalHour.collatRatio = data.collatRatio
     dataHistoricalHour.totalMinted = totalMinted
     dataHistoricalHour.blockNumber = block.number
     dataHistoricalHour.timestamp = block.timestamp
   } else {
     // for the moment we just update with the last value in the hour but we could easier takes the first in the hour
     // or takes the mean (by adding a field to the struct to track the nuber of points so far) or more advanced metrics
-    dataHistoricalHour.collatRatio = collatRatio
+    dataHistoricalHour.collatRatio = data.collatRatio
     dataHistoricalHour.totalMinted = totalMinted
     dataHistoricalHour.timestamp = block.timestamp
   }
 
-  data.save()
   dataHistoricalHour.save()
 }
 
