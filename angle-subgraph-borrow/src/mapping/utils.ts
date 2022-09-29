@@ -1,4 +1,6 @@
 import { ethereum, BigInt, log } from '@graphprotocol/graph-ts'
+import { Oracle } from '../../generated/templates/StableMasterTemplate/Oracle'
+import { ChainlinkProxy } from '../../generated/templates/ChainlinkTemplate/ChainlinkProxy'
 import { ROUND_COEFF } from '../../../constants'
 
 export function historicalSlice(block: ethereum.Block): BigInt {
@@ -24,4 +26,22 @@ export function parseOracleDescription(description: string, hasExtra: boolean): 
     tokens[0] = wrappedTokens.get(tokens[0])
   }
   return tokens
+}
+
+
+export function _trackNewChainlinkOracle(oracle: Oracle): void {
+  // check all 
+  let i = 0
+  let find = true
+  while (find) {
+    const result = oracle.try_circuitChainlink(BigInt.fromString(i.toString()))
+    if (result.reverted) {
+      find = false
+    } else {
+      i = i + 1
+      const oracleProxyAddress = result.value
+      const proxy = ChainlinkProxy.bind(oracleProxyAddress)
+      ChainlinkTemplate.create(proxy.aggregator())
+    }
+  }
 }

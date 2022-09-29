@@ -129,6 +129,8 @@ dataSources:
           file: ../abis/Treasury.json
         - name: Oracle
           file: ../abis/OracleBorrowingModule.json
+        - name: ChainlinkProxy
+          file: ../abis/ChainlinkProxy.json
       eventHandlers:
         - event: TreasuryUpdated(indexed address)
           handler: handleTreasuryUpdated
