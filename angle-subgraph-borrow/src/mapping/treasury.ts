@@ -13,6 +13,9 @@ import { TreasuryData, VaultManagerData, VaultManagerList } from '../../generate
 import { _initTreasury, _addTreasuryDataToHistory, extractArray } from './treasuryHelpers'
 import { _initVaultManager, _addVaultManagerDataToHistory, _addVaultDataToHistory } from './vaultManagerHelpers'
 import { log } from '@graphprotocol/graph-ts'
+import { VaultManager } from '../../generated/templates/TreasuryTemplate/VaultManager'
+import { Oracle } from '../../generated/templates/TreasuryTemplate/Oracle'
+import { _trackNewChainlinkOracle } from './utils'
 
 export function handleBadDebtUpdated(event: BadDebtUpdated): void {
   log.warning('++++ BadDebtUpdated', [])
@@ -77,6 +80,10 @@ export function handleVaultManagerToggled(event: VaultManagerToggled): void {
   dataTreasury.blockNumber = event.block.number
   dataTreasury.save()
   _addTreasuryDataToHistory(dataTreasury, event.block)
+
+  const vaultManager = VaultManager.bind(event.params.vaultManager)
+  const oracle = Oracle.bind(vaultManager.oracle())
+  _trackNewChainlinkOracle(oracle, event)
 
   let data = VaultManagerData.load(event.params.vaultManager.toHexString())
   if (data == null) {
