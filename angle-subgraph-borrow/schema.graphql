@@ -554,3 +554,37 @@ type FlashLoanData @entity {
   blockNumber: BigInt!
   timestamp: BigInt!
 }
+
+type FeeData @entity {
+  # fee data id
+  id: ID!
+  # Surplus from interest
+  surplusFromInterests: BigInt!
+  # Surplus from borrow fee
+  surplusFromBorrowFees: BigInt!
+  # surplus from repay fee
+  surplusFromRepayFees: BigInt!
+  # surplus from liquidation surcharge
+  surplusFromLiquidationSurcharges: BigInt!
+  # BlockNumber of last update
+  blockNumber: BigInt!
+  # Timestamp of last update
+  timestamp: BigInt!
+}
+
+type FeeHistoricalData @entity {
+  # fee data id
+  id: ID!
+  # Surplus from interest
+  surplusFromInterests: BigInt!
+  # Surplus from borrow fee
+  surplusFromBorrowFees: BigInt!
+  # surplus from repay fee
+  surplusFromRepayFees: BigInt!
+  # surplus from liquidation surcharge
+  surplusFromLiquidationSurcharges: BigInt!
+  # BlockNumber of last update
+  blockNumber: BigInt!
+  # Timestamp of last update
+  timestamp: BigInt!
+}

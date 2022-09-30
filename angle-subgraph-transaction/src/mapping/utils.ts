@@ -1,4 +1,4 @@
-import { ethereum, BigInt } from '@graphprotocol/graph-ts'
+import { ethereum, BigInt, log } from '@graphprotocol/graph-ts'
 import { StableMaster } from '../../generated/templates/StableMasterTemplate/StableMaster'
 import { ERC20 } from '../../generated/templates/StableMasterTemplate/ERC20'
 import { SanToken } from '../../generated/templates/StableMasterTemplate/SanToken'
@@ -6,11 +6,14 @@ import { AgToken as AgTokenContract } from '../../generated/templates/StableMast
 import { PoolManager } from '../../generated/templates/StableMasterTemplate/PoolManager'
 import { PerpetualManagerFront } from '../../generated/templates/StableMasterTemplate/PerpetualManagerFront'
 import { Oracle, Oracle__readAllResult } from '../../generated/templates/StableMasterTemplate/Oracle'
-import { PoolData, StableData, StableHistoricalData, PoolHistoricalData, Perpetual } from '../../generated/schema'
-import { BASE_PARAMS, BLOCK_UPDATE_POOL_MANAGER_ESTIMATED_APR, ROUND_COEFF } from '../../../constants'
+import { PoolData, StableData, StableHistoricalData, PoolHistoricalData, Perpetual, FeeData, OracleByTicker, FeeHistoricalData } from '../../generated/schema'
+import { BASE_PARAMS, BASE_TOKENS, BLOCK_UPDATE_POOL_MANAGER_ESTIMATED_APR, ROUND_COEFF, ZERO } from '../../../constants'
 // import { StableMaster__collateralMapResultFeeDataStruct } from '../../generated/Core/StableMaster'
 import { StableMaster__collateralMapResultFeeDataStruct } from '../../generated/templates/StableMasterTemplate/StableMaster'
 import { PerpetualOpened } from '../../generated/templates/PerpetualManagerFrontTemplate/PerpetualManagerFront'
+import { ChainlinkTemplate } from '../../generated/templates'
+import { ChainlinkProxy } from '../../generated/templates/ChainlinkTemplate/ChainlinkProxy'
+import { getCollateralPrice } from './chainlink'
 
 export function historicalSlice(block: ethereum.Block): BigInt {
   const timestamp = block.timestamp
@@ -19,6 +22,14 @@ export function historicalSlice(block: ethereum.Block): BigInt {
   const hourStartTimestamp = hourId.times(ROUND_COEFF)
 
   return hourStartTimestamp
+}
+
+// Whitespaces are stripped first. Then, `description` must be in the format "(W)TOKEN1/TOKEN2" or "(W)TOKEN1/TOKEN2Oracle".
+export function parseOracleDescription(description: string, hasExtra: boolean): string[] {
+  description = description.replace(' ', '')
+  if (hasExtra) description = description.slice(0, -6)
+  let tokens = description.split('/')
+  return tokens
 }
 
 export function updateStableData(stableMaster: StableMaster, block: ethereum.Block): void {
@@ -86,6 +97,7 @@ export function _updateGainPoolData(
   const id = poolManager._address.toHexString()
   const roundedTimestamp = historicalSlice(block)
   const idHistorical = poolManager._address.toHexString() + '_hour_' + roundedTimestamp.toString()
+  const token = ERC20.bind(poolManager.token())
 
   // always call after _updatePoolData
   let data = PoolData.load(id)!
@@ -111,6 +123,56 @@ export function _updateGainPoolData(
 
   dataHistorical.save()
   data.save()
+
+  // Update the global revenue values
+  const feeData = FeeData.load('0')!
+  let feeDataHistorical = FeeHistoricalData.load(roundedTimestamp.toString())
+  if (feeDataHistorical == null) {
+    feeDataHistorical = new FeeHistoricalData(roundedTimestamp.toString())
+  }
+  const collatName = token.symbol()
+  const collateralOracle = OracleByTicker.load(collatName)
+  const decimalNormalizer = BigInt.fromString('10').pow(data.decimals!.toI32() as u8)
+  let collateralPrice: BigInt
+  if (collateralOracle == null) {
+    if (collatName == "USDC") {
+      collateralPrice = BASE_TOKENS
+    } else {
+      log.warning('=== we have to read the oracle from contract: {}', [collatName])
+      const stableMaster = StableMaster.bind(poolManager.stableMaster())
+      const collatData = stableMaster.collateralMap(poolManager._address)
+      const oracle = Oracle.bind(collatData.value3)
+      collateralPrice = oracle.readLower()
+    }
+  }
+  else collateralPrice = getCollateralPrice(collateralOracle)
+
+
+  tmpTotalProtocolFees = feeData.totalProtocolFees.plus(totalProtocolFees.times(collateralPrice).div(decimalNormalizer))
+  tmpTotalKeeperFees = feeData.totalKeeperFees.plus(totalKeeperFees.times(collateralPrice).div(decimalNormalizer))
+  tmpTotalSLPFees = feeData.totalSLPFees.plus(totalSLPFees.times(collateralPrice).div(decimalNormalizer))
+  tmpTotalProtocolInterests = feeData.totalProtocolInterests.plus(totalProtocolInterests.times(collateralPrice).div(decimalNormalizer))
+  tmpTotalSLPInterests = feeData.totalSLPInterests.plus(totalSLPInterests.times(collateralPrice).div(decimalNormalizer))
+
+  feeData.totalProtocolFees = tmpTotalProtocolFees
+  feeData.totalKeeperFees = tmpTotalKeeperFees
+  feeData.totalSLPFees = tmpTotalSLPFees
+  feeData.totalProtocolInterests = tmpTotalProtocolInterests
+  feeData.totalSLPInterests = tmpTotalSLPInterests
+  feeData.blockNumber = block.number
+  feeData.timestamp = block.timestamp
+
+  feeDataHistorical.totalProtocolFees = tmpTotalProtocolFees
+  feeDataHistorical.totalKeeperFees = tmpTotalKeeperFees
+  feeDataHistorical.totalSLPFees = tmpTotalSLPFees
+  feeDataHistorical.totalProtocolInterests = tmpTotalProtocolInterests
+  feeDataHistorical.totalSLPInterests = tmpTotalSLPInterests
+  feeDataHistorical.timestamp = block.timestamp
+  feeDataHistorical.blockNumber = block.number
+
+  feeData.save()
+  feeDataHistorical.save()
+
 }
 
 export function _updatePoolData(
@@ -134,21 +196,12 @@ export function _updatePoolData(
   const totalHedgeAmount = perpetualManager.totalHedgeAmount()
 
   let totalMargin: BigInt
-  let totalProtocolFees: BigInt
-  let totalKeeperFees: BigInt
-  let totalSLPFees: BigInt
-  let totalProtocolInterests: BigInt
-  let totalSLPInterests: BigInt
 
   let data = PoolData.load(id)
   if (data == null) {
     data = new PoolData(id)
-    totalMargin = BigInt.fromString('0')
-    totalProtocolFees = BigInt.fromString('0')
-    totalKeeperFees = BigInt.fromString('0')
-    totalSLPFees = BigInt.fromString('0')
-    totalProtocolInterests = BigInt.fromString('0')
-    totalSLPInterests = BigInt.fromString('0')
+    totalMargin = ZERO
+    _trackNewChainlinkOracle(oracle);
   }
 
   totalMargin = add ? data.totalMargin.plus(margin) : data.totalMargin.minus(margin)
@@ -574,4 +627,22 @@ export function _getForceCloseFees(
   const protocolFees = closeFee.minus(keeperFees)
 
   return [protocolFees, keeperFees]
+}
+
+
+export function _trackNewChainlinkOracle(oracle: Oracle): void {
+  // check all 
+  let i = 0
+  let find = true
+  while (find) {
+    const result = oracle.try_circuitChainlink(BigInt.fromString(i.toString()))
+    if (result.reverted) {
+      find = false
+    } else {
+      i = i + 1
+      const oracleProxyAddress = result.value
+      const proxy = ChainlinkProxy.bind(oracleProxyAddress)
+      ChainlinkTemplate.create(proxy.aggregator())
+    }
+  }
 }

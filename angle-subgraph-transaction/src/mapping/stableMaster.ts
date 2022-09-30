@@ -6,7 +6,8 @@ import {
   CollateralDeployed,
   MintedStablecoins,
   BurntStablecoins,
-  FeeArrayUpdated
+  FeeArrayUpdated,
+  OracleUpdated
 } from '../../generated/templates/StableMasterTemplate/StableMaster'
 import { ERC20 } from '../../generated/templates/StableMasterTemplate/ERC20'
 import { PoolManager } from '../../generated/templates/StableMasterTemplate/PoolManager'
@@ -15,8 +16,9 @@ import { PerpetualManagerFront } from '../../generated/templates/StableMasterTem
 import { FeeManagerTemplate, PerpetualManagerFrontTemplate, SanTokenTemplate } from '../../generated/templates'
 import { PauseData, PoolData, Contracts, Mint, Burn } from '../../generated/schema'
 
-import { updateStableData, _getBurnFee, _getMintFee, _updateGainPoolData, _updatePoolData } from './utils'
+import { updateStableData, _getBurnFee, _getMintFee, _trackNewChainlinkOracle, _updateGainPoolData, _updatePoolData } from './utils'
 import { ERCManagerFrontTemplate } from '../../../angle-subgraph-transaction/generated/templates'
+import { Oracle } from '../../generated/templates/StableMasterTemplate/Oracle'
 
 function updatePoolData(
   poolManager: PoolManager,
@@ -258,4 +260,9 @@ export function handleUserFeeUpdate(event: FeeArrayUpdated): void {
     data.yFeeBurn = event.params._yFee
   }
   data.save()
+}
+
+export function handleSetOracle(event: OracleUpdated): void {
+  const oracle = Oracle.bind(event.params._oracle)
+  _trackNewChainlinkOracle(oracle)
 }

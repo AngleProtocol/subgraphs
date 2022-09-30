@@ -7,5 +7,6 @@
   "chainlink_EUR_USD": "0x310990e8091b5cf083fa55f500f140cfbb959016",
   "ageur": "0xe0b52e49357fd4daf2c15e02058dce6bc0057db4",
   "flashAngle": "0x2878596427bfA6b52Fa6D93B519A0c610bbDf00a",
-  "block_ageur": 30216427
+  "block_ageur": 30216427,
+  "block_oracle": 30126427
 }

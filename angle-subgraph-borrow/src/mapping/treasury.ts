@@ -104,6 +104,6 @@ export function handleNewTreasurySet(event: NewTreasurySet): void {
     data.timestamp = event.block.timestamp
     data.blockNumber = event.block.number
     data.save()
-    _addVaultManagerDataToHistory(data, event.block)
+    _addVaultManagerDataToHistory(data, event.block, null)
   }
 }
