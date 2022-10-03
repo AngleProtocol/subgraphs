@@ -1,4 +1,4 @@
-import { AnswerUpdated, ChainlinkFeed } from '../../generated/Chainlink1/ChainlinkFeed'
+import { AnswerUpdated } from '../../generated/Chainlink1/ChainlinkFeed'
 import { OracleByTicker, OracleData, VaultManagerData, VaultManagerList, VaultData } from '../../generated/schema'
 import { _initTreasury } from './treasuryHelpers'
 import {
@@ -8,8 +8,8 @@ import {
   _addVaultManagerDataToHistory,
   _addVaultDataToHistory
 } from './vaultManagerHelpers'
-import { log, ethereum, BigInt, Address } from '@graphprotocol/graph-ts'
-import { parseOracleDescription } from './utils'
+import { ethereum, BigInt, Address } from '@graphprotocol/graph-ts'
+import { _initAggregator } from './utils'
 import {
   BASE_TOKENS,
   FAST_SYNC_THRESHOLD,
@@ -18,39 +18,14 @@ import {
   STETH_ADDRESS
 } from '../../../constants'
 import { stETH } from '../../generated/Chainlink8/stETH'
+import { ChainlinkFeed } from '../../generated/templates/ChainlinkTemplate/ChainlinkFeed'
 
 // Handler used to periodically refresh Oracles and Vault's HF/debt
 export function handleAnswerUpdated(event: AnswerUpdated): void {
   let dataOracle = OracleData.load(event.address.toHexString())
   if (dataOracle == null) {
     const feed = ChainlinkFeed.bind(event.address)
-    const tokens = parseOracleDescription(feed.description(), false)
-    const decimals = BigInt.fromI32(feed.decimals())
-
-    dataOracle = new OracleData(event.address.toHexString())
-    // here we assume that Chainlink always put the non-USD token first
-    dataOracle.tokenTicker = tokens[0]
-    // The borrowing module does not handle rebasing tokens, so the only accepted token is wstETH
-    // if the in token is wstETH we also need to multiply by the rate wstETH to stETH - as we are looking at the stETH oracle because on 
-    // mainnet the oracle wstETH-stETH does not exist
-    let quoteAmount = BASE_TOKENS;
-    if (tokens[0] == "STETH") {
-      dataOracle.tokenTicker = "wSTETH"
-      quoteAmount = stETH.bind(Address.fromString(STETH_ADDRESS)).getPooledEthByShares(BASE_TOKENS)
-
-    }
-    dataOracle.price = quoteAmount.times(event.params.current).div(BASE_TOKENS)
-    dataOracle.decimals = decimals
-    dataOracle.timestamp = event.block.timestamp
-    dataOracle.save()
-
-    log.warning('=== new Oracle: {} {}', [tokens[0], tokens[1]])
-
-    // OracleByTicker will point to OracleData and be indexed by token address, which will help us retrieve the second oracle in `getCollateralPriceInAgToken`
-    const dataOracleByTicker = new OracleByTicker(dataOracle.tokenTicker)
-    dataOracleByTicker.oracle = dataOracle.id
-    dataOracleByTicker.save()
-    // mostly used for high frequency block blockchain
+    _initAggregator(feed, event);
   } else if (event.block.timestamp.minus(dataOracle.timestamp).lt(ORACLE_SYNC_TIME_INTERVAL)) {
     return
   } else {
@@ -145,3 +120,5 @@ function updateVaults(block: ethereum.Block, newOracleValue: BigInt, dataVM: Vau
   dataVM.save()
   _addVaultManagerDataToHistory(dataVM, block, null)
 }
+
+

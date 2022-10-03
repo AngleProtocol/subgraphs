@@ -2,7 +2,7 @@
   "name": "mainnet-subgraph",
   "license": "UNLICENSED",
   "scripts": {
-    "build:transaction": "cd angle-subgraph-transaction && yarn build",
+    "build:borrow": "cd angle-subgraph-borrow && yarn build",
     "deploy:borrow": "cd angle-subgraph-borrow && yarn deploy",
     "deploy:periphery": "cd angle-subgraph-periphery && yarn deploy",
     "deploy:perpetual": "cd angle-subgraph-perpetual && yarn deploy",

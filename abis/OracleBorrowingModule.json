@@ -84,6 +84,19 @@
   },
   {
     "inputs": [],
+    "name": "circuitChainlink",
+    "outputs": [
+      {
+        "internalType": "contract AggregatorV3Interface[2]",
+        "name": "",
+        "type": "address[2]"
+      }
+    ],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "read",
     "outputs": [
       {
