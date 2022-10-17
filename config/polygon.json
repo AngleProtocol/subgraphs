@@ -1,7 +1,7 @@
 {
   "network": "matic",
   "chainlink_ETH_USD": "0x4dd6655ad5ed7c06c882f496e3f42ace5766cb89",
-  "chainlink_BTC_USD": "0xc907E116054Ad103354f2D350FD2514433D57F6f",
+  "chainlink_BTC_USD": "0x9b489F7Fffa89EA450E3121603e79d9093a9396E",
   "chainlink_MATIC_USD": "0x1278c74c3b2f8c3bca0089b4e128faf023615ecf",
   "chainlink_USDC_USD": "0xf9c53A834F60cBbE40E27702276fBc0819B3aFAD",
   "chainlink_EUR_USD": "0x310990e8091b5cf083fa55f500f140cfbb959016",
