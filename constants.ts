@@ -23,9 +23,9 @@ export const WEEK = BigInt.fromString('7').times(BigInt.fromString('86400'))
 // For events happening below this timestamp, vaults will be updated every (at most) `FAST_SYNC_TIME_INTERVAL` seconds
 // instead of being updated at every oracle update. This is a considerable speedup.
 // Once the subgraph is indexed, this threshold should be set to 0 to launch a slow but accurate indexing in background.
-export const FAST_SYNC_THRESHOLD = BigInt.fromString('0')
+export const FAST_SYNC_THRESHOLD = BigInt.fromString('1665563767')
 // 3 hours minimal interval between vault refresh (see above)
-export const FAST_SYNC_TIME_INTERVAL = BigInt.fromString('10800')
+export const FAST_SYNC_TIME_INTERVAL = BigInt.fromString('86400')
 export const ORACLE_SYNC_TIME_INTERVAL = BigInt.fromString('3600')
 
 export const BLOCK_UPDATE_POOL_MANAGER_ESTIMATED_APR = BigInt.fromString('14665999')
