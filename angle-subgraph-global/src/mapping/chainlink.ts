@@ -10,7 +10,6 @@ import { AnswerUpdated, ChainlinkFeed } from '../../generated/templates/Chainlin
 // Handler used to periodically refresh Oracles
 export function handleAnswerUpdated(event: AnswerUpdated): void {
   const feed = ChainlinkFeed.bind(event.address)
-  const description = feed.description()
 
   let dataOracle = OracleData.load(event.address.toHexString())
   if (dataOracle == null) {

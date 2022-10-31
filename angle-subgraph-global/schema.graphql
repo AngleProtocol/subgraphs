@@ -30,15 +30,6 @@ type StableHistoricalData @entity {
   timestamp: BigInt!
 }
 
-type PauseData @entity {
-  # id of the PoolData
-  id: ID!
-  # Pause possibilities
-  user: Boolean
-  slp: Boolean
-  ha: Boolean
-}
-
 type PoolData @entity {
   # Address of the poolManager
   id: ID!
@@ -274,6 +265,397 @@ type Perpetual @entity {
   status: PerpetualStatus
 }
 
+type UtilisationData @entity {
+  # agToken address
+  id: ID!
+  # agToken address
+  stablecoin: String!
+  # agToken ticker
+  stableName: String!
+
+  # Internal variable to avoid tx double counting
+  _lastTx: String!
+
+  # Number of agToken available
+  circulationSupply: BigInt!
+  # Total transfer volume
+  volume: BigInt!
+  # Number of transfer transactions for this agToken
+  txCount: BigInt!
+  # Number of different addresses holding a positive balance of this agToken
+  holderCount: BigInt!
+
+  ## Time tracking
+  # BlockNumber of last update
+  blockNumber: BigInt!
+  # Timestamp of last update
+  timestamp: BigInt!
+}
+
+type UtilisationHistoricalData @entity {
+  # agToken address + '_' + timestamp
+  id: ID!
+  # agToken address
+  stablecoin: String!
+  # agToken ticker
+  stableName: String!
+
+  # Number of agToken available
+  circulationSupply: BigInt!
+  # Total transfer volume
+  volume: BigInt!
+  # Number of transfer transactions for this agToken
+  txCount: BigInt!
+  # Number of different addresses holding a positive balance of this agToken
+  holderCount: BigInt!
+
+  ## Time tracking
+  # BlockNumber of last update, modulo 30 minutes worth of blocks
+  blockNumber: BigInt!
+  # Timestamp of last update, modulo 30 minutes
+  timestamp: BigInt!
+}
+
+type FeeData @entity {
+  # fee data id
+  id: ID!
+  # Total protocol fees
+  totalProtocolFees: BigInt!
+  # Total SLP fees
+  totalSLPFees: BigInt!
+  # Total keeper fees
+  totalKeeperFees: BigInt!
+  # Total protocol interest
+  totalProtocolInterests: BigInt!
+  # Total SLP interest
+  totalSLPInterests: BigInt!
+  # BlockNumber of last update
+  blockNumber: BigInt!
+  # Timestamp of last update
+  timestamp: BigInt!
+}
+
+type FeeHistoricalData @entity {
+  # fee data id
+  id: ID!
+  # Total protocol fees
+  totalProtocolFees: BigInt!
+  # Total SLP fees
+  totalSLPFees: BigInt!
+  # Total keeper fees
+  totalKeeperFees: BigInt!
+  # Total protocol interest
+  totalProtocolInterests: BigInt!
+  # Total SLP interest
+  totalSLPInterests: BigInt!
+  # BlockNumber of last update
+  blockNumber: BigInt!
+  # Timestamp of last update
+  timestamp: BigInt!
+}
+
+type FeesEarned @entity {
+  # Address of the owner + address of the token
+  id: ID!
+  owner: String!
+  token: String!
+  earned: BigInt!
+}
+
+type FeeDistribution @entity {
+  # Address of the fee distributor
+  id: ID!
+  token: String!
+  tokenName: String!
+  tokenDecimals: BigInt!
+  tokensPerWeek: [WeeklyDistribution!]! @derivedFrom(field: "feeDistributor")
+  lastTokenTime: BigInt!
+  # Block Number of last update
+  blockNumber: BigInt
+}
+
+type WeeklyDistribution @entity {
+  # Address of the fee distributor + week number
+  id: ID!
+  feeDistributor: FeeDistribution!
+  week: BigInt!
+  distributed: BigInt!
+}
+
+type OracleByTicker @entity {
+  # Ticker of non-USD token
+  id: ID!
+  # Address of oracle which allows to load the matching `OracleData` entity
+  oracle: String!
+}
+
+type OracleData @entity {
+  # Address of oracle
+  id: ID!
+  # Ticker of non-USD token
+  tokenTicker: String!
+  # Price reported by oracle
+  price: BigInt!
+  # Decimal used by the Chainlink oracle
+  decimals: BigInt!
+  # Timestamp of current block
+  timestamp: BigInt!
+}
+
+type OracleCoreData @entity {
+  # Address of the oracle
+  id: ID!
+  # Address of the oracle
+  oracle: String!
+  # Name of input token
+  tokenIn: String!
+  # Name of output token
+  tokenOut: String!
+  # Exchange rate
+  rateLower: BigInt!
+  # Exchange rate
+  rateUpper: BigInt!
+  # BlockNumber of last update
+  blockNumber: BigInt!
+  # Timestamp of last update
+  timestamp: BigInt!
+}
+
+type OracleAPRCoreHistoricalData @entity {
+  # Address of the PerpetualManager + '_hour_' +timestamp
+  id: ID!
+  # Name of the stable assets
+  stableName: String
+  # Name of the collateral
+  collatName: String
+  # Estimated APR
+  apr: BigInt
+  # Exchange rate
+  rateLower: BigInt
+  # Exchange rate
+  rateUpper: BigInt
+  # BlockNumber of last update
+  blockNumber: BigInt!
+  # Timestamp of last update
+  timestamp: BigInt!
+}
+
+type GaugeData @entity {
+  # Address of the gauge contract
+  id: ID!
+  type: BigInt
+  rewardDatas: [GaugeRewardData!]! @derivedFrom(field: "gauge")
+  relWeigth: BigInt
+  # Block Number of last update
+  blockNumber: BigInt!
+  timestamp: BigInt!
+}
+
+type GaugeHistoricalData @entity {
+  # Address of the gauge contract + timestamp
+  id: ID!
+  type: BigInt
+  relWeigth: BigInt
+  # Block Number of last update
+  blockNumber: BigInt!
+  timestamp: BigInt!
+}
+
+type GaugeRewardData @entity {
+  # Address of the gauge contract + reward token
+  id: ID!
+  gauge: GaugeData
+  token: String!
+  decimals: BigInt
+  decimalsStakedToken: BigInt
+  tokenSymbol: String
+  distributor: String
+  periodFinish: BigInt
+  rewardRate: BigInt
+  totalSupply: BigInt
+  workingSupply: BigInt
+  lastUpdateTime: BigInt
+  # Block Number of last update
+  blockNumber: BigInt!
+  timestamp: BigInt!
+}
+
+type GaugeRewardHistoricalData @entity {
+  # Address of the gauge contract + reward token + timestamp
+  id: ID!
+  gauge: GaugeData!
+  token: String!
+  decimals: BigInt
+  decimalsStakedToken: BigInt
+  tokenSymbol: String
+  distributor: String
+  periodFinish: BigInt
+  rewardRate: BigInt
+  totalSupply: BigInt
+  workingSupply: BigInt
+  lastUpdateTime: BigInt
+  # Block Number of last update
+  blockNumber: BigInt!
+  timestamp: BigInt!
+}
+
+type StrategyData @entity {
+  # Address of the strategy
+  id: ID!
+  # Address of the poolManager
+  poolManager: String
+  # Name of the stable
+  stableName: String!
+  # Name of the collateral
+  collatName: String!
+  # Collateral Decimal
+  decimals: BigInt!
+  # Lender data
+  lenders: [LenderData!]! @derivedFrom(field: "strategy")
+  # Total liquidity in the strategy
+  estimatedTotalAssets: BigInt!
+  # DebtRatio the strategy
+  debtRatio: BigInt!
+  # Balance of the poolManager
+  managerBalance: BigInt!
+  # Total assets of the poolManager
+  totalAsset: BigInt!
+  # Estimated APR
+  apr: BigInt!
+  # Timestamp of last update
+  timestamp: BigInt!
+}
+
+type StrategyHistoricalData @entity {
+  # Address of the strategy + block number
+  id: ID!
+  # Address of the poolManager
+  poolManager: String!
+  # Name of the stable
+  stableName: String!
+  # Name of the collateral
+  collatName: String!
+  # Collateral Decimal
+  decimals: BigInt!
+  # Total liquidity in the strategy
+  estimatedTotalAssets: BigInt!
+  # DebtRatio the strategy
+  debtRatio: BigInt!
+  # Balance of the poolManager
+  managerBalance: BigInt!
+  # Total assets of the poolManager
+  totalAsset: BigInt!
+  # Estimated APR
+  apr: BigInt!
+  # Timestamp of last update
+  timestamp: BigInt!
+}
+
+type LenderData @entity {
+  # Address of the genericLender
+  id: ID!
+  # name of the lender
+  name: String!
+  # Name of the strategy
+  strategy: StrategyData!
+  # Total liquidity in the lender
+  nav: BigInt!
+  # Estimated APR
+  apr: BigInt!
+}
+
+type ANGLE @entity {
+  # Address of the angle owner
+  id: ID!
+  # Balance
+  balance: BigInt!
+}
+
+type ANGLEHistorical @entity {
+  # Address of the angle owner + rounded timestamp
+  id: ID!
+  owner: String!
+  # Balance
+  balance: BigInt!
+  timestamp: BigInt!
+}
+
+type lockedANGLE @entity {
+  # veANGLE address
+  id: ID!
+  timestamp: BigInt!
+  angleLocked: BigInt!
+  veSupply: BigInt!
+}
+
+type lockedANGLEHistorical @entity {
+  # Timestamp
+  id: ID!
+  timestamp: BigInt!
+  angleLocked: BigInt!
+  veSupply: BigInt!
+}
+
+type veANGLEData @entity {
+  # Address of the angle owner
+  id: ID!
+  bias: BigInt!
+  slope: BigInt!
+  lastUpdate: BigInt!
+  endLocked: BigInt!
+  amount: BigInt!
+}
+
+type veANGLEHistorical @entity {
+  # Address of the angle owner + timestamp
+  id: ID!
+  user: String!
+  bias: BigInt!
+  slope: BigInt!
+  timestamp: BigInt!
+  endLocked: BigInt!
+  amount: BigInt!
+}
+
+type agToken @entity {
+  # Address of the owner + address of the token
+  id: ID!
+  owner: String!
+  token: String!
+  stableName: String
+  balance: BigInt!
+  staked: BigInt!
+}
+
+type sanToken @entity {
+  # Address of the owner + address of the token
+  id: ID!
+  owner: String!
+  token: String!
+  collatName: String
+  stableName: String
+  balance: BigInt!
+  staked: BigInt!
+}
+
+type externalToken @entity {
+  # Address of the owner + address of the token
+  id: ID!
+  owner: String!
+  token: String!
+  name: String
+  balance: BigInt!
+  staked: BigInt!
+}
+
+type CapitalGain @entity {
+  # Address
+  id: ID!
+  gains: BigInt!
+  lastPosition: BigInt!
+  lastStakedPosition: BigInt!
+}
+
 type KeeperReward @entity {
   # Tx hash
   id: ID!
@@ -408,397 +790,15 @@ type Unstake @entity {
   blockNumber: BigInt
 }
 
-type FeeData @entity {
-  # fee data id
-  id: ID!
-  # Total protocol fees
-  totalProtocolFees: BigInt!
-  # Total SLP fees
-  totalSLPFees: BigInt!
-  # Total keeper fees
-  totalKeeperFees: BigInt!
-  # Total protocol interest
-  totalProtocolInterests: BigInt!
-  # Total SLP interest
-  totalSLPInterests: BigInt!
-  # BlockNumber of last update
-  blockNumber: BigInt!
-  # Timestamp of last update
-  timestamp: BigInt!
-}
-
-type FeeHistoricalData @entity {
-  # fee data id
-  id: ID!
-  # Total protocol fees
-  totalProtocolFees: BigInt!
-  # Total SLP fees
-  totalSLPFees: BigInt!
-  # Total keeper fees
-  totalKeeperFees: BigInt!
-  # Total protocol interest
-  totalProtocolInterests: BigInt!
-  # Total SLP interest
-  totalSLPInterests: BigInt!
-  # BlockNumber of last update
-  blockNumber: BigInt!
-  # Timestamp of last update
-  timestamp: BigInt!
-}
-
-type OracleByTicker @entity {
-  # Ticker of non-USD token
-  id: ID!
-  # Address of oracle which allows to load the matching `OracleData` entity
-  oracle: String!
-}
-
-type OracleData @entity {
-  # Address of oracle
-  id: ID!
-  # Ticker of non-USD token
-  tokenTicker: String!
-  # Price reported by oracle
-  price: BigInt!
-  # Decimal used by the Chainlink oracle
-  decimals: BigInt!
-  # Timestamp of current block
-  timestamp: BigInt!
-}
-
-type ANGLE @entity {
-  # Address of the angle owner
-  id: ID!
-  # Balance
-  balance: BigInt!
-}
-
-type ANGLEHistorical @entity {
-  # Address of the angle owner + rounded timestamp
-  id: ID!
-  owner: String!
-  # Balance
-  balance: BigInt!
-  timestamp: BigInt!
-}
-
-type lockedANGLE @entity {
-  # veANGLE address
-  id: ID!
-  timestamp: BigInt!
-  angleLocked: BigInt!
-  veSupply: BigInt!
-}
-
-type lockedANGLEHistorical @entity {
-  # Timestamp
-  id: ID!
-  timestamp: BigInt!
-  angleLocked: BigInt!
-  veSupply: BigInt!
-}
-
-type veANGLEData @entity {
-  # Address of the angle owner
-  id: ID!
-  bias: BigInt!
-  slope: BigInt!
-  lastUpdate: BigInt!
-  endLocked: BigInt!
-  amount: BigInt!
-}
-
-type veANGLEHistorical @entity {
-  # Address of the angle owner + timestamp
-  id: ID!
-  user: String!
-  bias: BigInt!
-  slope: BigInt!
-  timestamp: BigInt!
-  endLocked: BigInt!
-  amount: BigInt!
-}
-
-type agToken @entity {
-  # Address of the owner + address of the token
-  id: ID!
-  owner: String!
-  token: String!
-  stableName: String
-  balance: BigInt!
-  staked: BigInt!
-}
-
-type sanToken @entity {
-  # Address of the owner + address of the token
-  id: ID!
-  owner: String!
-  token: String!
-  collatName: String
-  stableName: String
-  balance: BigInt!
-  staked: BigInt!
-}
-
-type externalToken @entity {
-  # Address of the owner + address of the token
-  id: ID!
-  owner: String!
-  token: String!
-  name: String
-  balance: BigInt!
-  staked: BigInt!
-}
-
-type CapitalGain @entity {
-  # Address
-  id: ID!
-  gains: BigInt!
-  lastPosition: BigInt!
-  lastStakedPosition: BigInt!
-}
-
-type GaugeData @entity {
-  # Address of the gauge contract
-  id: ID!
-  type: BigInt
-  rewardDatas: [GaugeRewardData!]! @derivedFrom(field: "gauge")
-  relWeigth: BigInt
-  # Block Number of last update
-  blockNumber: BigInt!
-  timestamp: BigInt!
-}
-
-type GaugeHistoricalData @entity {
-  # Address of the gauge contract + timestamp
-  id: ID!
-  type: BigInt
-  relWeigth: BigInt
-  # Block Number of last update
-  blockNumber: BigInt!
-  timestamp: BigInt!
-}
-
-type GaugeRewardData @entity {
-  # Address of the gauge contract + reward token
-  id: ID!
-  gauge: GaugeData
-  token: String!
-  decimals: BigInt
-  decimalsStakedToken: BigInt
-  tokenSymbol: String
-  distributor: String
-  periodFinish: BigInt
-  rewardRate: BigInt
-  totalSupply: BigInt
-  workingSupply: BigInt
-  lastUpdateTime: BigInt
-  # Block Number of last update
-  blockNumber: BigInt!
-  timestamp: BigInt!
-}
-
-type GaugeRewardHistoricalData @entity {
-  # Address of the gauge contract + reward token + timestamp
-  id: ID!
-  gauge: GaugeData!
-  token: String!
-  decimals: BigInt
-  decimalsStakedToken: BigInt
-  tokenSymbol: String
-  distributor: String
-  periodFinish: BigInt
-  rewardRate: BigInt
-  totalSupply: BigInt
-  workingSupply: BigInt
-  lastUpdateTime: BigInt
-  # Block Number of last update
-  blockNumber: BigInt!
-  timestamp: BigInt!
-}
-
-type UtilisationData @entity {
-  # agToken address
-  id: ID!
-  # agToken address
-  stablecoin: String!
-  # agToken ticker
-  stableName: String!
-
-  # Internal variable to avoid tx double counting
-  _lastTx: String!
-
-  # Number of agToken available
-  circulationSupply: BigInt!
-  # Total transfer volume
-  volume: BigInt!
-  # Number of transfer transactions for this agToken
-  txCount: BigInt!
-  # Number of different addresses holding a positive balance of this agToken
-  holderCount: BigInt!
-
-  ## Time tracking
-  # BlockNumber of last update
-  blockNumber: BigInt!
-  # Timestamp of last update
-  timestamp: BigInt!
-}
-
-type UtilisationHistoricalData @entity {
-  # agToken address + '_' + timestamp
-  id: ID!
-  # agToken address
-  stablecoin: String!
-  # agToken ticker
-  stableName: String!
-
-  # Number of agToken available
-  circulationSupply: BigInt!
-  # Total transfer volume
-  volume: BigInt!
-  # Number of transfer transactions for this agToken
-  txCount: BigInt!
-  # Number of different addresses holding a positive balance of this agToken
-  holderCount: BigInt!
-
-  ## Time tracking
-  # BlockNumber of last update, modulo 30 minutes worth of blocks
-  blockNumber: BigInt!
-  # Timestamp of last update, modulo 30 minutes
-  timestamp: BigInt!
-}
-
-type StrategyData @entity {
-  # Address of the strategy
-  id: ID!
-  # Address of the poolManager
-  poolManager: String
-  # Name of the stable
-  stableName: String!
-  # Name of the collateral
-  collatName: String!
-  # Collateral Decimal
-  decimals: BigInt!
-  # Lender data
-  lenders: [LenderData!]! @derivedFrom(field: "strategy")
-  # Total liquidity in the strategy
-  estimatedTotalAssets: BigInt!
-  # DebtRatio the strategy
-  debtRatio: BigInt!
-  # Balance of the poolManager
-  managerBalance: BigInt!
-  # Total assets of the poolManager
-  totalAsset: BigInt!
-  # Estimated APR
-  apr: BigInt!
-  # Timestamp of last update
-  timestamp: BigInt!
-}
-
-type StrategyHistoricalData @entity {
-  # Address of the strategy + block number
-  id: ID!
-  # Address of the poolManager
-  poolManager: String!
-  # Name of the stable
-  stableName: String!
-  # Name of the collateral
-  collatName: String!
-  # Collateral Decimal
-  decimals: BigInt!
-  # Total liquidity in the strategy
-  estimatedTotalAssets: BigInt!
-  # DebtRatio the strategy
-  debtRatio: BigInt!
-  # Balance of the poolManager
-  managerBalance: BigInt!
-  # Total assets of the poolManager
-  totalAsset: BigInt!
-  # Estimated APR
-  apr: BigInt!
-  # Timestamp of last update
-  timestamp: BigInt!
-}
-
-type LenderData @entity {
-  # Address of the genericLender
-  id: ID!
-  # name of the lender
-  name: String!
-  # Name of the strategy
-  strategy: StrategyData!
-  # Total liquidity in the lender
-  nav: BigInt!
-  # Estimated APR
-  apr: BigInt!
-}
-
-type OracleCoreData @entity {
-  # Address of the oracle
-  id: ID!
-  # Address of the oracle
-  oracle: String!
-  # Name of input token
-  tokenIn: String!
-  # Name of output token
-  tokenOut: String!
-  # Exchange rate
-  rateLower: BigInt!
-  # Exchange rate
-  rateUpper: BigInt!
-  # BlockNumber of last update
-  blockNumber: BigInt!
-  # Timestamp of last update
-  timestamp: BigInt!
-}
-
-type OracleAPRCoreHistoricalData @entity {
-  # Address of the PerpetualManager + '_hour_' +timestamp
-  id: ID!
-  # Name of the stable assets
-  stableName: String
-  # Name of the collateral
-  collatName: String
-  # Estimated APR
-  apr: BigInt
-  # Exchange rate
-  rateLower: BigInt
-  # Exchange rate
-  rateUpper: BigInt
-  # BlockNumber of last update
-  blockNumber: BigInt!
-  # Timestamp of last update
-  timestamp: BigInt!
-}
-
-type FeesEarned @entity {
-  # Address of the owner + address of the token
-  id: ID!
-  owner: String!
-  token: String!
-  earned: BigInt!
-}
-
-type FeeDistribution @entity {
-  # Address of the fee distributor
-  id: ID!
-  token: String!
-  tokenName: String!
-  tokenDecimals: BigInt!
-  tokensPerWeek: [WeeklyDistribution!]! @derivedFrom(field: "feeDistributor")
-  lastTokenTime: BigInt!
-  # Block Number of last update
-  blockNumber: BigInt
-}
-
-type WeeklyDistribution @entity {
-  # Address of the fee distributor + week number
-  id: ID!
-  feeDistributor: FeeDistribution!
-  week: BigInt!
-  distributed: BigInt!
-}
-
 type Contracts @entity {
   id: ID!
+}
+
+type PauseData @entity {
+  # id of the PoolData
+  id: ID!
+  # Pause possibilities
+  user: Boolean
+  slp: Boolean
+  ha: Boolean
 }
