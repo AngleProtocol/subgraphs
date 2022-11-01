@@ -1,3 +1,10 @@
+enum PerpetualStatus {
+  open
+  close
+  forceClose
+  liquidate
+}
+
 type StableData @entity {
   # Address of the stableMaster
   id: ID!
@@ -216,13 +223,6 @@ type PoolHistoricalData @entity {
   pauseData: PauseData
 }
 
-enum PerpetualStatus {
-  open
-  close
-  forceClose
-  liquidate
-}
-
 type Perpetual @entity {
   # Address of the PerpetualManager + '_' + PerpetualID
   id: ID!
@@ -265,6 +265,348 @@ type Perpetual @entity {
   status: PerpetualStatus
 }
 
+type TreasuryData @entity {
+  # Address of the treasury
+  id: ID!
+  # Address of the stablecoin
+  agToken: String!
+
+  ## Contract state
+  # Address of the treasury
+  treasury: String!
+  # List of vaultManagers reporting to this treasury
+  vaultManagers: [VaultManagerData!]! @derivedFrom(field: "treasury")
+  # Amount of bad debt
+  badDebt: BigInt!
+  # Amount of unprocessed surplus available
+  surplusBuffer: BigInt!
+
+  # Governance parameters
+  # Share of the `surplusBuffer` distributed to governance (in `BASE_PARAMS`)
+  surplusForGovernance: BigInt!
+  # Address of the contract managing surplus
+  surplusManager: String!
+
+  ## Derivated values
+  # Amount of surplus available for safety
+  surplus: BigInt!
+  # sum of all profits succesfully forwarded to governance
+  governanceProfits: BigInt!
+
+  ## Time tracking
+  # BlockNumber of last update
+  blockNumber: BigInt!
+  # Timestamp of last update
+  timestamp: BigInt!
+}
+
+type TreasuryHistoricalData @entity {
+  # Address of the treasury + '_' + timestamp
+  id: ID!
+  # Address of the stablecoin
+  agToken: String!
+
+  ## Contract state
+  # Address of the treasury
+  treasury: String!
+  # Amount of bad debt
+  badDebt: BigInt!
+  # Amount of surplus available
+  surplus: BigInt!
+  # Amount of unprocessed surplus available
+  surplusBuffer: BigInt!
+
+  # Governance parameters
+  # Share of the `surplusBuffer` distributed to governance (in `BASE_PARAMS`)
+  surplusForGovernance: BigInt!
+  # Address of the contract managing surplus
+  surplusManager: String!
+
+  ## Time tracking
+  # BlockNumber of last update
+  blockNumber: BigInt!
+  # Timestamp of last update
+  timestamp: BigInt!
+}
+
+# This entity is used to refresh vaults whenever ETH/USD Chainlink oracle is updated (~ 1/h)
+type VaultManagerList @entity {
+  # 1
+  id: ID!
+  # List of all active vault managers
+  vaultManagers: [VaultManagerData!]!
+}
+
+type VaultManagerData @entity {
+  # Address of VaultManager
+  id: ID!
+  # Name of VaultManager
+  name: String!
+  # Address of VaultManager
+  vaultManager: String!
+  # Address of agToken
+  agToken: String!
+  # Address of collateral
+  collateral: String!
+  # base of collateral
+  collateralBase: BigInt!
+  # Minimum debt of a healthy vault
+  dust: BigInt!
+  # Ticker of agToken target (e.g: EUR)
+  agTokenTicker: String!
+  # Ticker of collateral (e.g: ETH)
+  collateralTicker: String!
+
+  ## Contract state
+  # Address of treasury
+  treasury: TreasuryData!
+  # Amount of collateral deposited
+  collateralAmount: BigInt!
+  # Total amount of debt across vaults in agToken, normalized
+  totalNormalizedDebt: BigInt!
+  # Value of interestAccumulator
+  interestAccumulator: BigInt!
+  # Timestamp when interestAccumulator was updated the last time
+  lastInterestAccumulatorUpdated: BigInt!
+
+  ## Derivated values
+  # Amount of debt in agToken
+  totalDebt: BigInt!
+  # Amount of collateral in USD
+  tvl: BigInt!
+  # Number of active vaults
+  activeVaultsCount: BigInt!
+  # list of vaults
+  vaults: [VaultData!]! @derivedFrom(field: "vaultManager")
+  # total surplus accumulated by this VM since inception
+  surplus: BigInt!
+  # total surplus accumulated from vault's interests
+  surplusFromInterests: BigInt!
+  # total surplus accumulated from vault's fees at borrow time
+  surplusFromBorrowFees: BigInt!
+  # total surplus accumulated from vault's fees at repayment time
+  surplusFromRepayFees: BigInt!
+  # total surplus accumulated from protocol surcharge when a liquidation occurs
+  surplusFromLiquidationSurcharges: BigInt!
+  # total bad debt created by vaults on this VM since inception
+  badDebt: BigInt!
+  # surplus - bad debt (since inception)
+  profits: BigInt!
+  # pending surplus accumulated since last accrual to treasury
+  pendingSurplus: BigInt!
+  # pending bad debt accumulated since last accrual to treasury
+  pendingBadDebt: BigInt!
+  # Current value of the oracle
+  oracleValue: BigInt!
+  # sum of debt repayed by liquidators on the vaults of this manager
+  liquidationRepayments: BigInt!
+
+  ## liquidation data
+  # List of USD amounts of debt repayedthrough liquidation
+  liquidationDebtsRepayed: [BigInt!]!
+  # List of USD amounts of debt removed through liquidation
+  liquidationDebtsRemoved: [BigInt!]!
+  # List of debts remaining in liquidated vault
+  liquidationDebtsRemaining: [BigInt!]!
+  # List of USD amounts of collateral bought through liquidation
+  liquidationCollateralsBought: [BigInt!]!
+  # List of USD amounts of collateral remaining in liquidated vault
+  liquidationCollateralsRemaining: [BigInt!]!
+  # List of liquidation timestamps
+  liquidationTimestamps: [BigInt!]!
+
+  ## Governance parameters
+  # Maximum debt this VaultManager can handle
+  debtCeiling: BigInt!
+  # Proxy contract giving veAngle balances
+  veBoostProxy: String!
+  # Liquidation boost parameters
+  xLiquidationBoost: [BigInt!]!
+  yLiquidationBoost: [BigInt!]!
+  # Value of collateral factor
+  collateralFactor: BigInt!
+  # Value of target health factor
+  targetHealthFactor: BigInt!
+  # Value of borrow fee
+  borrowFee: BigInt!
+  # Value of repay fee
+  repayFee: BigInt!
+  # Value of borrow interest rate
+  interestRate: BigInt!
+  # Value of liquidation surcharge
+  liquidationSurcharge: BigInt!
+  # Value of max liquidation discount
+  maxLiquidationDiscount: BigInt!
+
+  ## Time tracking
+  # BlockNumber of last update
+  blockNumber: BigInt!
+  # Timestamp of last update
+  timestamp: BigInt!
+}
+
+type VaultManagerHistoricalData @entity {
+  # Address of VaultManager + '_' + timestamp
+  id: ID!
+  # Name of VaultManager
+  name: String!
+  # Address of VaultManager
+  vaultManager: String!
+  # Address of agToken
+  agToken: String!
+  # Address of collateral
+  collateral: String!
+  # base of collateral
+  collateralBase: BigInt!
+  # Minimum debt of a healthy vault
+  dust: BigInt!
+  # Ticker of agToken target (e.g: EUR)
+  agTokenTicker: String!
+  # Ticker of collateral (e.g: ETH)
+  collateralTicker: String!
+
+  ## State
+  # Address of treasury
+  treasury: TreasuryData!
+  # Amount of collateral deposited
+  collateralAmount: BigInt!
+  # Total amount of debt across vaults in agToken, normalized
+  totalNormalizedDebt: BigInt!
+  # Value of interestAccumulator
+  interestAccumulator: BigInt!
+  # Timestamp when interestAccumulator was updated the last time
+  lastInterestAccumulatorUpdated: BigInt!
+
+  ## Derivated values
+  # Amount of debt in agToken
+  totalDebt: BigInt!
+  # Amount of collateral in USD
+  tvl: BigInt!
+  # Number of active vaults
+  activeVaultsCount: BigInt!
+  # total surplus accumulated by this VM since inception
+  surplus: BigInt!
+  # total surplus accumulated from vault's interests
+  surplusFromInterests: BigInt!
+  # total surplus accumulated from vault's fees at borrow time
+  surplusFromBorrowFees: BigInt!
+  # total surplus accumulated from vault's fees at repayment time
+  surplusFromRepayFees: BigInt!
+  # total surplus accumulated from protocol surcharge when a liquidation occurs
+  surplusFromLiquidationSurcharges: BigInt!
+  # total bad debt created by vaults on this VM since inception
+  badDebt: BigInt!
+  # surplus - bad debt (since inception)
+  profits: BigInt!
+  # pending surplus accumulated since last accrual to treasury
+  pendingSurplus: BigInt!
+  # pending bad debt accumulated since last accrual to treasury
+  pendingBadDebt: BigInt!
+  # Current value of the oracle
+  oracleValue: BigInt!
+  # sum of debt repayed by liquidators on the vaults of this manager
+  liquidationRepayments: BigInt!
+  # total number of liquidation that ever occured to the vaults of this manager
+  liquidationCount: BigInt!
+
+  ## Governance parameters
+  # Maximum debt this VaultManager can handle
+  debtCeiling: BigInt!
+  # Proxy contract giving veAngle balances
+  veBoostProxy: String!
+  # Liquidation boost parameters
+  xLiquidationBoost: [BigInt!]!
+  yLiquidationBoost: [BigInt!]!
+  # Value of collateral factor
+  collateralFactor: BigInt!
+  # Value of target health factor
+  targetHealthFactor: BigInt!
+  # Value of borrow fee
+  borrowFee: BigInt!
+  # Value of repay fee
+  repayFee: BigInt!
+  # Value of borrow interest rate
+  interestRate: BigInt!
+  # Value of liquidation surcharge
+  liquidationSurcharge: BigInt!
+  # Value of max liquidation discount
+  maxLiquidationDiscount: BigInt!
+
+  ## Time tracking
+  # BlockNumber of last update
+  blockNumber: BigInt!
+  # Timestamp of last update
+  timestamp: BigInt!
+}
+
+type VaultData @entity {
+  # Address of VaultManager + '_' + vaultID
+  id: ID!
+  # Address of VaultManager
+  vaultManager: VaultManagerData!
+  # tokenID
+  vaultID: BigInt!
+  # Opening date
+  openingDate: BigInt!
+
+  ## Contract state
+  # Address of vault owner
+  owner: String!
+  # Amount of collateral deposited
+  collateralAmount: BigInt!
+  # Amount of debt in agToken, normalized
+  normalizedDebt: BigInt!
+  # False when vault is burned
+  isActive: Boolean!
+
+  ## Derivated values
+  # Amount of debt in agToken
+  debt: BigInt!
+  # Vault's health factor (in base 1e9)
+  healthFactor: BigInt
+  # sum of all fees (borrow, repay, interests, liquidation) accrued by this vault
+  fees: BigInt!
+
+  ## Time tracking
+  # BlockNumber of last update
+  blockNumber: BigInt!
+  # Timestamp of last update
+  timestamp: BigInt!
+}
+
+type VaultHistoricalData @entity {
+  # Address of VaultManager + '_' + vaultID + '_' + timestamp
+  id: ID!
+  # Address of VaultManager
+  vaultManager: String!
+  # tokenID
+  vaultID: BigInt!
+
+  ## Contract state
+  # Address of vault owner
+  owner: String!
+  # Amount of collateral deposited
+  collateralAmount: BigInt!
+  # Amount of debt in agToken, normalized
+  normalizedDebt: BigInt!
+  # False when vault is burned
+  isActive: Boolean!
+
+  ## Derivated values
+  # Amount of debt in agToken
+  debt: BigInt!
+  # Vault's health factor (in base 1e9)
+  healthFactor: BigInt
+  # sum of all fees (borrow, repay, interests, liquidation) accrued by this vault
+  fees: BigInt!
+
+  ## Time tracking
+  # BlockNumber of last update
+  blockNumber: BigInt!
+  # Timestamp of last update
+  timestamp: BigInt!
+}
+
 type UtilisationData @entity {
   # agToken address
   id: ID!
@@ -290,6 +632,20 @@ type UtilisationData @entity {
   blockNumber: BigInt!
   # Timestamp of last update
   timestamp: BigInt!
+}
+
+# This entity is used to find InternalDebtUpdated events where borrow/repay fees should be applied differently
+type OngoingDebtTransfer @entity {
+  # timestamp
+  id: ID!
+  # VaultManager from which the debt transfer has been initiated
+  srcVaultManager: String!
+  # ID of the vault that will see its debt increased
+  srcVaultID: BigInt!
+  # VaultManager on which lives the vault that will see its debt decreased
+  dstVaultManager: String!
+  # ID of the vault that will see its debt decreased
+  dstVaultID: BigInt!
 }
 
 type UtilisationHistoricalData @entity {
@@ -329,6 +685,14 @@ type FeeData @entity {
   totalProtocolInterests: BigInt!
   # Total SLP interest
   totalSLPInterests: BigInt!
+  # Surplus from interest
+  surplusFromInterests: BigInt!
+  # Surplus from borrow fee
+  surplusFromBorrowFees: BigInt!
+  # surplus from repay fee
+  surplusFromRepayFees: BigInt!
+  # surplus from liquidation surcharge
+  surplusFromLiquidationSurcharges: BigInt!
   # BlockNumber of last update
   blockNumber: BigInt!
   # Timestamp of last update
@@ -348,6 +712,14 @@ type FeeHistoricalData @entity {
   totalProtocolInterests: BigInt!
   # Total SLP interest
   totalSLPInterests: BigInt!
+  # Surplus from interest
+  surplusFromInterests: BigInt!
+  # Surplus from borrow fee
+  surplusFromBorrowFees: BigInt!
+  # surplus from repay fee
+  surplusFromRepayFees: BigInt!
+  # surplus from liquidation surcharge
+  surplusFromLiquidationSurcharges: BigInt!
   # BlockNumber of last update
   blockNumber: BigInt!
   # Timestamp of last update
@@ -788,6 +1160,187 @@ type Unstake @entity {
   decimals: String
   timestamp: BigInt
   blockNumber: BigInt
+}
+
+## These entities are used to track transactions related to vaults
+
+# This entity helps to correctly track identical actions occuring in a single transaction.
+# It's an internal entity, it is created when a Tx is handled, and gets overwritten when the next Tx is handled
+type ActionCounter @entity {
+  # "1"
+  id: ID!
+  # Timestamp of current block
+  timestamp: BigInt!
+  # Tx Hash
+  txHash: String!
+
+  collateralUpdate: BigInt!
+  debtUpdate: BigInt!
+  debtTransfer: BigInt!
+  vaultTransfer: BigInt!
+}
+
+type VaultTransfer @entity {
+  # Tx Hash + vaultManager address + vaultID
+  id: ID!
+  # Tx Hash
+  txHash: String!
+  # Tx origin
+  txOrigin: String!
+  # Address of the first contract with which the Tx is interacting with
+  txTarget: String!
+  # Address of vaultManager
+  vaultManager: String!
+  # Vault Id
+  vaultID: BigInt!
+  # Sender address
+  previousOwner: String!
+  # Receiver address
+  newOwner: String!
+
+  ## Time tracking
+  # BlockNumber of last update
+  blockNumber: BigInt!
+  # Timestamp of last update
+  timestamp: BigInt!
+}
+
+type CollateralUpdate @entity {
+  # Tx Hash + '_' + counter
+  id: ID!
+  # Tx Hash
+  txHash: String!
+  # Tx origin
+  txOrigin: String!
+  # Address of the first contract with which the Tx is interacting with
+  txTarget: String!
+  # Address of vaultManager
+  vaultManager: String!
+  # Vault Id
+  vaultID: BigInt!
+  # Vault owner
+  owner: String!
+  # flag to show if it's a deposit or removal of collateral
+  isIncrease: Boolean!
+  # Amount added to vault
+  amountUpdate: BigInt!
+
+  ## Time tracking
+  # BlockNumber of last update
+  blockNumber: BigInt!
+  # Timestamp of last update
+  timestamp: BigInt!
+}
+
+type DebtUpdate @entity {
+  # Tx Hash + '_' + counter
+  id: ID!
+  # Tx Hash
+  txHash: String!
+  # Tx origin
+  txOrigin: String!
+  # Address of the first contract with which the Tx is interacting with
+  txTarget: String!
+  # Address of vaultManager
+  vaultManager: String!
+  # Vault Id
+  vaultID: BigInt!
+  # Vault owner
+  owner: String!
+  # flag to show if it's a debt increase or a debt repayment
+  isIncrease: Boolean!
+  # Amount added to vault
+  amountUpdate: BigInt!
+
+  ## Time tracking
+  # BlockNumber of last update
+  blockNumber: BigInt!
+  # Timestamp of last update
+  timestamp: BigInt!
+}
+
+type DebtTransfer @entity {
+  # Tx Hash + '_' + counter
+  id: ID!
+  # Tx Hash
+  txHash: String!
+  # Tx origin
+  txOrigin: String!
+  # Address of the first contract with which the Tx is interacting with
+  txTarget: String!
+  # Address of vaultManager receiving the debt
+  srcVaultManager: String!
+  # Id of the vault receiving its debt
+  srcVaultID: BigInt!
+  # Owner of the vault receiving its debt
+  srcOwner: String!
+  # Address of vaultManager sending the debt
+  dstVaultManager: String!
+  # Id of the vault sending its debt
+  dstVaultID: BigInt!
+  # Owner of the vault sending its debt
+  dstOwner: String!
+  # Amount transferred between vaults
+  amount: BigInt!
+
+  ## Time tracking
+  # BlockNumber of last update
+  blockNumber: BigInt!
+  # Timestamp of last update
+  timestamp: BigInt!
+}
+
+type VaultLiquidation @entity {
+  # VaultManager + '_' + vaultID + '_' + timestamp
+  id: ID!
+  # Tx Hash
+  txHash: String!
+  # Tx origin
+  txOrigin: String!
+  # Address of the first contract with which the Tx is interacting with
+  txTarget: String!
+  # Address of vaultManager
+  vaultManager: String!
+  # Vault Id
+  vaultID: BigInt!
+  # Vault owner
+  owner: String!
+
+  # collateral bought by liquidator
+  collateralBought: BigInt!
+  # oracle value at liquidation time
+  oraclePrice: BigInt!
+
+  ## Values filled in the InternalDebtUpdated event handler
+  # liquidation boost obtained by liquidator
+  liquidatorDiscount: BigInt
+  # debt removed (might contain some bad debt)
+  debtRemoved: BigInt
+  # stablecoin payed by liquidator
+  liquidatorDeposit: BigInt
+  # debt repayed with liquidator deposit after protocol surcharge payment
+  debtRepayed: BigInt
+  # badDebt revealed by this liquidation
+  badDebt: BigInt
+  # protocol surcharge
+  surcharge: BigInt
+
+  ## Time tracking
+  # BlockNumber of last update
+  blockNumber: BigInt!
+  # Timestamp of last update
+  timestamp: BigInt!
+}
+
+type FlashLoanData @entity {
+  # Address of the stablecoin flash loaned + receiver + amount +hashTx (this is not enough to express multiple flashLoan in same tx)
+  id: ID!
+  stablecoin: String!
+  amount: BigInt
+  receiver: String!
+  # Block Number of last update
+  blockNumber: BigInt!
+  timestamp: BigInt!
 }
 
 type Contracts @entity {

@@ -188,6 +188,8 @@ templates:
           file: ../abis/SanToken.json
         - name: AgToken
           file: ../abis/AgToken.json
+        - name: ChainlinkFeed
+          file: ../abis/Chainlink.json
       eventHandlers:
         - event: CollateralDeployed(indexed address,indexed address,indexed address,address)
           handler: handleCollateralDeployed

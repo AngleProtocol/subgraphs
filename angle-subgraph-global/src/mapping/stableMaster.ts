@@ -268,5 +268,5 @@ export function handleUserFeeUpdate(event: FeeArrayUpdated): void {
 
 export function handleSetOracle(event: OracleUpdated): void {
   const oracle = Oracle.bind(event.params._oracle)
-  _trackNewChainlinkOracle(oracle)
+  _trackNewChainlinkOracle(oracle, event.block.timestamp)
 }

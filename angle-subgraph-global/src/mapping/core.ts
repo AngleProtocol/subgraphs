@@ -1,3 +1,4 @@
+import { log } from '@graphprotocol/graph-ts'
 import { AgTokenTemplate } from '../../generated/templates'
 import { StableMasterTemplate } from '../../generated/templates'
 import { StableMasterDeployed } from '../../generated/Core/Core'
@@ -7,6 +8,8 @@ import { historicalSlice, updateStableData } from './utils'
 import { FeeData, FeeHistoricalData } from '../../generated/schema'
 
 export function handleStableMasterDeployed(event: StableMasterDeployed): void {
+  log.warning('+++++ core: {}, {}', [event.address.toHexString(), event.params._agToken.toHexString()])
+
   StableMasterTemplate.create(event.params._stableMaster)
   // Start indexing and tracking new contracts
   StableMasterTemplate.create(event.params._stableMaster)

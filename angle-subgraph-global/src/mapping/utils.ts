@@ -1,4 +1,4 @@
-import { ethereum, BigInt, log } from '@graphprotocol/graph-ts'
+import { Address, ethereum, BigInt, log } from '@graphprotocol/graph-ts'
 import { StableMaster } from '../../generated/templates/StableMasterTemplate/StableMaster'
 import { ERC20 } from '../../generated/templates/StableMasterTemplate/ERC20'
 import { SanToken } from '../../generated/templates/StableMasterTemplate/SanToken'
@@ -6,14 +6,20 @@ import { AgToken as AgTokenContract } from '../../generated/templates/StableMast
 import { PoolManager } from '../../generated/templates/StableMasterTemplate/PoolManager'
 import { PerpetualManagerFront } from '../../generated/templates/StableMasterTemplate/PerpetualManagerFront'
 import { Oracle, Oracle__readAllResult } from '../../generated/templates/StableMasterTemplate/Oracle'
-import { PoolData, StableData, StableHistoricalData, PoolHistoricalData, Perpetual, FeeData, OracleByTicker, FeeHistoricalData, OracleCoreData, OracleAPRCoreHistoricalData } from '../../generated/schema'
-import { BASE_PARAMS, BASE_TOKENS, BLOCK_UPDATE_POOL_MANAGER_ESTIMATED_APR, ROUND_COEFF, ZERO } from '../../../constants'
+import { PoolData, StableData, StableHistoricalData, PoolHistoricalData, Perpetual, FeeData, OracleData, OracleByTicker, FeeHistoricalData, OracleCoreData, OracleAPRCoreHistoricalData } from '../../generated/schema'
+import { BASE_PARAMS, BASE_TOKENS, BLOCK_UPDATE_POOL_MANAGER_ESTIMATED_APR, ROUND_COEFF, ZERO, STETH_ADDRESS } from '../../../constants'
 import { StableMaster__collateralMapResultFeeDataStruct } from '../../generated/templates/StableMasterTemplate/StableMaster'
 import { PerpetualOpened } from '../../generated/templates/PerpetualManagerFrontTemplate/PerpetualManagerFront'
 import { ChainlinkTemplate } from '../../generated/templates'
 import { ChainlinkProxy } from '../../generated/templates/ChainlinkTemplate/ChainlinkProxy'
 import { getCollateralPrice } from './chainlink'
+import { stETH } from '../../generated/Chainlink5/stETH'
+import { ChainlinkFeed } from '../../generated/templates/ChainlinkTemplate/ChainlinkFeed'
 
+
+let wrappedTokens = new Map<string, string>()
+wrappedTokens.set('WBTC', 'BTC')
+wrappedTokens.set('wETH', 'ETH')
 
 export function historicalSlice(block: ethereum.Block): BigInt {
   const timestamp = block.timestamp
@@ -29,6 +35,10 @@ export function parseOracleDescription(description: string, hasExtra: boolean): 
   description = description.replace(' ', '')
   if (hasExtra) description = description.slice(0, -6)
   let tokens = description.split('/')
+  // if token is wrapped, we're looking for underlying token
+  if (wrappedTokens.has(tokens[0])) {
+    tokens[0] = wrappedTokens.get(tokens[0])
+  }
   return tokens
 }
 
@@ -201,7 +211,7 @@ export function _updatePoolData(
   if (data == null) {
     data = new PoolData(id)
     totalMargin = ZERO
-    _trackNewChainlinkOracle(oracle);
+    _trackNewChainlinkOracle(oracle, block.timestamp);
   }
 
   totalMargin = add ? data.totalMargin.plus(margin) : data.totalMargin.minus(margin)
@@ -710,7 +720,9 @@ export function _getForceCloseFees(
 }
 
 
-export function _trackNewChainlinkOracle(oracle: Oracle): void {
+// Change back to angle-subgraph-borrow implementation when circuitChainlink() is implemented 
+// in all oracles
+export function _trackNewChainlinkOracle(oracle: Oracle, timestamp: BigInt): void {
   // check all 
   let i = 0
   let find = true
@@ -722,7 +734,38 @@ export function _trackNewChainlinkOracle(oracle: Oracle): void {
       i = i + 1
       const oracleProxyAddress = result.value
       const proxy = ChainlinkProxy.bind(oracleProxyAddress)
-      ChainlinkTemplate.create(proxy.aggregator())
+      const aggregator = proxy.aggregator()
+      ChainlinkTemplate.create(aggregator)
+      // init the oracle value
+      _initAggregator(ChainlinkFeed.bind(aggregator), timestamp);
     }
   }
+}
+
+export function _initAggregator(feed: ChainlinkFeed, timestamp: BigInt): void {
+  const tokens = parseOracleDescription(feed.description(), false)
+  const decimals = BigInt.fromI32(feed.decimals())
+
+  const dataOracle = new OracleData(feed._address.toHexString())
+  // here we assume that Chainlink always put the non-USD token first
+  dataOracle.tokenTicker = tokens[0]
+  // The borrowing module does not handle rebasing tokens, so the only accepted token is wstETH
+  // if the in token is wstETH we also need to multiply by the rate wstETH to stETH - as we are looking at the stETH oracle because on 
+  // mainnet the oracle wstETH-stETH does not exist
+  let quoteAmount = BASE_TOKENS;
+  if (tokens[0] == "STETH") {
+    dataOracle.tokenTicker = "wSTETH"
+    quoteAmount = stETH.bind(Address.fromString(STETH_ADDRESS)).getPooledEthByShares(BASE_TOKENS)
+  }
+  dataOracle.price = quoteAmount.times(feed.latestAnswer()).div(BigInt.fromString('10').pow(dataOracle.decimals.toI32() as u8))
+  dataOracle.decimals = decimals
+  dataOracle.timestamp = timestamp
+  dataOracle.save()
+
+  log.warning('=== new Oracle: {} {}', [tokens[0], tokens[1]])
+
+  // OracleByTicker will point to OracleData and be indexed by token address, which will help us retrieve the second oracle in `getCollateralPriceInAgToken`
+  const dataOracleByTicker = new OracleByTicker(dataOracle.tokenTicker)
+  dataOracleByTicker.oracle = dataOracle.id
+  dataOracleByTicker.save()
 }
