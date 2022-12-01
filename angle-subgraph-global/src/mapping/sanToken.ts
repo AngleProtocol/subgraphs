@@ -31,15 +31,15 @@ export function handleTransfer(event: Transfer): void {
   const SanTokenCo = SanToken.bind(event.address)
   const poolManager = PoolManager.bind(SanTokenCo.poolManager())
   let poolData = PoolData.load(poolManager._address.toHexString())!
-  const stableMaster = StableMaster.bind(poolManager.stableMaster())
-  const token = ERC20.bind(poolManager.token())
-  const tokenInfo = getToken(Address.fromString(poolData.collateral))
+  const stableMaster = StableMaster.bind(Address.fromString(poolData.stableMaster))
+  const collateralInfo = getToken(Address.fromString(poolData.collateral))
+  const stablenameInfo = getToken(Address.fromString(poolData.stablecoin))
 
   updateOracleData(poolManager, event.block)
 
   // Read names and sanRate
-  const stableName = ERC20.bind(stableMaster.agToken()).symbol()
-  const collatName = token.symbol()
+  const stableName = stablenameInfo.symbol
+  const collatName = collateralInfo.symbol
 
   const sanRate = convertTokenToDecimal(stableMaster.collateralMap(poolManager._address).value5, DECIMAL_TOKENS)
   const slippage = convertTokenToDecimal(stableMaster.collateralMap(poolManager._address).value7.slippage, DECIMAL_PARAMS)
@@ -62,7 +62,7 @@ export function handleTransfer(event: Transfer): void {
     updatePoolData(poolManager, event.block)
   }
 
-  const amount = convertTokenToDecimal(event.params.value, tokenInfo.decimals)
+  const amount = convertTokenToDecimal(event.params.value, collateralInfo.decimals)
   if (isMint(event)) {
     const id =
       event.transaction.hash.toHexString() + '_' + event.address.toHexString() + '_' + event.params.to.toHexString()

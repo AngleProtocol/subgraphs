@@ -1,7 +1,8 @@
 import { BigInt } from '@graphprotocol/graph-ts'
-import { MAX_LOCK_TIME } from '../../../constants'
+import { DECIMAL_TOKENS, MAX_LOCK_TIME, ZERO, ZERO_BD } from '../../../constants'
 import { lockedANGLE, lockedANGLEHistorical, veANGLEData, veANGLEHistorical } from '../../generated/schema'
 import { Deposit, Withdraw, veANGLE } from '../../generated/veAngle/veANGLE'
+import { convertTokenToDecimal } from '../utils'
 import { historicalSlice } from './utils'
 
 // @notice Tracking of veANGLE balances
@@ -13,7 +14,7 @@ export function handleDeposit(event: Deposit): void {
 
   const toId = event.params.provider.toHexString()
   const idHistorical = event.params.provider.toHexString() + '_hour_' + timestamp.toString()
-  const amount = event.params.value
+  const amount = convertTokenToDecimal(event.params.value, DECIMAL_TOKENS)
   const locktime = event.params.locktime
   const type = event.params.type
 
@@ -21,8 +22,8 @@ export function handleDeposit(event: Deposit): void {
   const idLockedANGLEHistoricalHour = roundedTimestamp.toString()
   let dataLockedANGLE = lockedANGLE.load(veANGLEAddress)
   let dataHistoricalLockedANGLE = lockedANGLEHistorical.load(idLockedANGLEHistoricalHour)
-  const totalANGLELocked = veANGLEContract.supply()
-  const totalSupplyVeANGLE = veANGLEContract.totalSupply()
+  const totalANGLELocked = convertTokenToDecimal(veANGLEContract.supply(), DECIMAL_TOKENS)
+  const totalSupplyVeANGLE = convertTokenToDecimal(veANGLEContract.totalSupply(), DECIMAL_TOKENS)
   if (dataLockedANGLE == null) {
     dataLockedANGLE = new lockedANGLE(veANGLEAddress)
   }
@@ -49,15 +50,15 @@ export function handleDeposit(event: Deposit): void {
     data.amount = data.amount.plus(amount)
     dataHistorical.amount = data.amount.plus(amount)
     if (data.endLocked.ge(timestamp)) {
-      data.slope = data.amount.div(MAX_LOCK_TIME)
-      data.bias = data.slope.times(data.endLocked.minus(timestamp))
+      data.slope = data.amount.div(convertTokenToDecimal(MAX_LOCK_TIME, ZERO))
+      data.bias = data.slope.times(convertTokenToDecimal(data.endLocked.minus(timestamp), ZERO))
       dataHistorical.slope = data.slope
       dataHistorical.bias = data.bias
     } else {
-      data.slope = BigInt.fromString('0')
-      data.bias = BigInt.fromString('0')
-      dataHistorical.slope = BigInt.fromString('0')
-      dataHistorical.bias = BigInt.fromString('0')
+      data.slope = ZERO_BD
+      data.bias = ZERO_BD
+      dataHistorical.slope = ZERO_BD
+      dataHistorical.bias = ZERO_BD
     }
     data.lastUpdate = timestamp
     dataHistorical.timestamp = timestamp
@@ -66,8 +67,8 @@ export function handleDeposit(event: Deposit): void {
   } else if (type.equals(BigInt.fromString('1'))) {
     let data = new veANGLEData(toId)
     data.lastUpdate = timestamp
-    data.slope = amount.div(MAX_LOCK_TIME)
-    data.bias = data.slope.times(locktime.minus(timestamp))
+    data.slope = amount.div(convertTokenToDecimal(MAX_LOCK_TIME, ZERO))
+    data.bias = data.slope.times(convertTokenToDecimal(locktime.minus(timestamp), ZERO))
     data.endLocked = locktime
     data.amount = amount
     data.save()
@@ -85,8 +86,8 @@ export function handleDeposit(event: Deposit): void {
     dataHistorical.save()
   } else {
     let data = veANGLEData.load(toId)!
-    data.slope = data.amount.div(MAX_LOCK_TIME)
-    data.bias = data.slope.times(locktime.minus(timestamp))
+    data.slope = data.amount.div(convertTokenToDecimal(MAX_LOCK_TIME, ZERO))
+    data.bias = data.slope.times(convertTokenToDecimal(locktime.minus(timestamp), ZERO))
     data.endLocked = locktime
     data.lastUpdate = timestamp
     data.save()
@@ -116,8 +117,8 @@ export function handleWithdraw(event: Withdraw): void {
   // keep track of the locked ANGLE
   const roundedTimestamp = historicalSlice(event.block)
   const idLockedANGLEHistoricalHour = roundedTimestamp.toString()
-  const totalANGLELocked = veANGLEContract.supply()
-  const totalSupplyVeANGLE = veANGLEContract.totalSupply()
+  const totalANGLELocked = convertTokenToDecimal(veANGLEContract.supply(), DECIMAL_TOKENS)
+  const totalSupplyVeANGLE = convertTokenToDecimal(veANGLEContract.totalSupply(), DECIMAL_TOKENS)
   let dataLockedANGLE = lockedANGLE.load(veANGLEAddress)!
   let dataHistoricalLockedANGLE = lockedANGLEHistorical.load(idLockedANGLEHistoricalHour)
   if (dataHistoricalLockedANGLE == null) {
@@ -131,10 +132,10 @@ export function handleWithdraw(event: Withdraw): void {
   dataHistoricalLockedANGLE.save()
 
   data.lastUpdate = timestamp
-  data.slope = BigInt.fromString('0')
-  data.bias = BigInt.fromString('0')
-  data.endLocked = BigInt.fromString('0')
-  data.amount = BigInt.fromString('0')
+  data.slope = ZERO_BD
+  data.bias = ZERO_BD
+  data.endLocked = ZERO
+  data.amount = ZERO_BD
   data.save()
   // or just remove the datapoint
   // store.remove('veANGLEData', toId)
@@ -144,9 +145,9 @@ export function handleWithdraw(event: Withdraw): void {
   }
   dataHistorical.timestamp = timestamp
   dataHistorical.user = toId
-  dataHistorical.slope = BigInt.fromString('0')
-  dataHistorical.bias = BigInt.fromString('0')
-  dataHistorical.endLocked = BigInt.fromString('0')
-  dataHistorical.amount = BigInt.fromString('0')
+  dataHistorical.slope = ZERO_BD
+  dataHistorical.bias = ZERO_BD
+  dataHistorical.endLocked = ZERO
+  dataHistorical.amount = ZERO_BD
   dataHistorical.save()
 }

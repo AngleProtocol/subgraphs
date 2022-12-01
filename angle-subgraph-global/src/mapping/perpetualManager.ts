@@ -1,4 +1,4 @@
-import { ethereum, Address, BigInt, BigDecimal } from '@graphprotocol/graph-ts'
+import { ethereum, Address, BigDecimal } from '@graphprotocol/graph-ts'
 import {
   BoundsPerpetualUpdated,
   KeeperFeesCapUpdated,
@@ -17,7 +17,6 @@ import {
   HAFeesUpdated,
   PerpetualManagerFront
 } from '../../generated/templates/StableMasterTemplate/PerpetualManagerFront'
-import { ERC20 } from '../../generated/templates/PerpetualManagerFrontTemplate/ERC20'
 import { StableMaster } from '../../generated/templates/StableMasterTemplate/StableMaster'
 import { KeeperReward, Perpetual, PerpetualOpen, PerpetualUpdate, PoolData, PauseData, PerpetualClose } from '../../generated/schema'
 
@@ -154,7 +153,7 @@ export function handleClosingPerpetual(event: PerpetualClosed): void {
   txData.status = 'close'
   txData.save()
 
-  const fee = _getFeesClosePerp(perpetualManager, data)
+  const fee = _getFeesClosePerp(perpetualManager, poolManager._address, data)
   _updateGainPoolData(poolManager, event.block, fee)
 }
 
@@ -188,9 +187,9 @@ export function handleForceClose(event: PerpetualsForceClosed): void {
       txData.save()
 
       if (netCashOutAmount.gt(ZERO_BD)) {
-        totalCloseFee = totalCloseFee.plus(_getFeesClosePerp(perpetualManager, data))
+        totalCloseFee = totalCloseFee.plus(_getFeesClosePerp(perpetualManager, poolManager._address, data))
       } else {
-        const fees = _getFeesLiquidationPerp(perpetualManager, data, collateralInfo)
+        const fees = _getFeesLiquidationPerp(perpetualManager, poolManager._address, data, collateralInfo)
         totalKeeperLiquidationFee = totalKeeperLiquidationFee.plus(fees[1])
         totalProtocolLiquidationFee = totalProtocolLiquidationFee.plus(fees[0])
       }
@@ -230,7 +229,6 @@ export function handleLiquidatePerpetuals(event: KeeperTransferred): void {
   const perpetualManager = PerpetualManagerFront.bind(event.address)
   const poolManager = PoolManager.bind(perpetualManager.poolManager())
   const poolData = PoolData.load(poolManager._address.toHexString())!
-  const keeperFeesLiquidationRatio = perpetualManager.keeperFeesLiquidationRatio()
   const tokenInfo = getToken(poolManager.token())
 
   const liquidationFees = convertTokenToDecimal(event.params.liquidationFees, tokenInfo.decimals)
@@ -256,7 +254,8 @@ export function handleLiquidatePerpetuals(event: KeeperTransferred): void {
 export function handleTransfer(event: Transfer): void {
   const PerpetualManager = PerpetualManagerFront.bind(event.address)
   const poolManager = PoolManager.bind(PerpetualManager.poolManager())
-  const stableMaster = StableMaster.bind(poolManager.stableMaster())
+  const poolData = PoolData.load(poolManager._address.toHexString())!
+  const stableMaster = StableMaster.bind(Address.fromString(poolData.stableMaster))
 
   updateOracleData(poolManager, event.block)
 
@@ -292,23 +291,20 @@ export function handleTransfer(event: Transfer): void {
 
   // Case of a transfer or a mint
   else {
-    const PerpetualManager = PerpetualManagerFront.bind(event.address)
-    const poolManager = PoolManager.bind(PerpetualManager.poolManager())
-    const stableMaster = StableMaster.bind(poolManager.stableMaster())
-    const token = ERC20.bind(poolManager.token())
-    const agToken = ERC20.bind(stableMaster.agToken())
+    const collateralInfo = getToken(Address.fromString(poolData.collateral))
+    const stablecoinInfo = getToken(Address.fromString(poolData.collateral))
 
     let data = Perpetual.load(id)
     if (data == null) {
-      const stableAddress = agToken._address.toHexString()
-      const collatAddress = token._address.toHexString()
-      const stableName = agToken.symbol()
-      const collatName = token.symbol()
+      const stableAddress = stablecoinInfo.id
+      const collatAddress = collateralInfo.id
+      const stableName = stablecoinInfo.symbol
+      const collatName = collateralInfo.symbol
 
       data = new Perpetual(id)
       data.perpetualID = event.params.tokenId
       data.perpetualManager = event.address.toHexString()
-      data.decimals = BigInt.fromI32(token.decimals())
+      data.decimals = collateralInfo.decimals
       data.stableAddress = stableAddress
       data.collatAddress = collatAddress
       data.stableName = stableName

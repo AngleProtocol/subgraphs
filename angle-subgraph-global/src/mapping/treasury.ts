@@ -1,4 +1,4 @@
-import { store, BigInt, Address, ethereum } from '@graphprotocol/graph-ts'
+import { Address } from '@graphprotocol/graph-ts'
 import {
   Treasury,
   BadDebtUpdated,
@@ -13,7 +13,6 @@ import { TreasuryData, VaultManagerData, VaultManagerList } from '../../generate
 import { _initTreasury, _addTreasuryDataToHistory, extractArray } from './treasuryHelpers'
 import { _initVaultManager, _addVaultManagerDataToHistory, _addVaultDataToHistory } from './vaultManagerHelpers'
 import { log } from '@graphprotocol/graph-ts'
-import { VaultManager } from '../../generated/templates/TreasuryTemplate/VaultManager'
 import { Oracle } from '../../generated/templates/StableMasterTemplate/Oracle'
 import { getToken, _trackNewChainlinkOracle } from './utils'
 import { convertTokenToDecimal } from '../utils'
@@ -85,11 +84,10 @@ export function handleVaultManagerToggled(event: VaultManagerToggled): void {
   dataTreasury.save()
   _addTreasuryDataToHistory(dataTreasury, event.block)
 
-  const vaultManager = VaultManager.bind(event.params.vaultManager)
-  const oracle = Oracle.bind(vaultManager.oracle())
+  let data = VaultManagerData.load(event.params.vaultManager.toHexString())!
+  const oracle = Oracle.bind(Address.fromString(data.oracle))
   _trackNewChainlinkOracle(oracle, event.block.timestamp)
 
-  let data = VaultManagerData.load(event.params.vaultManager.toHexString())
   if (data == null) {
     _initVaultManager(event.params.vaultManager, event.block)
 

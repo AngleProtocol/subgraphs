@@ -1,31 +1,27 @@
-import { ethereum, BigInt, store, BigDecimal } from '@graphprotocol/graph-ts'
+import { BigInt, store, BigDecimal, Address } from '@graphprotocol/graph-ts'
 import { PoolManager } from '../../generated/templates/StableMasterTemplate/PoolManager'
 import { Harvested, RemoveLender, Strategy } from '../../generated/templates/StrategyTemplate/Strategy'
-import { StableMaster } from '../../generated/templates/StrategyTemplate/StableMaster'
 import { getToken, _updateGainPoolData, _updatePoolData } from './utils'
-import { BASE_PARAMS, DECIMAL_PARAMS, DECIMAL_TOKENS, ONE_BD, ZERO_BD } from '../../../constants'
-import { ERC20 } from '../../generated/templates/StrategyTemplate/ERC20'
+import { DECIMAL_PARAMS, DECIMAL_TOKENS, ONE_BD, ZERO_BD } from '../../../constants'
 import { Lender } from '../../generated/templates/StrategyTemplate/Lender'
-import { StrategyData, StrategyHistoricalData, LenderData } from '../../generated/schema'
+import { StrategyData, StrategyHistoricalData, LenderData, PoolData } from '../../generated/schema'
 import { historicalSlice } from './utils'
 import { convertTokenToDecimal } from '../utils'
 
 export function handleHarvest(event: Harvested): void {
   const strategy = Strategy.bind(event.address)
   const poolManager = PoolManager.bind(strategy.poolManager())
-  const stableMaster = StableMaster.bind(poolManager.stableMaster())
-  const agToken = ERC20.bind(stableMaster.agToken())
-  const token = ERC20.bind(poolManager.token())
-  const collateralInfo = getToken(token._address)
-  const stableName = agToken.symbol()
-  const collatName = token.symbol()
+  let dataPool = PoolData.load(poolManager._address.toHexString())!
+  const stablecoinInfo = getToken(Address.fromString(dataPool.stablecoin))
+  const collateralInfo = getToken(Address.fromString(dataPool.collateral))
+  const stableName = stablecoinInfo.symbol
+  const collatName = collateralInfo.symbol
   const strat = poolManager.strategies(strategy._address)
   const managerAddress = strategy.poolManager().toHexString()
 
   const resultAPR = strategy.try_estimatedAPR()
   const apr = resultAPR.reverted ? ZERO_BD : convertTokenToDecimal(resultAPR.value, DECIMAL_TOKENS)
-  const collatData = stableMaster.collateralMap(poolManager._address)
-  const percentInterestsForSLPs = convertTokenToDecimal(collatData.value7.interestsForSLPs, DECIMAL_PARAMS)
+  const percentInterestsForSLPs = dataPool.interestsForSLPs
 
   let interestSLPs: BigDecimal
   let interestProtocol: BigDecimal
@@ -74,7 +70,7 @@ export function handleHarvest(event: Harvested): void {
   stratData.stableName = stableName
   stratData.collatName = collatName
   stratData.estimatedTotalAssets = estimatedTotalAssets
-  stratData.decimals = BigInt.fromI32(token.decimals())
+  stratData.decimals = collateralInfo.decimals
   stratData.debtRatio = debtRatio
   stratData.managerBalance = managerBalance
   stratData.totalAsset = totalAsset
@@ -87,7 +83,7 @@ export function handleHarvest(event: Harvested): void {
     stratDataHistorical.poolManager = managerAddress
     stratDataHistorical.stableName = stableName
     stratDataHistorical.collatName = collatName
-    stratDataHistorical.decimals = BigInt.fromI32(token.decimals())
+    stratDataHistorical.decimals = collateralInfo.decimals
     stratDataHistorical.estimatedTotalAssets = estimatedTotalAssets
     stratDataHistorical.debtRatio = debtRatio
     stratDataHistorical.managerBalance = managerBalance

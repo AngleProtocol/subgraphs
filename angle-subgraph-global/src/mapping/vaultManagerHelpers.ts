@@ -173,6 +173,7 @@ export function _initVaultManager(address: Address, block: ethereum.Block): void
   data.vaultManager = address.toHexString()
   data.agToken = vaultManager.stablecoin().toHexString()
   data.collateral = vaultManager.collateral().toHexString()
+  data.oracle = oracle._address.toHexString()
   data.collateralBase = BigInt.fromI32(10).pow(collateralContract.decimals() as u8)
   data.dust = convertTokenToDecimal(vaultManager.dust(), collateralInfo.decimals)
   data.collateralTicker = tokens[0]

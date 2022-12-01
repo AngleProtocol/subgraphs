@@ -41,11 +41,15 @@ type PoolData @entity {
   # Address of the poolManager
   id: ID!
   # Address of the poolManager
-  poolManager: String
+  poolManager: String!
+  # Address of the perpetualManager
+  perpetualManager: String!
+  # Address of the oracle linked to the pool
+  oracle: String!
   # Decimals of the underlying token
   decimals: BigInt!
   # Address of the stableMaster
-  stableMaster: StableData
+  stableMaster: StableData!
   # Name of the stable assets
   stableName: String
   # Stablecoin address
@@ -59,7 +63,7 @@ type PoolData @entity {
   # Availbale liquidity in the pool
   availableAsset: BigDecimal
   # Stock brought by users
-  stockUser: BigDecimal
+  stockUser: BigDecimal!
   # Stock brought by SLPs
   stockSLP: BigDecimal
   # San Rate
@@ -69,15 +73,15 @@ type PoolData @entity {
   # Fees accumulated from previous blocks and to be distributed to SLPs
   lockedInterests: BigDecimal
   # Max interests used to update the `sanRate` in a single block
-  maxInterestsDistributed: BigDecimal
+  maxInterestsDistributed: BigDecimal!
   # Amount of fees left aside for SLPs
-  feesAside: BigDecimal
+  feesAside: BigDecimal!
   # Portion of the fees from users minting and burning that goes to SLPs
-  feesForSLPs: BigDecimal
+  feesForSLPs: BigDecimal!
   # Portion of the interests from lending that goes to veANGLE
-  interestsForSurplus: BigDecimal
+  interestsForSurplus: BigDecimal!
   # Portion of the interests from lending that goes to SLPs
-  interestsForSLPs: BigDecimal
+  interestsForSLPs: BigDecimal!
   # Estimated APR
   apr: BigDecimal
   # To compute utilization ratio
@@ -362,6 +366,8 @@ type VaultManagerData @entity {
   agToken: String!
   # Address of collateral
   collateral: String!
+  # Address of Oracle
+  oracle: String!
   # base of collateral
   collateralBase: BigInt!
   # Minimum debt of a healthy vault
@@ -446,7 +452,7 @@ type VaultManagerData @entity {
   # Value of repay fee
   repayFee: BigDecimal!
   # Value of borrow interest rate
-  interestRate: BigInt!
+  interestRate: BigDecimal!
   # Value of liquidation surcharge
   liquidationSurcharge: BigDecimal!
   # Value of max liquidation discount
@@ -540,7 +546,7 @@ type VaultManagerHistoricalData @entity {
   # Value of repay fee
   repayFee: BigDecimal!
   # Value of borrow interest rate
-  interestRate: BigInt!
+  interestRate: BigDecimal!
   # Value of liquidation surcharge
   liquidationSurcharge: BigDecimal!
   # Value of max liquidation discount
@@ -972,37 +978,37 @@ type lockedANGLE @entity {
   # veANGLE address
   id: ID!
   timestamp: BigInt!
-  angleLocked: BigInt!
-  veSupply: BigInt!
+  angleLocked: BigDecimal!
+  veSupply: BigDecimal!
 }
 
 type lockedANGLEHistorical @entity {
   # Timestamp
   id: ID!
   timestamp: BigInt!
-  angleLocked: BigInt!
-  veSupply: BigInt!
+  angleLocked: BigDecimal!
+  veSupply: BigDecimal!
 }
 
 type veANGLEData @entity {
   # Address of the angle owner
   id: ID!
-  bias: BigInt!
-  slope: BigInt!
+  bias: BigDecimal!
+  slope: BigDecimal!
   lastUpdate: BigInt!
   endLocked: BigInt!
-  amount: BigInt!
+  amount: BigDecimal!
 }
 
 type veANGLEHistorical @entity {
   # Address of the angle owner + timestamp
   id: ID!
   user: String!
-  bias: BigInt!
-  slope: BigInt!
+  bias: BigDecimal!
+  slope: BigDecimal!
   timestamp: BigInt!
   endLocked: BigInt!
-  amount: BigInt!
+  amount: BigDecimal!
 }
 
 type Token @entity {

@@ -1,4 +1,3 @@
-import { Address } from '@graphprotocol/graph-ts'
 import { FlashLoan } from '../../generated/FlashAngle/FlashAngle'
 import { FlashLoanData } from '../../generated/schema'
 import { convertTokenToDecimal } from '../utils'

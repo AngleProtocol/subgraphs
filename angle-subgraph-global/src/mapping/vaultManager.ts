@@ -65,14 +65,13 @@ export function handleAccruedToTreasury(event: AccruedToTreasury): void {
 export function handleCollateralAmountUpdated(event: CollateralAmountUpdated): void {
   log.warning('++++ CollateralAmountUpdated', [])
   const txHash = event.transaction.hash.toHexString()
-  const vaultManager = VaultManager.bind(event.address)
-  const oracle = Oracle.bind(vaultManager.oracle())
   const idVM = event.address.toHexString()
   const idVault = idVM + '_' + event.params.vaultID.toString()
   const actionID = _getActionId('collateralUpdate', txHash, event.block.timestamp)
   const dataVM = VaultManagerData.load(idVM)!
   const dataVault = VaultData.load(idVault)!
   const action = new CollateralUpdate(actionID)
+  const oracle = Oracle.bind(Address.fromString(dataVM.oracle))
   const collateralInfo = getToken(Address.fromString(dataVM.collateral))
 
   const collateralAmountDecimal = convertTokenToDecimal(event.params.collateralAmount, collateralInfo.decimals)
@@ -363,7 +362,7 @@ export function handleInternalDebtUpdated(event: InternalDebtUpdated): void {
 
   // recompute vault's health factor
   const vaultManager = VaultManager.bind(event.address)
-  const oracle = Oracle.bind(vaultManager.oracle())
+  const oracle = Oracle.bind(Address.fromString(dataVM.oracle))
   // collateralAmount in the latest dataVault is potentially outdated, we can't rely on it
   const collateralAmount = convertTokenToDecimal(vaultManager.vaultData(dataVault.vaultID).value0, collateralInfo.decimals)
 
@@ -575,7 +574,7 @@ export function handleLiquidatedVaults(event: LiquidatedVaults): void {
   const timestamp = event.block.timestamp
 
   const vaultManager = VaultManager.bind(event.address)
-  const oracle = Oracle.bind(vaultManager.oracle())
+  const oracle = Oracle.bind(Address.fromString(dataVM.oracle))
   for (let i = 0; i < event.params.vaultIDs.length; i++) {
     let vaultID = event.params.vaultIDs[i]
     let idVault = idVM + '_' + vaultID.toString()

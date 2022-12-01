@@ -446,12 +446,14 @@ export function handleUnstaked(token: Address, event: Transfer): void {
   } else {
     // In this case the staked token is a SanToken
     const poolManager = PoolManager.bind(result.value)
-    const stableMaster = StableMaster.bind(poolManager.stableMaster())
-    const collatToken = ERC20.bind(poolManager.token())
+    let dataPool = PoolData.load(result.value.toHexString())!
+    const stableMaster = StableMaster.bind(Address.fromString(dataPool.stableMaster))
+    const stablecoinInfo = getToken(Address.fromString(dataPool.stablecoin))
+    const collateralInfo = getToken(Address.fromString(dataPool.collateral))
 
     // Read names and sanRate
-    const stableName = ERC20.bind(stableMaster.agToken()).symbol()
-    const collatName = collatToken.symbol()
+    const stableName = stablecoinInfo.symbol
+    const collatName = collateralInfo.symbol
     const sanRate = stableMaster.collateralMap(poolManager._address).value5
 
     const data = sanToken.load(tokenDataId)!

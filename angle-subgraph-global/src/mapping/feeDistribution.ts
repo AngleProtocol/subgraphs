@@ -46,11 +46,6 @@ export function handleCheckpoint(event: CheckpointToken): void {
     .div(WEEK)
     .times(WEEK)
 
-  const weekElapsed = lastTokenTime
-    .minus(upToWeek)
-    .div(WEEK)
-    .toI32()
-
   let curWeek = lastTokenTime
 
   while (curWeek.lt(upToWeek)) {
