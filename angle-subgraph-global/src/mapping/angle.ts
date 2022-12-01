@@ -1,7 +1,8 @@
 import { Address, BigInt, store } from '@graphprotocol/graph-ts'
-import { Transfer } from '../../generated/Angle/ERC20Votes'
+import { Transfer } from '../../generated/Angle/ERC20'
 import { ANGLE, ANGLEHistorical } from '../../generated/schema'
-import { historicalSlice } from './utils'
+import { convertTokenToDecimal } from '../utils'
+import { getToken, historicalSlice } from './utils'
 
 // @notice Track balances of all ANGLE holders
 export function handleTransfer(event: Transfer): void {
@@ -11,6 +12,8 @@ export function handleTransfer(event: Transfer): void {
   const fromIdHistorical = event.params.from.toHexString() + '_hour_' + roundedTimestamp.toString()
   const toIdHistorical = event.params.to.toHexString() + '_hour_' + roundedTimestamp.toString()
   if (event.params.value.gt(BigInt.fromString('0'))) {
+    const tokenInfo = getToken(event.address)
+    let valueDecimal = convertTokenToDecimal(event.params.value, tokenInfo.decimals)
     if (event.params.to.equals(Address.fromString('0x0000000000000000000000000000000000000000'))) {
       const data = ANGLE.load(fromId)!
       let dataAngleHistorical = ANGLEHistorical.load(fromIdHistorical)
@@ -19,11 +22,11 @@ export function handleTransfer(event: Transfer): void {
         dataAngleHistorical.owner = data.id
         dataAngleHistorical.timestamp = roundedTimestamp
       }
-      if (data.balance.equals(event.params.value)) {
+      if (data.balance.equals(valueDecimal)) {
         store.remove('ANGLE', fromId)
         store.remove('ANGLEHistorical', fromIdHistorical)
       } else {
-        data.balance = data.balance.minus(event.params.value)
+        data.balance = data.balance.minus(valueDecimal)
         data.save()
         dataAngleHistorical.balance = data.balance
         dataAngleHistorical.save()
@@ -33,9 +36,9 @@ export function handleTransfer(event: Transfer): void {
       let data = ANGLE.load(toId)
       if (data == null) {
         data = new ANGLE(toId)
-        data.balance = event.params.value
+        data.balance = valueDecimal
       } else {
-        data.balance = data.balance.plus(event.params.value)
+        data.balance = data.balance.plus(valueDecimal)
       }
       data.save()
       let dataAngleHistorical = ANGLEHistorical.load(toIdHistorical)
@@ -48,7 +51,7 @@ export function handleTransfer(event: Transfer): void {
       dataAngleHistorical.save()
     } else {
       const fromData = ANGLE.load(fromId)!
-      fromData.balance = fromData.balance.minus(event.params.value)
+      fromData.balance = fromData.balance.minus(valueDecimal)
       fromData.save()
       let toData = ANGLE.load(toId)
       let dataAngleHistoricalFrom = ANGLEHistorical.load(fromIdHistorical)
@@ -60,9 +63,9 @@ export function handleTransfer(event: Transfer): void {
 
       if (toData == null) {
         toData = new ANGLE(toId)
-        toData.balance = event.params.value
+        toData.balance = valueDecimal
       } else {
-        toData.balance = toData.balance.plus(event.params.value)
+        toData.balance = toData.balance.plus(valueDecimal)
       }
       toData.save()
       let dataAngleHistoricalTo = ANGLEHistorical.load(toIdHistorical)

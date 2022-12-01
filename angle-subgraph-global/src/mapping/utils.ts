@@ -1,4 +1,4 @@
-import { Address, ethereum, BigInt, log } from '@graphprotocol/graph-ts'
+import { Address, ethereum, BigInt, log, BigDecimal } from '@graphprotocol/graph-ts'
 import { StableMaster } from '../../generated/templates/StableMasterTemplate/StableMaster'
 import { ERC20 } from '../../generated/templates/StableMasterTemplate/ERC20'
 import { SanToken } from '../../generated/templates/StableMasterTemplate/SanToken'
@@ -6,8 +6,8 @@ import { AgToken as AgTokenContract } from '../../generated/templates/StableMast
 import { PoolManager } from '../../generated/templates/StableMasterTemplate/PoolManager'
 import { PerpetualManagerFront } from '../../generated/templates/StableMasterTemplate/PerpetualManagerFront'
 import { Oracle, Oracle__readAllResult } from '../../generated/templates/StableMasterTemplate/Oracle'
-import { PoolData, StableData, StableHistoricalData, PoolHistoricalData, Perpetual, FeeData, OracleData, OracleByTicker, FeeHistoricalData, OracleCoreData, OracleAPRCoreHistoricalData } from '../../generated/schema'
-import { BASE_PARAMS, BASE_TOKENS, BLOCK_UPDATE_POOL_MANAGER_ESTIMATED_APR, ROUND_COEFF, ZERO, STETH_ADDRESS } from '../../../constants'
+import { PoolData, StableData, StableHistoricalData, PoolHistoricalData, Perpetual, FeeData, OracleData, OracleByTicker, FeeHistoricalData, OracleCoreData, OracleAPRCoreHistoricalData, Token } from '../../generated/schema'
+import { BASE_TOKENS, BLOCK_UPDATE_POOL_MANAGER_ESTIMATED_APR, ROUND_COEFF, ZERO, STETH_ADDRESS, DECIMAL_PARAMS, ZERO_BD, ONE_BD, DECIMAL_TOKENS } from '../../../constants'
 import { StableMaster__collateralMapResultFeeDataStruct } from '../../generated/templates/StableMasterTemplate/StableMaster'
 import { PerpetualOpened } from '../../generated/templates/PerpetualManagerFrontTemplate/PerpetualManagerFront'
 import { ChainlinkTemplate } from '../../generated/templates'
@@ -15,6 +15,7 @@ import { ChainlinkProxy } from '../../generated/templates/ChainlinkTemplate/Chai
 import { getCollateralPrice } from './chainlink'
 import { stETH } from '../../generated/Chainlink5/stETH'
 import { ChainlinkFeed } from '../../generated/templates/ChainlinkTemplate/ChainlinkFeed'
+import { convertTokenListToDecimal, convertTokenToDecimal } from '../utils'
 
 
 let wrappedTokens = new Map<string, string>()
@@ -59,11 +60,12 @@ export function updateStableData(stableMaster: StableMaster, block: ethereum.Blo
 
   const resultCollatRatio = stableMaster.try_getCollateralRatio()
   if (!resultCollatRatio.reverted) {
-    data.collatRatio = resultCollatRatio.value
+    data.collatRatio = convertTokenToDecimal(resultCollatRatio.value, DECIMAL_PARAMS)
   }
 
   const totalMinted = agToken.totalSupply()
-  data.totalMinted = totalMinted
+  const agTokenInfo = getToken(agToken._address)
+  data.totalMinted = convertTokenToDecimal(totalMinted, agTokenInfo.decimals)
   data.blockNumber = block.number
   data.timestamp = block.timestamp
 
@@ -72,22 +74,22 @@ export function updateStableData(stableMaster: StableMaster, block: ethereum.Blo
     dataHistoricalHour = new StableHistoricalData(idHistorical)
     dataHistoricalHour.name = name
     if (!resultCollatRatio.reverted) {
-      dataHistoricalHour.collatRatio = resultCollatRatio.value
+      dataHistoricalHour.collatRatio = convertTokenToDecimal(resultCollatRatio.value, DECIMAL_PARAMS)
     } else {
       dataHistoricalHour.collatRatio = data.collatRatio
     }
-    dataHistoricalHour.totalMinted = totalMinted
+    dataHistoricalHour.totalMinted = convertTokenToDecimal(totalMinted, agTokenInfo.decimals)
     dataHistoricalHour.blockNumber = block.number
     dataHistoricalHour.timestamp = block.timestamp
   } else {
     // for the moment we just update with the last value in the hour but we could easier takes the first in the hour
     // or takes the mean (by adding a field to the struct to track the nuber of points so far) or more advanced metrics
     if (!resultCollatRatio.reverted) {
-      dataHistoricalHour.collatRatio = resultCollatRatio.value
+      dataHistoricalHour.collatRatio = convertTokenToDecimal(resultCollatRatio.value, DECIMAL_PARAMS)
     } else {
       dataHistoricalHour.collatRatio = data.collatRatio
     }
-    dataHistoricalHour.totalMinted = totalMinted
+    dataHistoricalHour.totalMinted = convertTokenToDecimal(totalMinted, agTokenInfo.decimals)
     dataHistoricalHour.timestamp = block.timestamp
   }
 
@@ -98,11 +100,11 @@ export function updateStableData(stableMaster: StableMaster, block: ethereum.Blo
 export function _updateGainPoolData(
   poolManager: PoolManager,
   block: ethereum.Block,
-  totalProtocolFees: BigInt = BigInt.fromString('0'),
-  totalKeeperFees: BigInt = BigInt.fromString('0'),
-  totalSLPFees: BigInt = BigInt.fromString('0'),
-  totalProtocolInterests: BigInt = BigInt.fromString('0'),
-  totalSLPInterests: BigInt = BigInt.fromString('0')
+  totalProtocolFees: BigDecimal = ZERO_BD,
+  totalKeeperFees: BigDecimal = ZERO_BD,
+  totalSLPFees: BigDecimal = ZERO_BD,
+  totalProtocolInterests: BigDecimal = ZERO_BD,
+  totalSLPInterests: BigDecimal = ZERO_BD
 ): void {
   const id = poolManager._address.toHexString()
   const roundedTimestamp = historicalSlice(block)
@@ -142,27 +144,26 @@ export function _updateGainPoolData(
   }
   const collatName = token.symbol()
   const collateralOracle = OracleByTicker.load(collatName)
-  const decimalNormalizer = BigInt.fromString('10').pow(data.decimals!.toI32() as u8)
-  let collateralPrice: BigInt
+  let collateralPrice: BigDecimal
   if (collateralOracle == null) {
     if (collatName == "USDC") {
-      collateralPrice = BASE_TOKENS
+      collateralPrice = ONE_BD
     } else {
       log.warning('=== we have to read the oracle from contract: {}', [collatName])
       const stableMaster = StableMaster.bind(poolManager.stableMaster())
       const collatData = stableMaster.collateralMap(poolManager._address)
       const oracle = Oracle.bind(collatData.value3)
-      collateralPrice = oracle.readLower()
+      collateralPrice = convertTokenToDecimal(oracle.readLower(), DECIMAL_TOKENS)
     }
   }
   else collateralPrice = getCollateralPrice(collateralOracle)
 
 
-  tmpTotalProtocolFees = feeData.totalProtocolFees.plus(totalProtocolFees.times(collateralPrice).div(decimalNormalizer))
-  tmpTotalKeeperFees = feeData.totalKeeperFees.plus(totalKeeperFees.times(collateralPrice).div(decimalNormalizer))
-  tmpTotalSLPFees = feeData.totalSLPFees.plus(totalSLPFees.times(collateralPrice).div(decimalNormalizer))
-  tmpTotalProtocolInterests = feeData.totalProtocolInterests.plus(totalProtocolInterests.times(collateralPrice).div(decimalNormalizer))
-  tmpTotalSLPInterests = feeData.totalSLPInterests.plus(totalSLPInterests.times(collateralPrice).div(decimalNormalizer))
+  tmpTotalProtocolFees = feeData.totalProtocolFees.plus(totalProtocolFees.times(collateralPrice))
+  tmpTotalKeeperFees = feeData.totalKeeperFees.plus(totalKeeperFees.times(collateralPrice))
+  tmpTotalSLPFees = feeData.totalSLPFees.plus(totalSLPFees.times(collateralPrice))
+  tmpTotalProtocolInterests = feeData.totalProtocolInterests.plus(totalProtocolInterests.times(collateralPrice))
+  tmpTotalSLPInterests = feeData.totalSLPInterests.plus(totalSLPInterests.times(collateralPrice))
 
   feeData.totalProtocolFees = tmpTotalProtocolFees
   feeData.totalKeeperFees = tmpTotalKeeperFees
@@ -189,7 +190,7 @@ export function _updatePoolData(
   poolManager: PoolManager,
   block: ethereum.Block,
   add: boolean = true,
-  margin: BigInt = BigInt.fromString('0')
+  margin: BigDecimal = ZERO_BD
 ): PoolData {
   const stableMaster = StableMaster.bind(poolManager.stableMaster())
   const token = ERC20.bind(poolManager.token())
@@ -197,20 +198,21 @@ export function _updatePoolData(
   const collatData = stableMaster.collateralMap(poolManager._address)
   const perpetualManager = PerpetualManagerFront.bind(collatData.value2)
   const oracle = Oracle.bind(collatData.value3)
+  const collateralInfo = getToken(token._address)
+  const stablecoinInfo = getToken(agToken._address)
 
   const id = poolManager._address.toHexString()
   const roundedTimestamp = historicalSlice(block)
   const idHistorical = poolManager._address.toHexString() + '_hour_' + roundedTimestamp.toString()
 
-  const decimals = BigInt.fromI32(token.decimals())
-  const totalHedgeAmount = perpetualManager.totalHedgeAmount()
+  const totalHedgeAmount = convertTokenToDecimal(perpetualManager.totalHedgeAmount(), stablecoinInfo.decimals)
 
-  let totalMargin: BigInt
+  let totalMargin: BigDecimal
 
   let data = PoolData.load(id)
   if (data == null) {
     data = new PoolData(id)
-    totalMargin = ZERO
+    totalMargin = ZERO_BD
     _trackNewChainlinkOracle(oracle, block.timestamp);
   }
 
@@ -218,30 +220,32 @@ export function _updatePoolData(
 
   data.poolManager = poolManager._address.toHexString()
 
-  data.decimals = decimals
+  data.decimals = collateralInfo.decimals
 
   const stableMasterAddress = poolManager.stableMaster().toHexString()
   data.stableMaster = stableMasterAddress
 
   const stableName = agToken.symbol()
   data.stableName = stableName
+  data.stablecoin = agToken._address.toHexString()
 
   const collatName = token.symbol()
   data.collatName = collatName
+  data.collateral = token._address.toHexString()
 
-  const totalAsset = poolManager.getTotalAsset()
+  const totalAsset = convertTokenToDecimal(poolManager.getTotalAsset(), collateralInfo.decimals)
   data.totalAsset = totalAsset
 
-  const availableAsset = poolManager.getBalance()
+  const availableAsset = convertTokenToDecimal(poolManager.getBalance(), collateralInfo.decimals)
   data.availableAsset = availableAsset
 
-  const stockUser = collatData.value4
+  const stockUser = convertTokenToDecimal(collatData.value4, stablecoinInfo.decimals)
   data.stockUser = stockUser
 
   const sanToken = SanToken.bind(collatData.value1)
 
-  const sanRate = collatData.value5
-  const stockSLP = sanToken.totalSupply().times(sanRate)
+  const sanRate = convertTokenToDecimal(collatData.value5, DECIMAL_TOKENS)
+  const stockSLP = convertTokenToDecimal(sanToken.totalSupply(), collateralInfo.decimals).times(sanRate)
   data.stockSLP = stockSLP
 
   data.sanRate = sanRate
@@ -250,45 +254,44 @@ export function _updatePoolData(
   const lastBlockUpadted = slpInfo.lastBlockUpdated
   data.lastBlockUpdated = lastBlockUpadted
 
-  const lockedInterests = slpInfo.lockedInterests
+  const lockedInterests = convertTokenToDecimal(slpInfo.lockedInterests, collateralInfo.decimals)
   data.lockedInterests = lockedInterests
 
-  const maxInterestsDistributed = slpInfo.maxInterestsDistributed
+  const maxInterestsDistributed = convertTokenToDecimal(slpInfo.maxInterestsDistributed, collateralInfo.decimals)
   data.maxInterestsDistributed = maxInterestsDistributed
 
-  const feesAside = slpInfo.feesAside
+  const feesAside = convertTokenToDecimal(slpInfo.feesAside, collateralInfo.decimals)
   data.feesAside = feesAside
 
-  const feesForSLPs = slpInfo.feesForSLPs
+  const feesForSLPs = convertTokenToDecimal(slpInfo.feesForSLPs, DECIMAL_PARAMS)
   data.feesForSLPs = feesForSLPs
 
   const resultInterestsForSurplus = poolManager.try_interestsForSurplus()
-  let interestsForSurplus = BigInt.fromString('0')
+  let interestsForSurplus = ZERO_BD
   if (!resultInterestsForSurplus.reverted) {
-    interestsForSurplus = resultInterestsForSurplus.value
+    interestsForSurplus = convertTokenToDecimal(resultInterestsForSurplus.value, DECIMAL_PARAMS)
     data.interestsForSurplus = interestsForSurplus
   }
 
-  let interestsForSLPs: BigInt
-  let apr: BigInt
-  const result = poolManager.try_interestsForSurplus()
-  if (result.reverted || block.number.gt(BLOCK_UPDATE_POOL_MANAGER_ESTIMATED_APR)) {
-    interestsForSLPs = slpInfo.interestsForSLPs
+  let interestsForSLPs: BigDecimal
+  let apr: BigDecimal
+  if (resultInterestsForSurplus.reverted || block.number.gt(BLOCK_UPDATE_POOL_MANAGER_ESTIMATED_APR)) {
+    interestsForSLPs = convertTokenToDecimal(slpInfo.interestsForSLPs, DECIMAL_PARAMS)
     const resultAPR = poolManager.try_estimatedAPR()
-    apr = resultAPR.reverted ? BigInt.fromString('0') : resultAPR.value
+    apr = resultAPR.reverted ? ZERO_BD : convertTokenToDecimal(resultAPR.value, DECIMAL_TOKENS)
   } else {
-    const interestForSurplus = result.value
+    const interestForSurplus = interestsForSurplus
     const resultAPR = poolManager.try_estimatedAPR()
-    interestsForSLPs = slpInfo.interestsForSLPs.times(BASE_PARAMS.minus(interestForSurplus)).div(BASE_PARAMS)
+    interestsForSLPs = convertTokenToDecimal(slpInfo.interestsForSLPs, DECIMAL_PARAMS).times(ONE_BD.minus(interestForSurplus))
     apr = resultAPR.reverted
-      ? BigInt.fromString('0')
-      : resultAPR.value.times(BASE_PARAMS.minus(interestForSurplus)).div(BASE_PARAMS)
+      ? ZERO_BD
+      : convertTokenToDecimal(resultAPR.value, DECIMAL_TOKENS).times(ONE_BD.minus(interestForSurplus))
   }
 
   data.interestsForSLPs = interestsForSLPs
 
   // if the call did not fail
-  if (!apr.equals(BigInt.fromString('0'))) {
+  if (!apr.equals(ZERO_BD)) {
     data.apr = apr
   }
 
@@ -297,35 +300,17 @@ export function _updatePoolData(
   data.totalMargin = totalMargin
 
   const resultRates = oracle.try_readAll()
-  let rates: Oracle__readAllResult
+  let rates: BigDecimal[]
   if (resultRates.reverted) {
-    const rateLower = data.rateLower ? data.rateLower : BigInt.fromString('0')
-    const rateUpper = data.rateUpper ? data.rateUpper : BigInt.fromString('0')
-    rates = new Oracle__readAllResult(rateLower!, rateUpper!)
+    const rateLower = data.rateLower ? data.rateLower : ZERO_BD
+    const rateUpper = data.rateUpper ? data.rateUpper : ZERO_BD
+    rates = [rateLower!, rateUpper!]
   } else {
-    rates = resultRates.value
+    rates = [convertTokenToDecimal(resultRates.value.value0, DECIMAL_TOKENS), convertTokenToDecimal(resultRates.value.value1, DECIMAL_TOKENS)]
   }
 
-  data.rateLower = rates.value0
-  data.rateUpper = rates.value1
-
-  const targetHAHedge = perpetualManager.targetHAHedge()
-  data.targetHAHedge = targetHAHedge
-
-  const limitHAHedge = perpetualManager.limitHAHedge()
-  data.limitHAHedge = limitHAHedge
-
-  const keeperFeesLiquidationCap = perpetualManager.keeperFeesLiquidationCap()
-  data.keeperFeesLiquidationCap = keeperFeesLiquidationCap
-
-  const keeperFeesClosingCap = perpetualManager.keeperFeesClosingCap()
-  data.keeperFeesClosingCap = keeperFeesClosingCap
-
-  const keeperFeesLiquidationRatio = perpetualManager.keeperFeesLiquidationRatio()
-  data.keeperFeesLiquidationRatio = keeperFeesLiquidationRatio
-
-  const maintenanceMargin = perpetualManager.maintenanceMargin()
-  data.maintenanceMargin = maintenanceMargin
+  data.rateLower = rates[0]
+  data.rateUpper = rates[1]
 
   data.blockNumber = block.number
   data.timestamp = block.timestamp
@@ -334,7 +319,7 @@ export function _updatePoolData(
   if (dataHistorical == null) {
     dataHistorical = new PoolHistoricalData(idHistorical)
     dataHistorical.poolManager = poolManager._address.toHexString()
-    dataHistorical.decimals = decimals
+    dataHistorical.decimals = collateralInfo.decimals
     dataHistorical.stableMaster = stableMasterAddress
     dataHistorical.stableName = stableName
     dataHistorical.collatName = collatName
@@ -358,17 +343,17 @@ export function _updatePoolData(
   dataHistorical.interestsForSLPs = interestsForSLPs
   dataHistorical.totalHedgeAmount = totalHedgeAmount
   dataHistorical.totalMargin = totalMargin
-  dataHistorical.rateLower = rates.value0
-  dataHistorical.rateUpper = rates.value1
-  dataHistorical.targetHAHedge = targetHAHedge
-  dataHistorical.keeperFeesLiquidationCap = keeperFeesLiquidationCap
-  dataHistorical.limitHAHedge = limitHAHedge
-  dataHistorical.keeperFeesClosingCap = keeperFeesClosingCap
-  dataHistorical.keeperFeesLiquidationRatio = keeperFeesLiquidationRatio
-  dataHistorical.maintenanceMargin = maintenanceMargin
+  dataHistorical.rateLower = rates[0]
+  dataHistorical.rateUpper = rates[1]
+  dataHistorical.targetHAHedge = data.targetHAHedge
+  dataHistorical.keeperFeesLiquidationCap = data.keeperFeesLiquidationCap
+  dataHistorical.limitHAHedge = data.limitHAHedge
+  dataHistorical.keeperFeesClosingCap = data.keeperFeesClosingCap
+  dataHistorical.keeperFeesLiquidationRatio = data.keeperFeesLiquidationRatio
+  dataHistorical.maintenanceMargin = data.maintenanceMargin
   dataHistorical.blockNumber = block.number
   dataHistorical.timestamp = roundedTimestamp
-  if (!apr.equals(BigInt.fromString('0'))) {
+  if (!apr.equals(ZERO_BD)) {
     dataHistorical.apr = apr
   }
 
@@ -388,16 +373,16 @@ export function updateOracleData(poolManager: PoolManager, block: ethereum.Block
   const collatName = token.symbol()
   const resultRates = oracle.try_readAll()
   const result = poolManager.try_interestsForSurplus()
-  let apr: BigInt
+  let apr: BigDecimal
   if (result.reverted || block.number.gt(BLOCK_UPDATE_POOL_MANAGER_ESTIMATED_APR)) {
     const resultAPR = poolManager.try_estimatedAPR()
-    apr = resultAPR.reverted ? BigInt.fromString('0') : resultAPR.value
+    apr = resultAPR.reverted ? ZERO_BD : convertTokenToDecimal(resultAPR.value, DECIMAL_TOKENS)
   } else {
-    const interestForSurplus = result.value
+    const interestForSurplus = convertTokenToDecimal(result.value, DECIMAL_PARAMS)
     const resultAPR = poolManager.try_estimatedAPR()
     apr = resultAPR.reverted
-      ? BigInt.fromString('0')
-      : resultAPR.value.times(BASE_PARAMS.minus(interestForSurplus)).div(BASE_PARAMS)
+      ? ZERO_BD
+      : convertTokenToDecimal(resultAPR.value, DECIMAL_TOKENS).times(ONE_BD.minus(interestForSurplus))
   }
 
   // Better to set the id to the poolManager than the oracle as there is more chances that the oracle is updated
@@ -409,18 +394,19 @@ export function updateOracleData(poolManager: PoolManager, block: ethereum.Block
   if (data == null) {
     data = new OracleCoreData(id)
   }
-  let rates: Oracle__readAllResult
+
+  let rates: BigDecimal[]
   if (resultRates.reverted) {
-    rates = new Oracle__readAllResult(data.rateLower, data.rateUpper)
+    rates = [data.rateLower, data.rateUpper]
   } else {
-    rates = resultRates.value
+    rates = [convertTokenToDecimal(resultRates.value.value0, DECIMAL_TOKENS), convertTokenToDecimal(resultRates.value.value1, DECIMAL_TOKENS)]
   }
 
   data.oracle = oracle._address.toHexString()
   data.tokenOut = stableName
   data.tokenIn = collatName
-  data.rateLower = rates.value0
-  data.rateUpper = rates.value1
+  data.rateLower = rates[0]
+  data.rateUpper = rates[1]
   data.blockNumber = block.number
   data.timestamp = block.timestamp
 
@@ -429,12 +415,12 @@ export function updateOracleData(poolManager: PoolManager, block: ethereum.Block
     dataOracleAprHistoricalHour = new OracleAPRCoreHistoricalData(idHistorical)
     dataOracleAprHistoricalHour.collatName = token.symbol()
     dataOracleAprHistoricalHour.stableName = agToken.symbol()
-    dataOracleAprHistoricalHour.rateLower = rates.value0
-    dataOracleAprHistoricalHour.rateUpper = rates.value1
+    dataOracleAprHistoricalHour.rateLower = rates[0]
+    dataOracleAprHistoricalHour.rateUpper = rates[1]
     dataOracleAprHistoricalHour.timestamp = roundedTimestamp
     dataOracleAprHistoricalHour.blockNumber = block.number
     // if the call didn't failed then update the value
-    if (!apr.equals(BigInt.fromString('0'))) {
+    if (!apr.equals(ZERO_BD)) {
       dataOracleAprHistoricalHour.apr = apr
     }
   } else {
@@ -442,12 +428,12 @@ export function updateOracleData(poolManager: PoolManager, block: ethereum.Block
     // or takes the mean (by adding a field to the struct to track the nuber of points so far) or more advanced metrics
     dataOracleAprHistoricalHour.collatName = token.symbol()
     dataOracleAprHistoricalHour.stableName = agToken.symbol()
-    dataOracleAprHistoricalHour.rateLower = rates.value0
-    dataOracleAprHistoricalHour.rateUpper = rates.value1
+    dataOracleAprHistoricalHour.rateLower = rates[0]
+    dataOracleAprHistoricalHour.rateUpper = rates[1]
     dataOracleAprHistoricalHour.timestamp = roundedTimestamp
     dataOracleAprHistoricalHour.blockNumber = block.number
     // if the call didn't failed then update the value
-    if (!apr.equals(BigInt.fromString('0'))) {
+    if (!apr.equals(ZERO_BD)) {
       dataOracleAprHistoricalHour.apr = apr
     }
   }
@@ -457,7 +443,7 @@ export function updateOracleData(poolManager: PoolManager, block: ethereum.Block
 }
 
 
-export function _piecewiseLinear(value: BigInt, xArray: BigInt[], yArray: BigInt[]): BigInt {
+export function _piecewiseLinear(value: BigDecimal, xArray: BigDecimal[], yArray: BigDecimal[]): BigDecimal {
   if (value.ge(xArray[xArray.length - 1])) {
     return yArray[yArray.length - 1]
   }
@@ -471,11 +457,9 @@ export function _piecewiseLinear(value: BigInt, xArray: BigInt[], yArray: BigInt
   }
   const pct = value
     .minus(xArray[i])
-    .times(BASE_PARAMS)
     .div(xArray[i + 1].minus(xArray[i]))
   const normalized = pct
     .times(yArray[i + 1].minus(yArray[i]))
-    .div(BASE_PARAMS)
     .plus(yArray[i])
 
   return normalized
@@ -483,17 +467,17 @@ export function _piecewiseLinear(value: BigInt, xArray: BigInt[], yArray: BigInt
 
 export function _computeHedgeRatio(
   perpetualManager: PerpetualManagerFront,
-  stocksUsers: BigInt,
-  currentHedgeAmount: BigInt
-): BigInt {
-  const targetHAHedge = perpetualManager.targetHAHedge()
+  stocksUsers: BigDecimal,
+  currentHedgeAmount: BigDecimal
+): BigDecimal {
+  const targetHAHedge = convertTokenToDecimal(perpetualManager.targetHAHedge(), DECIMAL_PARAMS)
   // Fetching info from the `StableMaster`: the amount to hedge is based on the `stocksUsers`
   // of the given collateral
-  const targetHedgeAmount = stocksUsers.times(targetHAHedge).div(BASE_PARAMS)
+  const targetHedgeAmount = stocksUsers.times(targetHAHedge)
 
-  let ratio: BigInt
-  if (currentHedgeAmount.lt(targetHedgeAmount)) ratio = currentHedgeAmount.times(BASE_PARAMS).div(targetHedgeAmount)
-  else ratio = BASE_PARAMS
+  let ratio: BigDecimal
+  if (currentHedgeAmount.lt(targetHedgeAmount)) ratio = currentHedgeAmount.div(targetHedgeAmount)
+  else ratio = ONE_BD
 
   return ratio
 }
@@ -502,29 +486,30 @@ export function _getFeesOpenPerp(
   perpetualManager: PerpetualManagerFront,
   poolManager: PoolManager,
   event: PerpetualOpened
-): BigInt {
+): BigDecimal {
   const stableMaster = StableMaster.bind(poolManager.stableMaster())
   const collatData = stableMaster.collateralMap(poolManager._address)
-  const stocksUsers = collatData.value4
-  const baseCollat = collatData.value6
-  const totalHedgeAmount = perpetualManager.totalHedgeAmount()
-  const totalHedgeAmountUpdate = event.params._committedAmount.times(event.params._entryRate).div(baseCollat)
+  const collateral = collatData.value0
+  const collateralInfo = getToken(collateral)
+  const stocksUsers = convertTokenToDecimal(collatData.value4, collateralInfo.decimals)
+  const totalHedgeAmount = convertTokenToDecimal(perpetualManager.totalHedgeAmount(), DECIMAL_TOKENS)
+  const totalHedgeAmountUpdate = convertTokenToDecimal(event.params._committedAmount, collateralInfo.decimals).times(convertTokenToDecimal(event.params._entryRate, DECIMAL_TOKENS))
 
   const hedgeRatio = _computeHedgeRatio(perpetualManager, stocksUsers, totalHedgeAmount.plus(totalHedgeAmountUpdate))
-  const haFeesDeposit = _getDepositFees(perpetualManager, hedgeRatio)
+  const haFeesDeposit = _getDepositFees(poolManager._address, hedgeRatio)
   // Fees are rounded to the advantage of the protocol
-  const fee = event.params._committedAmount.times(haFeesDeposit).div(BASE_PARAMS)
+  const fee = convertTokenToDecimal(event.params._committedAmount, collateralInfo.decimals).times(haFeesDeposit)
   return fee
 }
 
-export function _getCashOutAmount(perp: Perpetual, currentRate: BigInt): BigInt {
+export function _getCashOutAmount(perp: Perpetual, currentRate: BigDecimal): BigDecimal {
   // All these computations are made just because we are working with uint and not int
   // so we cannot do x-y if x<y
   const newCommit = perp.committedAmount.times(perp.entryRate).div(currentRate)
   // Checking if a liquidation is needed: for this to happen the `cashOutAmount` should be inferior
   // to the maintenance margin of the perpetual
-  let cashOutAmount: BigInt
-  if (newCommit.ge(perp.committedAmount.plus(perp.margin))) cashOutAmount = BigInt.fromString('0')
+  let cashOutAmount: BigDecimal
+  if (newCommit.ge(perp.committedAmount.plus(perp.margin))) cashOutAmount = ZERO_BD
   else {
     // The definition of the margin ratio is `(margin + PnL) / committedAmount`
     // where `PnL = commit * (1-entryRate/currentRate)`
@@ -534,68 +519,74 @@ export function _getCashOutAmount(perp: Perpetual, currentRate: BigInt): BigInt 
   return cashOutAmount
 }
 
-export function _getFeesClosePerp(perpetualManager: PerpetualManagerFront, perp: Perpetual): BigInt {
+export function _getFeesClosePerp(perpetualManager: PerpetualManagerFront, perp: Perpetual): BigDecimal {
   const oracle = Oracle.bind(perpetualManager.oracle())
-  const currentRate = oracle.readLower()
+  const currentRate = convertTokenToDecimal(oracle.readLower(), DECIMAL_TOKENS)
   const poolManager = PoolManager.bind(perpetualManager.poolManager())
   const stableMaster = StableMaster.bind(poolManager.stableMaster())
   const collatData = stableMaster.collateralMap(poolManager._address)
-  const stocksUsers = collatData.value4
-  const totalHedgeAmount = perpetualManager.totalHedgeAmount()
+  const collateral = collatData.value0
+  const collateralInfo = getToken(collateral)
+  const stocksUsers = convertTokenToDecimal(collatData.value4, collateralInfo.decimals)
+  const totalHedgeAmount = convertTokenToDecimal(perpetualManager.totalHedgeAmount(), DECIMAL_TOKENS)
   const cashOutAmount = _getCashOutAmount(perp, currentRate)
   const hedgeRatio = _computeHedgeRatio(perpetualManager, stocksUsers, totalHedgeAmount)
 
-  const feeWithdraw = _getWithdrawFees(perpetualManager, hedgeRatio)
+  const feeWithdraw = _getWithdrawFees(poolManager._address, hedgeRatio)
   // Rounding the fees at the protocol's advantage
-  let feesPaid = perp.committedAmount.times(feeWithdraw).div(BASE_PARAMS)
+  let feesPaid = perp.committedAmount.times(feeWithdraw)
   if (feesPaid.ge(cashOutAmount)) {
     feesPaid = cashOutAmount
   }
   return feesPaid
 }
 
-export function _getFeesLiquidationPerp(perpetualManager: PerpetualManagerFront, perp: Perpetual): BigInt[] {
+export function _getFeesLiquidationPerp(perpetualManager: PerpetualManagerFront, perp: Perpetual, collateralInfo: Token): BigDecimal[] {
   const oracle = Oracle.bind(perpetualManager.oracle())
-  const currentRate = oracle.readLower()
+  const currentRate = convertTokenToDecimal(oracle.readLower(), DECIMAL_TOKENS)
   const cashOutAmount = _getCashOutAmount(perp, currentRate)
-  const keeperFeesLiquidationRatio = perpetualManager.keeperFeesLiquidationRatio()
-  const keeperFeesLiquidationCap = perpetualManager.keeperFeesLiquidationCap()
+  const keeperFeesLiquidationRatio = convertTokenToDecimal(perpetualManager.keeperFeesLiquidationRatio(), DECIMAL_PARAMS)
+  const keeperFeesLiquidationCap = convertTokenToDecimal(perpetualManager.keeperFeesLiquidationCap(), collateralInfo.decimals)
 
-  let keeperFees = cashOutAmount.times(keeperFeesLiquidationRatio).div(BASE_PARAMS)
+  let keeperFees = cashOutAmount.times(keeperFeesLiquidationRatio)
   keeperFees = keeperFees.lt(keeperFeesLiquidationCap) ? keeperFees : keeperFeesLiquidationCap
   const protocolFees = cashOutAmount.minus(keeperFees)
   return [protocolFees, keeperFees]
 }
 
-export function _getMintFee(stableMaster: StableMaster, poolManager: PoolManager, amount: BigInt): BigInt[] {
+export function _getMintFee(stableMaster: StableMaster, poolManager: PoolManager, amount: BigDecimal): BigDecimal[] {
   const collatData = stableMaster.collateralMap(poolManager._address)
   const oracle = Oracle.bind(collatData.value3)
+  const collateral = collatData.value0
+  const collateralInfo = getToken(collateral)
   const feeData = collatData.value8
-  const stocksUsers = collatData.value4
+  const stocksUsers = convertTokenToDecimal(collatData.value4, collateralInfo.decimals)
   const perpetualManager = PerpetualManagerFront.bind(collatData.value2)
-  const totalHedgeAmount = perpetualManager.totalHedgeAmount()
-  const amountForUserInStable = oracle.readQuoteLower(amount)
+  const totalHedgeAmount = convertTokenToDecimal(perpetualManager.totalHedgeAmount(), DECIMAL_TOKENS)
+  const amountForUserInStable = amount.times(convertTokenToDecimal(oracle.readLower(), DECIMAL_TOKENS))
   const hedgeRatio = _computeHedgeRatio(perpetualManager, amountForUserInStable.plus(stocksUsers), totalHedgeAmount)
   // Fees could in some occasions depend on other factors like collateral ratio
   // Keepers are the ones updating this part of the fees
   const feeMint = _getMintPercentageFees(feeData, hedgeRatio)
-  const fee = amount.times(feeMint).div(BASE_PARAMS)
-  const percentFeesForSLPs = collatData.value7.feesForSLPs
-  const SLPFees = fee.times(percentFeesForSLPs).div(BASE_PARAMS)
+  const fee = amount.times(feeMint)
+  const percentFeesForSLPs = convertTokenToDecimal(collatData.value7.feesForSLPs, DECIMAL_PARAMS)
+  const SLPFees = fee.times(percentFeesForSLPs)
   return [fee.minus(SLPFees), SLPFees]
 }
 
-export function _getBurnFee(stableMaster: StableMaster, poolManager: PoolManager, amount: BigInt): BigInt[] {
+export function _getBurnFee(stableMaster: StableMaster, poolManager: PoolManager, amount: BigDecimal): BigDecimal[] {
   const collatData = stableMaster.collateralMap(poolManager._address)
   const oracle = Oracle.bind(collatData.value3)
+  const collateral = collatData.value0
+  const collateralInfo = getToken(collateral)
   const feeData = collatData.value8
-  const stocksUsers = collatData.value4
+  const stocksUsers = convertTokenToDecimal(collatData.value4, collateralInfo.decimals)
   const perpetualManager = PerpetualManagerFront.bind(collatData.value2)
-  const totalHedgeAmount = perpetualManager.totalHedgeAmount()
+  const totalHedgeAmount = convertTokenToDecimal(perpetualManager.totalHedgeAmount(), DECIMAL_TOKENS)
   const hedgeRatio = _computeHedgeRatio(perpetualManager, stocksUsers.minus(amount), totalHedgeAmount)
 
   // Getting the highest possible oracle value
-  const oracleValue = oracle.readUpper()
+  const oracleValue = convertTokenToDecimal(oracle.readUpper(), DECIMAL_TOKENS)
 
   // Computing how much of collateral can be redeemed by the user after taking fees
   // The value of the fees here is `_computeFeeBurn(amount,col)` (it is a proportion expressed in `BASE_PARAMS`)
@@ -603,116 +594,77 @@ export function _getBurnFee(stableMaster: StableMaster, poolManager: PoolManager
   // but we prefer to avoid doing multiplications after divisions
   const fee = amount
     .times(_getBurnPercentageFees(feeData, hedgeRatio))
-    .times(collatData.value6)
-    .div(oracleValue.times(BASE_PARAMS))
+    .div(oracleValue)
 
-  const percentFeesForSLPs = collatData.value7.feesForSLPs
-  const SLPFees = fee.times(percentFeesForSLPs).div(BASE_PARAMS)
+  const percentFeesForSLPs = convertTokenToDecimal(collatData.value7.feesForSLPs, DECIMAL_PARAMS)
+  const SLPFees = fee.times(percentFeesForSLPs)
   return [fee.minus(SLPFees), SLPFees]
 }
 
 export function _getMintPercentageFees(
   feeData: StableMaster__collateralMapResultFeeDataStruct,
-  hedgeRatio: BigInt
-): BigInt {
-  const bonusMalusMint = feeData.bonusMalusMint
-  const xFeeMint = feeData.xFeeMint
-  const yFeeMint = feeData.yFeeMint
+  hedgeRatio: BigDecimal
+): BigDecimal {
+  const bonusMalusMint = convertTokenToDecimal(feeData.bonusMalusMint, DECIMAL_PARAMS)
+  const xFeeMint = convertTokenListToDecimal(feeData.xFeeMint, DECIMAL_PARAMS)
+  const yFeeMint = convertTokenListToDecimal(feeData.yFeeMint, DECIMAL_PARAMS)
+
   // Computing the net margin of HAs to store in the perpetual: it consists simply in deducing fees
   // Those depend on how much is already hedged by HAs compared with what's to hedge
-  const feesPaid = bonusMalusMint.times(_piecewiseLinear(hedgeRatio, xFeeMint, yFeeMint)).div(BASE_PARAMS)
+  const feesPaid = bonusMalusMint.times(_piecewiseLinear(hedgeRatio, xFeeMint, yFeeMint))
   return feesPaid
 }
 
 export function _getBurnPercentageFees(
   feeData: StableMaster__collateralMapResultFeeDataStruct,
-  hedgeRatio: BigInt
-): BigInt {
-  const bonusMalusBurn = feeData.bonusMalusBurn
-  const xFeeBurn = feeData.xFeeBurn
-  const yFeeBurn = feeData.yFeeBurn
+  hedgeRatio: BigDecimal
+): BigDecimal {
+  const bonusMalusBurn = convertTokenToDecimal(feeData.bonusMalusBurn, DECIMAL_PARAMS)
+  const xFeeBurn = convertTokenListToDecimal(feeData.xFeeBurn, DECIMAL_PARAMS)
+  const yFeeBurn = convertTokenListToDecimal(feeData.yFeeBurn, DECIMAL_PARAMS)
   // Computing the net margin of HAs to store in the perpetual: it consists simply in deducing fees
   // Those depend on how much is already hedged by HAs compared with what's to hedge
-  const feesPaid = bonusMalusBurn.times(_piecewiseLinear(hedgeRatio, xFeeBurn, yFeeBurn)).div(BASE_PARAMS)
+  const feesPaid = bonusMalusBurn.times(_piecewiseLinear(hedgeRatio, xFeeBurn, yFeeBurn))
   return feesPaid
 }
 
-export function _getDepositFees(perpetualManager: PerpetualManagerFront, hedgeRatio: BigInt): BigInt {
-  const haBonusMalusDeposit = perpetualManager.haBonusMalusDeposit()
+export function _getDepositFees(poolManager: Address, hedgeRatio: BigDecimal): BigDecimal {
+  let data = PoolData.load(poolManager.toHexString())!
+  const haBonusMalusDeposit = data.haBonusMalusDeposit
+  const xHAFeesDeposit = data.xHAFeesDeposit
+  const yHAFeesDeposit = data.yHAFeesDeposit
 
-  const xHAFeesDeposit: BigInt[] = []
-  const yHAFeesDeposit: BigInt[] = []
-
-  let i = 0
-  let find = true
-  while (find) {
-    const result = perpetualManager.try_xHAFeesDeposit(BigInt.fromString(i.toString()))
-    if (result.reverted) {
-      find = false
-    } else {
-      xHAFeesDeposit.push(result.value)
-      yHAFeesDeposit.push(perpetualManager.yHAFeesDeposit(BigInt.fromString(i.toString())))
-      i = i + 1
-    }
-  }
   // Computing the net margin of HAs to store in the perpetual: it consists simply in deducing fees
   // Those depend on how much is already hedged by HAs compared with what's to hedge
   const feesPaid = haBonusMalusDeposit
     .times(_piecewiseLinear(hedgeRatio, xHAFeesDeposit, yHAFeesDeposit))
-    .div(BASE_PARAMS)
 
   return feesPaid
 }
 
-export function _getWithdrawFees(perpetualManager: PerpetualManagerFront, hedgeRatio: BigInt): BigInt {
-  const haBonusMalusWithdraw = perpetualManager.haBonusMalusWithdraw()
-
-  const xHAFeesWithdraw: BigInt[] = []
-  const yHAFeesWithdraw: BigInt[] = []
-
-  let i = 0
-  let find = true
-  while (find) {
-    const result = perpetualManager.try_xHAFeesWithdraw(BigInt.fromString(i.toString()))
-    if (result.reverted) {
-      find = false
-    } else {
-      xHAFeesWithdraw.push(result.value)
-      yHAFeesWithdraw.push(perpetualManager.yHAFeesWithdraw(BigInt.fromString(i.toString())))
-      i = i + 1
-    }
-  }
+export function _getWithdrawFees(poolManager: Address, hedgeRatio: BigDecimal): BigDecimal {
+  let data = PoolData.load(poolManager.toHexString())!
+  const haBonusMalusWithdraw = data.haBonusMalusWithdraw
+  const xHAFeesWithdraw = data.xHAFeesWithdraw
+  const yHAFeesWithdraw = data.yHAFeesWithdraw
 
   const feesPaid = haBonusMalusWithdraw
     .times(_piecewiseLinear(hedgeRatio, xHAFeesWithdraw, yHAFeesWithdraw))
-    .div(BASE_PARAMS)
 
   return feesPaid
 }
 
 export function _getForceCloseFees(
-  perpetualManager: PerpetualManagerFront,
-  hedgeRatio: BigInt,
-  closeFee: BigInt
-): BigInt[] {
-  const keeperFeesClosingCap = perpetualManager.keeperFeesClosingCap()
-  const xKeeperFeesClosing: BigInt[] = []
-  const yKeeperFeesClosing: BigInt[] = []
+  poolManager: Address,
+  hedgeRatio: BigDecimal,
+  closeFee: BigDecimal
+): BigDecimal[] {
+  let data = PoolData.load(poolManager.toHexString())!
+  const keeperFeesClosingCap = data.keeperFeesClosingCap
+  const xKeeperFeesClosing = data.xKeeperFeesClosing
+  const yKeeperFeesClosing = data.yKeeperFeesClosing
 
-  let i = 0
-  let find = true
-  while (find) {
-    const result = perpetualManager.try_xKeeperFeesClosing(BigInt.fromString(i.toString()))
-    if (result.reverted) {
-      find = false
-    } else {
-      xKeeperFeesClosing.push(result.value)
-      yKeeperFeesClosing.push(perpetualManager.yKeeperFeesClosing(BigInt.fromString(i.toString())))
-      i = i + 1
-    }
-  }
-
-  let keeperFees = closeFee.times(_piecewiseLinear(hedgeRatio, xKeeperFeesClosing, yKeeperFeesClosing)).div(BASE_PARAMS)
+  let keeperFees = closeFee.times(_piecewiseLinear(hedgeRatio, xKeeperFeesClosing, yKeeperFeesClosing))
   keeperFees = keeperFees.lt(keeperFeesClosingCap) ? keeperFees : keeperFeesClosingCap
   const protocolFees = closeFee.minus(keeperFees)
 
@@ -757,7 +709,7 @@ export function _initAggregator(feed: ChainlinkFeed, timestamp: BigInt): void {
     dataOracle.tokenTicker = "wSTETH"
     quoteAmount = stETH.bind(Address.fromString(STETH_ADDRESS)).getPooledEthByShares(BASE_TOKENS)
   }
-  dataOracle.price = quoteAmount.times(feed.latestAnswer()).div(BigInt.fromString('10').pow(dataOracle.decimals.toI32() as u8))
+  dataOracle.price = convertTokenToDecimal(quoteAmount, DECIMAL_TOKENS).times(convertTokenToDecimal(feed.latestAnswer(), decimals))
   dataOracle.decimals = decimals
   dataOracle.timestamp = timestamp
   dataOracle.save()
@@ -768,4 +720,19 @@ export function _initAggregator(feed: ChainlinkFeed, timestamp: BigInt): void {
   const dataOracleByTicker = new OracleByTicker(dataOracle.tokenTicker)
   dataOracleByTicker.oracle = dataOracle.id
   dataOracleByTicker.save()
+}
+
+export function getToken(tokenAddress: Address): Token {
+  let token = Token.load(tokenAddress.toHexString())
+  // fetch info if null
+  if (token === null) {
+    token = new Token(tokenAddress.toHexString())
+    let contract = ERC20.bind(tokenAddress)
+    token.symbol = contract.symbol()
+    token.name = contract.name()
+    token.decimals = BigInt.fromI32(contract.decimals())
+
+    token.save()
+  }
+  return token
 }

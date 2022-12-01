@@ -15,14 +15,17 @@ import { _initVaultManager, _addVaultManagerDataToHistory, _addVaultDataToHistor
 import { log } from '@graphprotocol/graph-ts'
 import { VaultManager } from '../../generated/templates/TreasuryTemplate/VaultManager'
 import { Oracle } from '../../generated/templates/StableMasterTemplate/Oracle'
-import { _trackNewChainlinkOracle } from './utils'
+import { getToken, _trackNewChainlinkOracle } from './utils'
+import { convertTokenToDecimal } from '../utils'
+import { DECIMAL_PARAMS } from '../../../constants'
 
 export function handleBadDebtUpdated(event: BadDebtUpdated): void {
   log.warning('++++ BadDebtUpdated', [])
   let data = TreasuryData.load(event.address.toHexString())!
   const agToken = AgToken.bind(Address.fromString(data.agToken))
-  data.badDebt = event.params.badDebtValue
-  data.surplus = agToken.balanceOf(event.address)
+  const agTokenInfo = getToken(agToken._address)
+  data.badDebt = convertTokenToDecimal(event.params.badDebtValue, agTokenInfo.decimals)
+  data.surplus = convertTokenToDecimal(agToken.balanceOf(event.address), agTokenInfo.decimals)
 
   data.timestamp = event.block.timestamp
   data.blockNumber = event.block.number
@@ -34,15 +37,16 @@ export function handleSurplusBufferUpdated(event: SurplusBufferUpdated): void {
   log.warning('++++ SurplusBufferUpdated', [])
   const treasury = Treasury.bind(event.address)
   const agToken = AgToken.bind(treasury.stablecoin())
+  const agTokenInfo = getToken(agToken._address)
   let data = TreasuryData.load(event.address.toHexString())!
   if (event.params.surplusBufferValue.isZero() && treasury.badDebt().isZero()) {
     // Surplus moving to zero and badDebt == 0 means we just flushed some surplus to governance
-    const newProfits = data.surplusBuffer.times(data.surplusForGovernance).div(BigInt.fromString('1000000000'))
+    const newProfits = data.surplusBuffer.times(data.surplusForGovernance)
     data.governanceProfits = data.governanceProfits.plus(newProfits)
   }
-  data.surplusBuffer = event.params.surplusBufferValue
+  data.surplusBuffer = convertTokenToDecimal(event.params.surplusBufferValue, agTokenInfo.decimals)
   // looks like a good time to update treasury's surplus
-  data.surplus = agToken.balanceOf(event.address)
+  data.surplus = convertTokenToDecimal(agToken.balanceOf(event.address), agTokenInfo.decimals)
 
   data.timestamp = event.block.timestamp
   data.blockNumber = event.block.number
@@ -53,7 +57,7 @@ export function handleSurplusBufferUpdated(event: SurplusBufferUpdated): void {
 export function handleSurplusForGovernanceUpdated(event: SurplusForGovernanceUpdated): void {
   log.warning('++++ SurplusForGovernanceUpdated', [])
   let data = TreasuryData.load(event.address.toHexString())!
-  data.surplusForGovernance = event.params._surplusForGovernance
+  data.surplusForGovernance = convertTokenToDecimal(event.params._surplusForGovernance, DECIMAL_PARAMS)
 
   data.timestamp = event.block.timestamp
   data.blockNumber = event.block.number

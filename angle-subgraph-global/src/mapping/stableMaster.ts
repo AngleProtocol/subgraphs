@@ -1,4 +1,4 @@
-import { Address, ethereum, crypto, Bytes, ByteArray, BigInt } from '@graphprotocol/graph-ts'
+import { Address, ethereum, crypto, Bytes, ByteArray, BigInt, BigDecimal } from '@graphprotocol/graph-ts'
 import {
   Paused,
   Unpaused,
@@ -16,19 +16,21 @@ import { PerpetualManagerFront } from '../../generated/templates/StableMasterTem
 import { FeeManagerTemplate, PerpetualManagerFrontTemplate, SanTokenTemplate } from '../../generated/templates'
 import { PauseData, PoolData, Contracts, Mint, Burn } from '../../generated/schema'
 
-import { updateOracleData, updateStableData, _getBurnFee, _getMintFee, _trackNewChainlinkOracle, _updateGainPoolData, _updatePoolData } from './utils'
+import { getToken, updateOracleData, updateStableData, _getBurnFee, _getMintFee, _trackNewChainlinkOracle, _updateGainPoolData, _updatePoolData } from './utils'
 import { ERCManagerFrontTemplate } from '../../../angle-subgraph-transaction/generated/templates'
 import { Oracle } from '../../generated/templates/StableMasterTemplate/Oracle'
+import { convertTokenListToDecimal, convertTokenToDecimal } from '../utils'
+import { DECIMAL_PARAMS, ZERO_BD } from '../../../constants'
 
 function updatePoolData(
   poolManager: PoolManager,
   block: ethereum.Block,
-  protocolFees: BigInt = BigInt.fromString('0'),
-  SLPFees: BigInt = BigInt.fromString('0')
+  protocolFees: BigDecimal = ZERO_BD,
+  SLPFees: BigDecimal = ZERO_BD
 ): void {
   const data = _updatePoolData(poolManager, block)
   data.save()
-  _updateGainPoolData(poolManager, block, protocolFees, BigInt.fromString('0'), SLPFees)
+  _updateGainPoolData(poolManager, block, protocolFees, ZERO_BD, SLPFees)
 }
 
 export function handleCollateralDeployed(event: CollateralDeployed): void {
@@ -85,8 +87,6 @@ export function handlePause(event: Paused): void {
   const call = poolManager.try_stableMaster()
   if (call.reverted) return
   const stableMaster = StableMaster.bind(call.value)
-  const token = ERC20.bind(poolManager.token())
-  const agToken = AgTokenContract.bind(stableMaster.agToken())
   const collatData = stableMaster.collateralMap(poolManager._address)
   const perpetualManager = PerpetualManagerFront.bind(collatData.value2)
 
@@ -187,13 +187,17 @@ export function handleMint(event: MintedStablecoins): void {
     return
 
   // Bind contracts
-  let inputPool: Bytes = event.params._poolManager
+  let inputPool = event.params._poolManager
+  let dataPool = PoolData.load(inputPool.toHexString())!
   const poolManager = PoolManager.bind(Address.fromString(inputPool.toHexString()))
   const stableMaster = StableMaster.bind(poolManager.stableMaster())
   const stableName = ERC20.bind(stableMaster.agToken()).symbol()
+  const agTokenInfo = getToken(Address.fromString(dataPool.stablecoin))
+  const collateralInfo = getToken(Address.fromString(dataPool.collateral))
+  const amount = convertTokenToDecimal(event.params.amount, collateralInfo.decimals)
 
   updateOracleData(poolManager, event.block)
-  const fees = _getMintFee(stableMaster, poolManager, event.params.amount)
+  const fees = _getMintFee(stableMaster, poolManager, amount)
   updateStableData(stableMaster, event.block)
   updatePoolData(poolManager, event.block, fees[0], fees[1])
 
@@ -201,12 +205,12 @@ export function handleMint(event: MintedStablecoins): void {
     event.transaction.hash.toHexString() + '_' + event.address.toHexString() + '_' + event.params.amount.toString()
   let mintData = new Mint(id)
   mintData.transactionId = event.transaction.hash.toHexString()
-  mintData.minted = event.params.amountForUserInStable
+  mintData.minted = convertTokenToDecimal(event.params.amountForUserInStable, agTokenInfo.decimals)
   mintData.sender = event.transaction.from.toHexString()
   // this is not true we do not have access to the recipient of this txs we can use the signature function but
   // if it was called via another contract it won't work
   mintData.recipient = event.transaction.from.toHexString()
-  mintData.amount = event.params.amount
+  mintData.amount = amount
   mintData.timestamp = event.block.timestamp
 
   const token = ERC20.bind(poolManager.token())
@@ -222,13 +226,18 @@ export function handleBurn(event: BurntStablecoins): void {
     return
 
   // Bind contracts
-  let inputPool: Bytes = event.params._poolManager
+  let inputPool = event.params._poolManager
+  let dataPool = PoolData.load(inputPool.toHexString())!
+  const stableName = dataPool.stableName
   const poolManager = PoolManager.bind(Address.fromString(inputPool.toHexString()))
   const stableMaster = StableMaster.bind(poolManager.stableMaster())
-  const stableName = ERC20.bind(stableMaster.agToken()).symbol()
+  const agTokenAddress = stableMaster.agToken()
+  const agTokenInfo = getToken(agTokenAddress)
+  const collateralInfo = getToken(Address.fromString(dataPool.collateral))
+  const amount = convertTokenToDecimal(event.params.amount, agTokenInfo.decimals)
 
   updateOracleData(poolManager, event.block)
-  const fees = _getBurnFee(stableMaster, poolManager, event.params.amount)
+  const fees = _getBurnFee(stableMaster, poolManager, amount)
   updateStableData(stableMaster, event.block)
   updatePoolData(poolManager, event.block, fees[0], fees[1])
 
@@ -236,14 +245,14 @@ export function handleBurn(event: BurntStablecoins): void {
     event.transaction.hash.toHexString() + '_' + event.address.toHexString() + '_' + event.params.amount.toString()
   let burnData = new Burn(id)
   burnData.transactionId = event.transaction.hash.toHexString()
-  burnData.burned = event.params.amount
+  burnData.burned = amount
   burnData.sender = event.transaction.from.toHexString()
   // this is not true we do not have access to the recipient of this txs we can use the signature function but
   // if it was called via another contract it won't work
   burnData.recipient = event.transaction.from.toHexString()
   burnData.timestamp = event.block.timestamp
   burnData.blockNumber = event.block.number
-  burnData.amount = event.params.redeemInC
+  burnData.amount = convertTokenToDecimal(event.params.redeemInC, collateralInfo.decimals)
 
   const collatName = ERC20.bind(poolManager.token()).symbol()
   burnData.collatName = collatName
@@ -257,11 +266,11 @@ export function handleUserFeeUpdate(event: FeeArrayUpdated): void {
   let inputPool = event.params._poolManager.toHexString()
   let data = PoolData.load(inputPool)!
   if (event.params._type > 0) {
-    data.xFeeMint = event.params._xFee
-    data.yFeeMint = event.params._yFee
+    data.xFeeMint = convertTokenListToDecimal(event.params._xFee, DECIMAL_PARAMS)
+    data.yFeeMint = convertTokenListToDecimal(event.params._yFee, DECIMAL_PARAMS)
   } else {
-    data.xFeeBurn = event.params._xFee
-    data.yFeeBurn = event.params._yFee
+    data.xFeeBurn = convertTokenListToDecimal(event.params._xFee, DECIMAL_PARAMS)
+    data.yFeeBurn = convertTokenListToDecimal(event.params._yFee, DECIMAL_PARAMS)
   }
   data.save()
 }

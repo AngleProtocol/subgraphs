@@ -13,9 +13,9 @@ type StableData @entity {
   # Number of collaterals
   collaterals: [PoolData!]! @derivedFrom(field: "stableMaster")
   # Collateral Ratio
-  collatRatio: BigInt!
+  collatRatio: BigDecimal!
   # Total assets minted
-  totalMinted: BigInt!
+  totalMinted: BigDecimal!
   # BlockNumber of last update
   blockNumber: BigInt!
   # Timestamp of last update
@@ -28,9 +28,9 @@ type StableHistoricalData @entity {
   # Name of the stable asset
   name: String!
   # Collateral Ratio
-  collatRatio: BigInt!
+  collatRatio: BigDecimal!
   # Total assets minted
-  totalMinted: BigInt!
+  totalMinted: BigDecimal!
   # BlockNumber
   blockNumber: BigInt!
   # Timestamp of last update
@@ -43,101 +43,115 @@ type PoolData @entity {
   # Address of the poolManager
   poolManager: String
   # Decimals of the underlying token
-  decimals: BigInt
+  decimals: BigInt!
   # Address of the stableMaster
   stableMaster: StableData
   # Name of the stable assets
   stableName: String
+  # Stablecoin address
+  stablecoin: String!
   # Name of the collateral
   collatName: String
+  # Collateral address
+  collateral: String!
   # Total liquidity in the pool
-  totalAsset: BigInt
+  totalAsset: BigDecimal
   # Availbale liquidity in the pool
-  availableAsset: BigInt
+  availableAsset: BigDecimal
   # Stock brought by users
-  stockUser: BigInt
+  stockUser: BigDecimal
   # Stock brought by SLPs
-  stockSLP: BigInt
+  stockSLP: BigDecimal
   # San Rate
-  sanRate: BigInt
+  sanRate: BigDecimal
   # Last timestamp at which the `sanRate` has been updated for SLPs
   lastBlockUpdated: BigInt
   # Fees accumulated from previous blocks and to be distributed to SLPs
-  lockedInterests: BigInt
+  lockedInterests: BigDecimal
   # Max interests used to update the `sanRate` in a single block
-  maxInterestsDistributed: BigInt
+  maxInterestsDistributed: BigDecimal
   # Amount of fees left aside for SLPs
-  feesAside: BigInt
+  feesAside: BigDecimal
   # Portion of the fees from users minting and burning that goes to SLPs
-  feesForSLPs: BigInt
+  feesForSLPs: BigDecimal
   # Portion of the interests from lending that goes to veANGLE
-  interestsForSurplus: BigInt
+  interestsForSurplus: BigDecimal
   # Portion of the interests from lending that goes to SLPs
-  interestsForSLPs: BigInt
+  interestsForSLPs: BigDecimal
   # Estimated APR
-  apr: BigInt
+  apr: BigDecimal
   # To compute utilization ratio
-  totalHedgeAmount: BigInt
+  totalHedgeAmount: BigDecimal
   # Total amount brought by HAs
-  totalMargin: BigInt!
+  totalMargin: BigDecimal!
   # Total fees taken by the protocol
-  totalProtocolFees: BigInt!
+  totalProtocolFees: BigDecimal!
   # Total keeper fees
-  totalKeeperFees: BigInt!
+  totalKeeperFees: BigDecimal!
   # Total interests generated for the protocol
-  totalProtocolInterests: BigInt!
+  totalProtocolInterests: BigDecimal!
   # Total interests distributed to the SLP
-  totalSLPInterests: BigInt!
+  totalSLPInterests: BigDecimal!
   # Total fees distributed to the SLP
-  totalSLPFees: BigInt!
+  totalSLPFees: BigDecimal!
   # Exchange rate
-  rateLower: BigInt
+  rateLower: BigDecimal
   # Exchange rate
-  rateUpper: BigInt
-  # targetHAHedge
-  targetHAHedge: BigInt
-  # limitHAHedge
-  limitHAHedge: BigInt
-  # keeperFeesLiquidationCap
-  keeperFeesLiquidationCap: BigInt
-  # keeperFeesClosingCap
-  keeperFeesClosingCap: BigInt
-  # keeperFeesLiquidationRatio
-  keeperFeesLiquidationRatio: BigInt
-  # maintenance margin
-  maintenanceMargin: BigInt
+  rateUpper: BigDecimal
   # Thresholds mint fee array
-  xFeeMint: [BigInt!]!
+  xFeeMint: [BigDecimal!]!
   # Values mint fees array
-  yFeeMint: [BigInt!]!
+  yFeeMint: [BigDecimal!]!
   # Thresholds burn fee array
-  xFeeBurn: [BigInt!]!
+  xFeeBurn: [BigDecimal!]!
   # Values burn fees array
-  yFeeBurn: [BigInt!]!
-  # Thresholds deposit HA fee array
-  xHAFeesDeposit: [BigInt!]!
-  # Values deposit HA fees array
-  yHAFeesDeposit: [BigInt!]!
-  # Thresholds withdraw HA fee array
-  xHAFeesWithdraw: [BigInt!]!
-  # Values withdraw HA fees array
-  yHAFeesWithdraw: [BigInt!]!
+  yFeeBurn: [BigDecimal!]!
   # Thresholds Bonus/Malus mint array
-  xBonusMalusMint: [BigInt!]!
+  xBonusMalusMint: [BigDecimal!]!
   # Values Bonus/Malus mint array
-  yBonusMalusMint: [BigInt!]!
+  yBonusMalusMint: [BigDecimal!]!
   # Thresholds Bonus/Malus burn array
-  xBonusMalusBurn: [BigInt!]!
+  xBonusMalusBurn: [BigDecimal!]!
   # Values Bonus/Malus burn array
-  yBonusMalusBurn: [BigInt!]!
+  yBonusMalusBurn: [BigDecimal!]!
   # Thresholds slippage array
-  xSlippage: [BigInt!]!
+  xSlippage: [BigDecimal!]!
   # Values slippage array
-  ySlippage: [BigInt!]!
+  ySlippage: [BigDecimal!]!
   # Thresholds slippage on fees array
-  xSlippageFee: [BigInt!]!
+  xSlippageFee: [BigDecimal!]!
   # Values slippage on fees  array
-  ySlippageFee: [BigInt!]!
+  ySlippageFee: [BigDecimal!]!
+
+  ## perpetuals variables
+  # Max multiplier on perps
+  maxLeverage: BigDecimal!
+  # Maintenance margin underwhich your perp will be closed
+  maintenanceMargin: BigDecimal!
+  # Max percented hedge amount accepted by the platform
+  limitHAHedge: BigDecimal!
+  # Target percented hedge amount
+  targetHAHedge: BigDecimal!
+  keeperFeesLiquidationRatio: BigDecimal!
+  keeperFeesLiquidationCap: BigDecimal!
+  keeperFeesClosingCap: BigDecimal!
+  # Thresholds deposit HA fee array
+  xHAFeesDeposit: [BigDecimal!]!
+  # Values deposit HA fees array
+  yHAFeesDeposit: [BigDecimal!]!
+  # Thresholds withdraw HA fee array
+  xHAFeesWithdraw: [BigDecimal!]!
+  # Values withdraw HA fees array
+  yHAFeesWithdraw: [BigDecimal!]!
+  # Thresholds slippage on fees array
+  xKeeperFeesClosing: [BigDecimal!]!
+  # Values slippage on fees  array
+  yKeeperFeesClosing: [BigDecimal!]!
+  # Malus on HA opening
+  haBonusMalusDeposit: BigDecimal!
+  # Malus on HA closing
+  haBonusMalusWithdraw: BigDecimal!
+
   # BlockNumber of last update
   blockNumber: BigInt
   # Timestamp of last update
@@ -160,61 +174,61 @@ type PoolHistoricalData @entity {
   # Name of the collateral
   collatName: String
   # Total liquidity in the pool
-  totalAsset: BigInt
+  totalAsset: BigDecimal
   # Availbale liquidity in the pool
-  availableAsset: BigInt
+  availableAsset: BigDecimal
   # Stock brought by users
-  stockUser: BigInt
+  stockUser: BigDecimal
   # Stock brought by SLPs
-  stockSLP: BigInt
+  stockSLP: BigDecimal
   # San Rate
-  sanRate: BigInt
+  sanRate: BigDecimal
   # Last timestamp at which the `sanRate` has been updated for SLPs
   lastBlockUpdated: BigInt
   # Fees accumulated from previous blocks and to be distributed to SLPs
-  lockedInterests: BigInt
+  lockedInterests: BigDecimal
   # Max interests used to update the `sanRate` in a single block
-  maxInterestsDistributed: BigInt
+  maxInterestsDistributed: BigDecimal
   # Amount of fees left aside for SLPs
-  feesAside: BigInt
+  feesAside: BigDecimal
   # Portion of the fees from users minting and burning that goes to SLPs
-  feesForSLPs: BigInt
+  feesForSLPs: BigDecimal
   # Portion of the interests from lending that goes to veANGLE
-  interestsForSurplus: BigInt
+  interestsForSurplus: BigDecimal
   # Portion of the interests from lending that goes to SLPs
-  interestsForSLPs: BigInt
+  interestsForSLPs: BigDecimal
   # Estimated APR
-  apr: BigInt
+  apr: BigDecimal
   # To compute utilization ratio
-  totalHedgeAmount: BigInt
+  totalHedgeAmount: BigDecimal
   # Total amount brought by HAs
-  totalMargin: BigInt!
+  totalMargin: BigDecimal!
   # Total fees taken by the protocol
-  totalProtocolFees: BigInt!
+  totalProtocolFees: BigDecimal!
   # Total keeper fees
-  totalKeeperFees: BigInt!
+  totalKeeperFees: BigDecimal!
   # Total interests generated for the protocol
-  totalProtocolInterests: BigInt!
+  totalProtocolInterests: BigDecimal!
   # Total interests distributed to the SLP
-  totalSLPInterests: BigInt!
+  totalSLPInterests: BigDecimal!
   # Total fees distributed to the SLP
-  totalSLPFees: BigInt!
+  totalSLPFees: BigDecimal!
   # Exchange rate
-  rateLower: BigInt
+  rateLower: BigDecimal
   # Exchange rate
-  rateUpper: BigInt
+  rateUpper: BigDecimal
   # targetHAHedge
-  targetHAHedge: BigInt
+  targetHAHedge: BigDecimal
   # limitHAHedge
-  limitHAHedge: BigInt
+  limitHAHedge: BigDecimal
   # keeperFeesLiquidationCap
-  keeperFeesLiquidationCap: BigInt
+  keeperFeesLiquidationCap: BigDecimal
   # keeperFeesClosingCap
-  keeperFeesClosingCap: BigInt
+  keeperFeesClosingCap: BigDecimal
   # keeperFeesLiquidationRatio
-  keeperFeesLiquidationRatio: BigInt
+  keeperFeesLiquidationRatio: BigDecimal
   # maintenance margin
-  maintenanceMargin: BigInt
+  maintenanceMargin: BigDecimal
   # BlockNumber of last update
   blockNumber: BigInt
   # Timestamp of last update
@@ -245,15 +259,15 @@ type Perpetual @entity {
   # address of the keeper who performed the action (if any)
   keeperAddress: String
   # Brought amount
-  margin: BigInt!
+  margin: BigDecimal!
   # Committed amount
-  committedAmount: BigInt!
+  committedAmount: BigDecimal!
   # Close amount (if any)
-  closeAmount: BigInt
+  closeAmount: BigDecimal
   # Rate of the last update of the Perpetual
-  entryRate: BigInt!
+  entryRate: BigDecimal!
   # rate at which the perp can be liquidated
-  liquidationPrice: BigInt
+  liquidationPrice: BigDecimal
   # BlockNumber at opening
   openingBlockNumber: BigInt!
   # Timestamp at opening
@@ -277,21 +291,21 @@ type TreasuryData @entity {
   # List of vaultManagers reporting to this treasury
   vaultManagers: [VaultManagerData!]! @derivedFrom(field: "treasury")
   # Amount of bad debt
-  badDebt: BigInt!
+  badDebt: BigDecimal!
   # Amount of unprocessed surplus available
-  surplusBuffer: BigInt!
+  surplusBuffer: BigDecimal!
 
   # Governance parameters
   # Share of the `surplusBuffer` distributed to governance (in `BASE_PARAMS`)
-  surplusForGovernance: BigInt!
+  surplusForGovernance: BigDecimal!
   # Address of the contract managing surplus
   surplusManager: String!
 
   ## Derivated values
   # Amount of surplus available for safety
-  surplus: BigInt!
+  surplus: BigDecimal!
   # sum of all profits succesfully forwarded to governance
-  governanceProfits: BigInt!
+  governanceProfits: BigDecimal!
 
   ## Time tracking
   # BlockNumber of last update
@@ -310,15 +324,15 @@ type TreasuryHistoricalData @entity {
   # Address of the treasury
   treasury: String!
   # Amount of bad debt
-  badDebt: BigInt!
+  badDebt: BigDecimal!
   # Amount of surplus available
-  surplus: BigInt!
+  surplus: BigDecimal!
   # Amount of unprocessed surplus available
-  surplusBuffer: BigInt!
+  surplusBuffer: BigDecimal!
 
   # Governance parameters
   # Share of the `surplusBuffer` distributed to governance (in `BASE_PARAMS`)
-  surplusForGovernance: BigInt!
+  surplusForGovernance: BigDecimal!
   # Address of the contract managing surplus
   surplusManager: String!
 
@@ -351,7 +365,7 @@ type VaultManagerData @entity {
   # base of collateral
   collateralBase: BigInt!
   # Minimum debt of a healthy vault
-  dust: BigInt!
+  dust: BigDecimal!
   # Ticker of agToken target (e.g: EUR)
   agTokenTicker: String!
   # Ticker of collateral (e.g: ETH)
@@ -361,9 +375,9 @@ type VaultManagerData @entity {
   # Address of treasury
   treasury: TreasuryData!
   # Amount of collateral deposited
-  collateralAmount: BigInt!
+  collateralAmount: BigDecimal!
   # Total amount of debt across vaults in agToken, normalized
-  totalNormalizedDebt: BigInt!
+  totalNormalizedDebt: BigDecimal!
   # Value of interestAccumulator
   interestAccumulator: BigInt!
   # Timestamp when interestAccumulator was updated the last time
@@ -371,72 +385,72 @@ type VaultManagerData @entity {
 
   ## Derivated values
   # Amount of debt in agToken
-  totalDebt: BigInt!
+  totalDebt: BigDecimal!
   # Amount of collateral in USD
-  tvl: BigInt!
+  tvl: BigDecimal!
   # Number of active vaults
   activeVaultsCount: BigInt!
   # list of vaults
   vaults: [VaultData!]! @derivedFrom(field: "vaultManager")
   # total surplus accumulated by this VM since inception
-  surplus: BigInt!
+  surplus: BigDecimal!
   # total surplus accumulated from vault's interests
-  surplusFromInterests: BigInt!
+  surplusFromInterests: BigDecimal!
   # total surplus accumulated from vault's fees at borrow time
-  surplusFromBorrowFees: BigInt!
+  surplusFromBorrowFees: BigDecimal!
   # total surplus accumulated from vault's fees at repayment time
-  surplusFromRepayFees: BigInt!
+  surplusFromRepayFees: BigDecimal!
   # total surplus accumulated from protocol surcharge when a liquidation occurs
-  surplusFromLiquidationSurcharges: BigInt!
+  surplusFromLiquidationSurcharges: BigDecimal!
   # total bad debt created by vaults on this VM since inception
-  badDebt: BigInt!
+  badDebt: BigDecimal!
   # surplus - bad debt (since inception)
-  profits: BigInt!
+  profits: BigDecimal!
   # pending surplus accumulated since last accrual to treasury
-  pendingSurplus: BigInt!
+  pendingSurplus: BigDecimal!
   # pending bad debt accumulated since last accrual to treasury
-  pendingBadDebt: BigInt!
+  pendingBadDebt: BigDecimal!
   # Current value of the oracle
-  oracleValue: BigInt!
+  oracleValue: BigDecimal!
   # sum of debt repayed by liquidators on the vaults of this manager
-  liquidationRepayments: BigInt!
+  liquidationRepayments: BigDecimal!
 
   ## liquidation data
   # List of USD amounts of debt repayedthrough liquidation
-  liquidationDebtsRepayed: [BigInt!]!
+  liquidationDebtsRepayed: [BigDecimal!]!
   # List of USD amounts of debt removed through liquidation
-  liquidationDebtsRemoved: [BigInt!]!
+  liquidationDebtsRemoved: [BigDecimal!]!
   # List of debts remaining in liquidated vault
-  liquidationDebtsRemaining: [BigInt!]!
+  liquidationDebtsRemaining: [BigDecimal!]!
   # List of USD amounts of collateral bought through liquidation
-  liquidationCollateralsBought: [BigInt!]!
+  liquidationCollateralsBought: [BigDecimal!]!
   # List of USD amounts of collateral remaining in liquidated vault
-  liquidationCollateralsRemaining: [BigInt!]!
+  liquidationCollateralsRemaining: [BigDecimal!]!
   # List of liquidation timestamps
   liquidationTimestamps: [BigInt!]!
 
   ## Governance parameters
   # Maximum debt this VaultManager can handle
-  debtCeiling: BigInt!
+  debtCeiling: BigDecimal!
   # Proxy contract giving veAngle balances
   veBoostProxy: String!
   # Liquidation boost parameters
-  xLiquidationBoost: [BigInt!]!
-  yLiquidationBoost: [BigInt!]!
+  xLiquidationBoost: [BigDecimal!]!
+  yLiquidationBoost: [BigDecimal!]!
   # Value of collateral factor
-  collateralFactor: BigInt!
+  collateralFactor: BigDecimal!
   # Value of target health factor
-  targetHealthFactor: BigInt!
+  targetHealthFactor: BigDecimal!
   # Value of borrow fee
-  borrowFee: BigInt!
+  borrowFee: BigDecimal!
   # Value of repay fee
-  repayFee: BigInt!
+  repayFee: BigDecimal!
   # Value of borrow interest rate
   interestRate: BigInt!
   # Value of liquidation surcharge
-  liquidationSurcharge: BigInt!
+  liquidationSurcharge: BigDecimal!
   # Value of max liquidation discount
-  maxLiquidationDiscount: BigInt!
+  maxLiquidationDiscount: BigDecimal!
 
   ## Time tracking
   # BlockNumber of last update
@@ -459,7 +473,7 @@ type VaultManagerHistoricalData @entity {
   # base of collateral
   collateralBase: BigInt!
   # Minimum debt of a healthy vault
-  dust: BigInt!
+  dust: BigDecimal!
   # Ticker of agToken target (e.g: EUR)
   agTokenTicker: String!
   # Ticker of collateral (e.g: ETH)
@@ -469,9 +483,9 @@ type VaultManagerHistoricalData @entity {
   # Address of treasury
   treasury: TreasuryData!
   # Amount of collateral deposited
-  collateralAmount: BigInt!
+  collateralAmount: BigDecimal!
   # Total amount of debt across vaults in agToken, normalized
-  totalNormalizedDebt: BigInt!
+  totalNormalizedDebt: BigDecimal!
   # Value of interestAccumulator
   interestAccumulator: BigInt!
   # Timestamp when interestAccumulator was updated the last time
@@ -479,58 +493,58 @@ type VaultManagerHistoricalData @entity {
 
   ## Derivated values
   # Amount of debt in agToken
-  totalDebt: BigInt!
+  totalDebt: BigDecimal!
   # Amount of collateral in USD
-  tvl: BigInt!
+  tvl: BigDecimal!
   # Number of active vaults
   activeVaultsCount: BigInt!
   # total surplus accumulated by this VM since inception
-  surplus: BigInt!
+  surplus: BigDecimal!
   # total surplus accumulated from vault's interests
-  surplusFromInterests: BigInt!
+  surplusFromInterests: BigDecimal!
   # total surplus accumulated from vault's fees at borrow time
-  surplusFromBorrowFees: BigInt!
+  surplusFromBorrowFees: BigDecimal!
   # total surplus accumulated from vault's fees at repayment time
-  surplusFromRepayFees: BigInt!
+  surplusFromRepayFees: BigDecimal!
   # total surplus accumulated from protocol surcharge when a liquidation occurs
-  surplusFromLiquidationSurcharges: BigInt!
+  surplusFromLiquidationSurcharges: BigDecimal!
   # total bad debt created by vaults on this VM since inception
-  badDebt: BigInt!
+  badDebt: BigDecimal!
   # surplus - bad debt (since inception)
-  profits: BigInt!
+  profits: BigDecimal!
   # pending surplus accumulated since last accrual to treasury
-  pendingSurplus: BigInt!
+  pendingSurplus: BigDecimal!
   # pending bad debt accumulated since last accrual to treasury
-  pendingBadDebt: BigInt!
+  pendingBadDebt: BigDecimal!
   # Current value of the oracle
-  oracleValue: BigInt!
+  oracleValue: BigDecimal!
   # sum of debt repayed by liquidators on the vaults of this manager
-  liquidationRepayments: BigInt!
+  liquidationRepayments: BigDecimal!
   # total number of liquidation that ever occured to the vaults of this manager
   liquidationCount: BigInt!
 
   ## Governance parameters
   # Maximum debt this VaultManager can handle
-  debtCeiling: BigInt!
+  debtCeiling: BigDecimal!
   # Proxy contract giving veAngle balances
   veBoostProxy: String!
   # Liquidation boost parameters
-  xLiquidationBoost: [BigInt!]!
-  yLiquidationBoost: [BigInt!]!
+  xLiquidationBoost: [BigDecimal!]!
+  yLiquidationBoost: [BigDecimal!]!
   # Value of collateral factor
-  collateralFactor: BigInt!
+  collateralFactor: BigDecimal!
   # Value of target health factor
-  targetHealthFactor: BigInt!
+  targetHealthFactor: BigDecimal!
   # Value of borrow fee
-  borrowFee: BigInt!
+  borrowFee: BigDecimal!
   # Value of repay fee
-  repayFee: BigInt!
+  repayFee: BigDecimal!
   # Value of borrow interest rate
   interestRate: BigInt!
   # Value of liquidation surcharge
-  liquidationSurcharge: BigInt!
+  liquidationSurcharge: BigDecimal!
   # Value of max liquidation discount
-  maxLiquidationDiscount: BigInt!
+  maxLiquidationDiscount: BigDecimal!
 
   ## Time tracking
   # BlockNumber of last update
@@ -553,19 +567,19 @@ type VaultData @entity {
   # Address of vault owner
   owner: String!
   # Amount of collateral deposited
-  collateralAmount: BigInt!
+  collateralAmount: BigDecimal!
   # Amount of debt in agToken, normalized
-  normalizedDebt: BigInt!
+  normalizedDebt: BigDecimal!
   # False when vault is burned
   isActive: Boolean!
 
   ## Derivated values
   # Amount of debt in agToken
-  debt: BigInt!
+  debt: BigDecimal!
   # Vault's health factor (in base 1e9)
-  healthFactor: BigInt
+  healthFactor: BigDecimal
   # sum of all fees (borrow, repay, interests, liquidation) accrued by this vault
-  fees: BigInt!
+  fees: BigDecimal!
 
   ## Time tracking
   # BlockNumber of last update
@@ -586,19 +600,19 @@ type VaultHistoricalData @entity {
   # Address of vault owner
   owner: String!
   # Amount of collateral deposited
-  collateralAmount: BigInt!
+  collateralAmount: BigDecimal!
   # Amount of debt in agToken, normalized
-  normalizedDebt: BigInt!
+  normalizedDebt: BigDecimal!
   # False when vault is burned
   isActive: Boolean!
 
   ## Derivated values
   # Amount of debt in agToken
-  debt: BigInt!
+  debt: BigDecimal!
   # Vault's health factor (in base 1e9)
-  healthFactor: BigInt
+  healthFactor: BigDecimal
   # sum of all fees (borrow, repay, interests, liquidation) accrued by this vault
-  fees: BigInt!
+  fees: BigDecimal!
 
   ## Time tracking
   # BlockNumber of last update
@@ -614,14 +628,16 @@ type UtilisationData @entity {
   stablecoin: String!
   # agToken ticker
   stableName: String!
+  # agToken decimal
+  decimals: BigInt!
 
   # Internal variable to avoid tx double counting
   _lastTx: String!
 
   # Number of agToken available
-  circulationSupply: BigInt!
+  circulationSupply: BigDecimal!
   # Total transfer volume
-  volume: BigInt!
+  volume: BigDecimal!
   # Number of transfer transactions for this agToken
   txCount: BigInt!
   # Number of different addresses holding a positive balance of this agToken
@@ -657,9 +673,9 @@ type UtilisationHistoricalData @entity {
   stableName: String!
 
   # Number of agToken available
-  circulationSupply: BigInt!
+  circulationSupply: BigDecimal!
   # Total transfer volume
-  volume: BigInt!
+  volume: BigDecimal!
   # Number of transfer transactions for this agToken
   txCount: BigInt!
   # Number of different addresses holding a positive balance of this agToken
@@ -676,23 +692,23 @@ type FeeData @entity {
   # fee data id
   id: ID!
   # Total protocol fees
-  totalProtocolFees: BigInt!
+  totalProtocolFees: BigDecimal!
   # Total SLP fees
-  totalSLPFees: BigInt!
+  totalSLPFees: BigDecimal!
   # Total keeper fees
-  totalKeeperFees: BigInt!
+  totalKeeperFees: BigDecimal!
   # Total protocol interest
-  totalProtocolInterests: BigInt!
+  totalProtocolInterests: BigDecimal!
   # Total SLP interest
-  totalSLPInterests: BigInt!
+  totalSLPInterests: BigDecimal!
   # Surplus from interest
-  surplusFromInterests: BigInt!
+  surplusFromInterests: BigDecimal!
   # Surplus from borrow fee
-  surplusFromBorrowFees: BigInt!
+  surplusFromBorrowFees: BigDecimal!
   # surplus from repay fee
-  surplusFromRepayFees: BigInt!
+  surplusFromRepayFees: BigDecimal!
   # surplus from liquidation surcharge
-  surplusFromLiquidationSurcharges: BigInt!
+  surplusFromLiquidationSurcharges: BigDecimal!
   # BlockNumber of last update
   blockNumber: BigInt!
   # Timestamp of last update
@@ -703,23 +719,23 @@ type FeeHistoricalData @entity {
   # fee data id
   id: ID!
   # Total protocol fees
-  totalProtocolFees: BigInt!
+  totalProtocolFees: BigDecimal!
   # Total SLP fees
-  totalSLPFees: BigInt!
+  totalSLPFees: BigDecimal!
   # Total keeper fees
-  totalKeeperFees: BigInt!
+  totalKeeperFees: BigDecimal!
   # Total protocol interest
-  totalProtocolInterests: BigInt!
+  totalProtocolInterests: BigDecimal!
   # Total SLP interest
-  totalSLPInterests: BigInt!
+  totalSLPInterests: BigDecimal!
   # Surplus from interest
-  surplusFromInterests: BigInt!
+  surplusFromInterests: BigDecimal!
   # Surplus from borrow fee
-  surplusFromBorrowFees: BigInt!
+  surplusFromBorrowFees: BigDecimal!
   # surplus from repay fee
-  surplusFromRepayFees: BigInt!
+  surplusFromRepayFees: BigDecimal!
   # surplus from liquidation surcharge
-  surplusFromLiquidationSurcharges: BigInt!
+  surplusFromLiquidationSurcharges: BigDecimal!
   # BlockNumber of last update
   blockNumber: BigInt!
   # Timestamp of last update
@@ -731,7 +747,7 @@ type FeesEarned @entity {
   id: ID!
   owner: String!
   token: String!
-  earned: BigInt!
+  earned: BigDecimal!
 }
 
 type FeeDistribution @entity {
@@ -751,7 +767,7 @@ type WeeklyDistribution @entity {
   id: ID!
   feeDistributor: FeeDistribution!
   week: BigInt!
-  distributed: BigInt!
+  distributed: BigDecimal!
 }
 
 type OracleByTicker @entity {
@@ -767,7 +783,7 @@ type OracleData @entity {
   # Ticker of non-USD token
   tokenTicker: String!
   # Price reported by oracle
-  price: BigInt!
+  price: BigDecimal!
   # Decimal used by the Chainlink oracle
   decimals: BigInt!
   # Timestamp of current block
@@ -784,9 +800,9 @@ type OracleCoreData @entity {
   # Name of output token
   tokenOut: String!
   # Exchange rate
-  rateLower: BigInt!
+  rateLower: BigDecimal!
   # Exchange rate
-  rateUpper: BigInt!
+  rateUpper: BigDecimal!
   # BlockNumber of last update
   blockNumber: BigInt!
   # Timestamp of last update
@@ -801,11 +817,11 @@ type OracleAPRCoreHistoricalData @entity {
   # Name of the collateral
   collatName: String
   # Estimated APR
-  apr: BigInt
+  apr: BigDecimal
   # Exchange rate
-  rateLower: BigInt
+  rateLower: BigDecimal
   # Exchange rate
-  rateUpper: BigInt
+  rateUpper: BigDecimal
   # BlockNumber of last update
   blockNumber: BigInt!
   # Timestamp of last update
@@ -817,7 +833,7 @@ type GaugeData @entity {
   id: ID!
   type: BigInt
   rewardDatas: [GaugeRewardData!]! @derivedFrom(field: "gauge")
-  relWeigth: BigInt
+  relWeigth: BigDecimal
   # Block Number of last update
   blockNumber: BigInt!
   timestamp: BigInt!
@@ -827,7 +843,7 @@ type GaugeHistoricalData @entity {
   # Address of the gauge contract + timestamp
   id: ID!
   type: BigInt
-  relWeigth: BigInt
+  relWeigth: BigDecimal
   # Block Number of last update
   blockNumber: BigInt!
   timestamp: BigInt!
@@ -838,14 +854,14 @@ type GaugeRewardData @entity {
   id: ID!
   gauge: GaugeData
   token: String!
-  decimals: BigInt
-  decimalsStakedToken: BigInt
+  decimals: BigInt!
+  decimalsStakedToken: BigInt!
   tokenSymbol: String
   distributor: String
   periodFinish: BigInt
-  rewardRate: BigInt
-  totalSupply: BigInt
-  workingSupply: BigInt
+  rewardRate: BigDecimal
+  totalSupply: BigDecimal
+  workingSupply: BigDecimal
   lastUpdateTime: BigInt
   # Block Number of last update
   blockNumber: BigInt!
@@ -857,14 +873,14 @@ type GaugeRewardHistoricalData @entity {
   id: ID!
   gauge: GaugeData!
   token: String!
-  decimals: BigInt
-  decimalsStakedToken: BigInt
+  decimals: BigInt!
+  decimalsStakedToken: BigInt!
   tokenSymbol: String
   distributor: String
   periodFinish: BigInt
-  rewardRate: BigInt
-  totalSupply: BigInt
-  workingSupply: BigInt
+  rewardRate: BigDecimal
+  totalSupply: BigDecimal
+  workingSupply: BigDecimal
   lastUpdateTime: BigInt
   # Block Number of last update
   blockNumber: BigInt!
@@ -885,15 +901,15 @@ type StrategyData @entity {
   # Lender data
   lenders: [LenderData!]! @derivedFrom(field: "strategy")
   # Total liquidity in the strategy
-  estimatedTotalAssets: BigInt!
+  estimatedTotalAssets: BigDecimal!
   # DebtRatio the strategy
-  debtRatio: BigInt!
+  debtRatio: BigDecimal!
   # Balance of the poolManager
-  managerBalance: BigInt!
+  managerBalance: BigDecimal!
   # Total assets of the poolManager
-  totalAsset: BigInt!
+  totalAsset: BigDecimal!
   # Estimated APR
-  apr: BigInt!
+  apr: BigDecimal!
   # Timestamp of last update
   timestamp: BigInt!
 }
@@ -910,15 +926,15 @@ type StrategyHistoricalData @entity {
   # Collateral Decimal
   decimals: BigInt!
   # Total liquidity in the strategy
-  estimatedTotalAssets: BigInt!
+  estimatedTotalAssets: BigDecimal!
   # DebtRatio the strategy
-  debtRatio: BigInt!
+  debtRatio: BigDecimal!
   # Balance of the poolManager
-  managerBalance: BigInt!
+  managerBalance: BigDecimal!
   # Total assets of the poolManager
-  totalAsset: BigInt!
+  totalAsset: BigDecimal!
   # Estimated APR
-  apr: BigInt!
+  apr: BigDecimal!
   # Timestamp of last update
   timestamp: BigInt!
 }
@@ -931,16 +947,16 @@ type LenderData @entity {
   # Name of the strategy
   strategy: StrategyData!
   # Total liquidity in the lender
-  nav: BigInt!
+  nav: BigDecimal!
   # Estimated APR
-  apr: BigInt!
+  apr: BigDecimal!
 }
 
 type ANGLE @entity {
   # Address of the angle owner
   id: ID!
   # Balance
-  balance: BigInt!
+  balance: BigDecimal!
 }
 
 type ANGLEHistorical @entity {
@@ -948,7 +964,7 @@ type ANGLEHistorical @entity {
   id: ID!
   owner: String!
   # Balance
-  balance: BigInt!
+  balance: BigDecimal!
   timestamp: BigInt!
 }
 
@@ -989,14 +1005,25 @@ type veANGLEHistorical @entity {
   amount: BigInt!
 }
 
+type Token @entity {
+  # token address
+  id: ID!
+  # token symbol
+  symbol: String!
+  # token name
+  name: String!
+  # token decimals
+  decimals: BigInt!
+}
+
 type agToken @entity {
   # Address of the owner + address of the token
   id: ID!
   owner: String!
-  token: String!
+  token: Token!
   stableName: String
-  balance: BigInt!
-  staked: BigInt!
+  balance: BigDecimal!
+  staked: BigDecimal!
 }
 
 type sanToken @entity {
@@ -1006,32 +1033,33 @@ type sanToken @entity {
   token: String!
   collatName: String
   stableName: String
-  balance: BigInt!
-  staked: BigInt!
+  balance: BigDecimal!
+  staked: BigDecimal!
 }
 
 type externalToken @entity {
   # Address of the owner + address of the token
   id: ID!
   owner: String!
-  token: String!
+  token: Token!
   name: String
-  balance: BigInt!
-  staked: BigInt!
+  balance: BigDecimal!
+  staked: BigDecimal!
 }
 
 type CapitalGain @entity {
   # Address
   id: ID!
-  gains: BigInt!
-  lastPosition: BigInt!
-  lastStakedPosition: BigInt!
+  gains: BigDecimal!
+  lastPosition: BigDecimal!
+  lastStakedPosition: BigDecimal!
 }
 
 type KeeperReward @entity {
   # Tx hash
   id: ID!
-  reward: BigInt
+  token: Token!
+  reward: BigDecimal
   address: String
   timestamp: BigInt
   blockNumber: BigInt
@@ -1041,8 +1069,8 @@ type Mint @entity {
   # Tx hash
   id: ID!
   transactionId: String!
-  amount: BigInt
-  minted: BigInt
+  amount: BigDecimal
+  minted: BigDecimal
   sender: String
   recipient: String
   collatName: String
@@ -1055,8 +1083,8 @@ type Burn @entity {
   # Tx hash
   id: ID!
   transactionId: String!
-  amount: BigInt
-  burned: BigInt
+  amount: BigDecimal
+  burned: BigDecimal
   sender: String
   recipient: String
   collatName: String
@@ -1069,8 +1097,8 @@ type Deposit @entity {
   # Tx hash
   id: ID!
   transactionId: String!
-  amount: BigInt
-  minted: BigInt
+  amount: BigDecimal
+  minted: BigDecimal
   sender: String
   recipient: String
   collatName: String
@@ -1083,8 +1111,8 @@ type Withdraw @entity {
   # Tx hash
   id: ID!
   transactionId: String!
-  amount: BigInt
-  burned: BigInt
+  amount: BigDecimal
+  burned: BigDecimal
   sender: String
   recipient: String
   collatName: String
@@ -1099,10 +1127,10 @@ type PerpetualOpen @entity {
   transactionId: String!
   sender: String
   perpetualID: BigInt
-  entryRate: BigInt
-  fees: BigInt
-  margin: BigInt
-  committedAmount: BigInt
+  entryRate: BigDecimal
+  fees: BigDecimal
+  margin: BigDecimal
+  committedAmount: BigDecimal
   collatName: String
   stableName: String
   timestamp: BigInt
@@ -1115,7 +1143,7 @@ type PerpetualUpdate @entity {
   transactionId: String!
   sender: String
   perpetualID: BigInt
-  margin: BigInt
+  margin: BigDecimal
   collatName: String
   stableName: String
   timestamp: BigInt
@@ -1129,8 +1157,8 @@ type PerpetualClose @entity {
   sender: String
   owner: String
   perpetualID: BigInt
-  closeAmount: BigInt
-  margin: BigInt
+  closeAmount: BigDecimal
+  margin: BigDecimal
   collatName: String
   stableName: String
   timestamp: BigInt
@@ -1142,10 +1170,9 @@ type Stake @entity {
   # Tx hash
   id: ID!
   transactionId: String!
-  amount: BigInt
+  amount: BigDecimal
   sender: String
-  stakedToken: String
-  decimals: String
+  stakedToken: Token!
   timestamp: BigInt
   blockNumber: BigInt
 }
@@ -1154,7 +1181,7 @@ type Unstake @entity {
   # Tx hash
   id: ID!
   transactionId: String!
-  amount: BigInt
+  amount: BigDecimal
   sender: String
   stakedToken: String
   decimals: String
@@ -1223,7 +1250,7 @@ type CollateralUpdate @entity {
   # flag to show if it's a deposit or removal of collateral
   isIncrease: Boolean!
   # Amount added to vault
-  amountUpdate: BigInt!
+  amountUpdate: BigDecimal!
 
   ## Time tracking
   # BlockNumber of last update
@@ -1250,7 +1277,7 @@ type DebtUpdate @entity {
   # flag to show if it's a debt increase or a debt repayment
   isIncrease: Boolean!
   # Amount added to vault
-  amountUpdate: BigInt!
+  amountUpdate: BigDecimal!
 
   ## Time tracking
   # BlockNumber of last update
@@ -1281,7 +1308,7 @@ type DebtTransfer @entity {
   # Owner of the vault sending its debt
   dstOwner: String!
   # Amount transferred between vaults
-  amount: BigInt!
+  amount: BigDecimal!
 
   ## Time tracking
   # BlockNumber of last update
@@ -1307,23 +1334,23 @@ type VaultLiquidation @entity {
   owner: String!
 
   # collateral bought by liquidator
-  collateralBought: BigInt!
+  collateralBought: BigDecimal!
   # oracle value at liquidation time
-  oraclePrice: BigInt!
+  oraclePrice: BigDecimal!
 
   ## Values filled in the InternalDebtUpdated event handler
   # liquidation boost obtained by liquidator
-  liquidatorDiscount: BigInt
+  liquidatorDiscount: BigDecimal
   # debt removed (might contain some bad debt)
-  debtRemoved: BigInt
+  debtRemoved: BigDecimal
   # stablecoin payed by liquidator
-  liquidatorDeposit: BigInt
+  liquidatorDeposit: BigDecimal
   # debt repayed with liquidator deposit after protocol surcharge payment
-  debtRepayed: BigInt
+  debtRepayed: BigDecimal
   # badDebt revealed by this liquidation
-  badDebt: BigInt
+  badDebt: BigDecimal
   # protocol surcharge
-  surcharge: BigInt
+  surcharge: BigDecimal
 
   ## Time tracking
   # BlockNumber of last update
@@ -1336,7 +1363,7 @@ type FlashLoanData @entity {
   # Address of the stablecoin flash loaned + receiver + amount +hashTx (this is not enough to express multiple flashLoan in same tx)
   id: ID!
   stablecoin: String!
-  amount: BigInt
+  amount: BigDecimal
   receiver: String!
   # Block Number of last update
   blockNumber: BigInt!

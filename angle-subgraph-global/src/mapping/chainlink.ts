@@ -1,6 +1,7 @@
-import { ethereum, BigInt, Address } from '@graphprotocol/graph-ts'
+import { ethereum, Address, BigDecimal } from '@graphprotocol/graph-ts'
 import {
   BASE_TOKENS,
+  DECIMAL_TOKENS,
   FAST_SYNC_THRESHOLD,
   FAST_SYNC_TIME_INTERVAL,
   ORACLE_SYNC_TIME_INTERVAL,
@@ -18,6 +19,7 @@ import {
   _addVaultDataToHistory
 } from './vaultManagerHelpers'
 import { _initAggregator } from './utils'
+import { convertTokenToDecimal } from '../utils'
 
 // Handler used to periodically refresh Oracles
 export function handleAnswerUpdated(event: AnswerUpdated): void {
@@ -35,7 +37,7 @@ export function handleAnswerUpdated(event: AnswerUpdated): void {
     if (dataOracle.tokenTicker == "wSTETH") {
       quoteAmount = stETH.bind(Address.fromString(STETH_ADDRESS)).getPooledEthByShares(BASE_TOKENS)
     }
-    dataOracle.price = event.params.current.times(quoteAmount).div(BigInt.fromString('10').pow(dataOracle.decimals.toI32() as u8))
+    dataOracle.price = convertTokenToDecimal(event.params.current, dataOracle.decimals).times(convertTokenToDecimal(quoteAmount, DECIMAL_TOKENS))
     dataOracle.timestamp = event.block.timestamp
     dataOracle.save()
 
@@ -68,7 +70,7 @@ export function handleAnswerUpdated(event: AnswerUpdated): void {
 
 export function getCollateralPrice(
   collateralOracleByTicker: OracleByTicker
-): BigInt {
+): BigDecimal {
   const collateralPriceInUSD = OracleData.load(collateralOracleByTicker.oracle)!.price
   return collateralPriceInUSD
 }
@@ -76,18 +78,18 @@ export function getCollateralPrice(
 function getCollateralPriceInAgToken(
   collateralOracleByTicker: OracleByTicker,
   agTokenOracleByTicker: OracleByTicker
-): BigInt {
+): BigDecimal {
   const collateralPriceInUSD = OracleData.load(collateralOracleByTicker.oracle)!.price
   // log.warning('=== colateral value in USD {}', [collateralPriceInUSD.toString()])
   const agTokenPriceInUSD = OracleData.load(agTokenOracleByTicker.oracle)!.price
   // log.warning('=== agToken value in USD {}', [agTokenPriceInUSD.toString()])
-  const collateralPriceInAgToken = collateralPriceInUSD.times(BASE_TOKENS).div(agTokenPriceInUSD)
+  const collateralPriceInAgToken = collateralPriceInUSD.div(agTokenPriceInUSD)
   // log.warning('=== collateral value in agToken {}', [collateralPriceInAgToken.toString()])
   return collateralPriceInAgToken
 }
 
 // Update every vault of a vaultManager with new oracle value
-function updateVaults(block: ethereum.Block, newOracleValue: BigInt, dataVM: VaultManagerData): void {
+function updateVaults(block: ethereum.Block, newOracleValue: BigDecimal, dataVM: VaultManagerData): void {
   for (let i = 1; i <= dataVM.activeVaultsCount.toI32(); i++) {
     const idVault = dataVM.vaultManager.toString() + '_' + i.toString()
     const dataVault = VaultData.load(idVault)!
@@ -107,7 +109,6 @@ function updateVaults(block: ethereum.Block, newOracleValue: BigInt, dataVM: Vau
       // recompute vault's health factor
       dataVault.healthFactor = computeHealthFactor(
         dataVault.collateralAmount,
-        dataVM.collateralBase,
         newOracleValue,
         dataVault.debt,
         dataVM.collateralFactor
@@ -120,7 +121,7 @@ function updateVaults(block: ethereum.Block, newOracleValue: BigInt, dataVM: Vau
   }
 
   // update dataVM as well
-  dataVM.tvl = computeTVL(dataVM.collateralAmount, dataVM.collateralBase, dataVM.collateralTicker)
+  dataVM.tvl = computeTVL(dataVM.collateralAmount, dataVM.collateralTicker)
   dataVM.oracleValue = newOracleValue
   dataVM.timestamp = block.timestamp
   dataVM.blockNumber = block.number

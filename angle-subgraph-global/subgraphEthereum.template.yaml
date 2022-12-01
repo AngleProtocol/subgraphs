@@ -45,6 +45,8 @@ dataSources:
       abis:
         - name: veANGLE
           file: ../abis/veANGLE.json
+        - name: ERC20
+          file: ../abis/ERC20.json
       eventHandlers:
         - event: Deposit(indexed address,uint256,indexed uint256,int128,uint256)
           handler: handleDeposit
@@ -54,7 +56,7 @@ dataSources:
     network: {{network}}
     source:
       address: '{{angle}}'
-      abi: ERC20Votes
+      abi: ERC20
       startBlock: {{block}}
     mapping:
       kind: ethereum/events
@@ -63,8 +65,8 @@ dataSources:
       entities:
         - ANGLE
       abis:
-        - name: ERC20Votes
-          file: ../abis/ERC20Votes.json
+        - name: ERC20
+          file: ../abis/ERC20.json
       eventHandlers:
         - event: Transfer(indexed address,indexed address,uint256)
           handler: handleTransfer
@@ -85,6 +87,8 @@ dataSources:
       abis:
         - name: GaugeController
           file: ../abis/GaugeController.json
+        - name: ERC20
+          file: ../abis/ERC20.json
       eventHandlers:
         - event: NewGauge(address,int128,uint256)
           handler: handleNewGauge
@@ -107,6 +111,8 @@ dataSources:
       abis:
         - name: ChainlinkFeed
           file: ../abis/Chainlink.json
+        - name: ERC20
+          file: ../abis/ERC20.json
       eventHandlers:
         - event: AnswerUpdated(indexed int256,indexed uint256,uint256)
           handler: handleAnswerUpdated
@@ -127,6 +133,8 @@ dataSources:
       abis:
         - name: ChainlinkFeed
           file: ../abis/Chainlink.json
+        - name: ERC20
+          file: ../abis/ERC20.json
       eventHandlers:
         - event: AnswerUpdated(indexed int256,indexed uint256,uint256)
           handler: handleAnswerUpdated
@@ -148,6 +156,8 @@ dataSources:
       abis:
         - name: ChainlinkFeed
           file: ../abis/Chainlink.json
+        - name: ERC20
+          file: ../abis/ERC20.json
       eventHandlers:
         - event: AnswerUpdated(indexed int256,indexed uint256,uint256)
           handler: handleAnswerUpdated
@@ -169,6 +179,8 @@ dataSources:
       abis:
         - name: ChainlinkFeed
           file: ../abis/Chainlink.json
+        - name: ERC20
+          file: ../abis/ERC20.json
       eventHandlers:
         - event: AnswerUpdated(indexed int256,indexed uint256,uint256)
           handler: handleAnswerUpdated
@@ -192,6 +204,8 @@ dataSources:
           file: ../abis/Chainlink.json
         - name: stETH
           file: ../abis/stETH.json
+        - name: ERC20
+          file: ../abis/ERC20.json
       eventHandlers:
         - event: AnswerUpdated(indexed int256,indexed uint256,uint256)
           handler: handleAnswerUpdated
@@ -215,6 +229,8 @@ dataSources:
           file: ../abis/Chainlink.json
         - name: stETH
           file: ../abis/stETH.json
+        - name: ERC20
+          file: ../abis/ERC20.json
       eventHandlers:
         - event: AnswerUpdated(indexed int256,indexed uint256,uint256)
           handler: handleAnswerUpdated
@@ -235,6 +251,8 @@ dataSources:
       abis:
         - name: FlashAngle
           file: ../abis/FlashAngle.json
+        - name: ERC20
+          file: ../abis/ERC20.json
       eventHandlers:
         - event: FlashLoan(indexed address,uint256,indexed address)
           handler: handleFlashLoan
@@ -317,6 +335,8 @@ templates:
           file: ../abis/Chainlink.json
         - name: ChainlinkProxy
           file: ../abis/ChainlinkProxy.json
+        - name: ERC20
+          file: ../abis/ERC20.json
       eventHandlers:
         - event: AnswerUpdated(indexed int256,indexed uint256,uint256)
           handler: handleAnswerUpdated
@@ -379,6 +399,8 @@ templates:
           file: ../abis/StableMasterFront.json
         - name: PoolManager
           file: ../abis/PoolManager.json
+        - name: ERC20
+          file: ../abis/ERC20.json
       eventHandlers:
         - event: Claimed(indexed address,uint256,uint256,uint256)
           handler: handleClaim
@@ -403,6 +425,8 @@ templates:
           file: ../abis/FeeManager.json
         - name: PerpetualManagerFront
           file: ../abis/PerpetualManagerFront.json
+        - name: ERC20
+          file: ../abis/ERC20.json
       eventHandlers:
         - event: FeeMintUpdated(uint256[],uint64[])
           handler: handleFeeMintUpdated
@@ -412,6 +436,8 @@ templates:
           handler: handleSlippageUpdated
         - event: SlippageFeeUpdated(uint256[],uint64[])
           handler: handleSlippageFeeUpdated
+        - event: HaFeesUpdated(uint64,uint64)
+          handler: handleHaBonusMalusUpdated
       file: ./src/mapping/feeManager.ts
   - kind: ethereum/contract
     name: LiquidityGaugeTemplate
@@ -503,6 +529,16 @@ templates:
           handler: handleTransfer
         - event: HAFeesUpdated(uint64[],uint64[],uint8)
           handler: handleHAFeesUpdated
+        - event: BoundsPerpetualUpdated(uint64,uint64)
+          handler: handleBoundsPerpetualUpdated
+        - event: TargetAndLimitHAHedgeUpdated(uint64,uint64)
+          handler: handleTargetAndLimitHAHedgeUpdated
+        - event: KeeperFeesLiquidationRatioUpdated(uint64)
+          handler: handleKeeperFeesLiquidationRatioUpdated
+        - event: KeeperFeesCapUpdated(uint256,uint256)
+          handler: handleKeeperFeesCapUpdated
+        - event: KeeperFeesClosingUpdated(uint64[],uint64[])
+          handler: handleKeeperFeesClosingUpdated
       file: ./src/mapping/perpetualManager.ts
   - kind: ethereum/contract
     name: PerpetualStakingRewardsTemplate

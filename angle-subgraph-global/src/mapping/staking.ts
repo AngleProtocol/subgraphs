@@ -6,7 +6,8 @@ import {
   GaugeRewardData,
   GaugeRewardHistoricalData,
   Stake,
-  Unstake
+  Unstake,
+  PoolData
 } from '../../generated/schema'
 import { Address, BigInt, ethereum } from '@graphprotocol/graph-ts'
 import { SanToken } from '../../generated/templates/LiquidityGaugeTemplate/SanToken'
@@ -16,8 +17,9 @@ import { PoolManager } from '../../generated/templates/StableMasterTemplate/Pool
 import { SushiLPToken } from '../../generated/templates/LiquidityGaugeTemplate/SushiLPToken'
 import { PerpetualManagerFront } from '../../generated/templates/StableMasterTemplate/PerpetualManagerFront'
 import { StableMaster } from '../../generated/templates/LiquidityGaugeTemplate/StableMaster'
-import { historicalSlice } from './utils'
-import { BASE_TOKENS } from '../../../constants'
+import { getToken, historicalSlice } from './utils'
+import { BASE_TOKENS, DECIMAL_TOKENS, ZERO_BD } from '../../../constants'
+import { convertTokenToDecimal } from '../utils'
 
 function isBurn(event: Transfer): boolean {
   return event.params._to.equals(Address.fromString('0x0000000000000000000000000000000000000000'))
@@ -28,12 +30,16 @@ function isMint(event: Transfer): boolean {
 }
 
 export function handleTransfer(event: Transfer): void {
+
   if (event.params._value.equals(BigInt.fromString('0'))) return
 
   updateGaugeSupplyData(event)
 
   const stakingRewardsContract = LiquidityGauge.bind(event.address)
+
   const token = ERC20.bind(stakingRewardsContract.staking_token())
+  const tokenInfo = getToken(token._address)
+
   const decimals = token.decimals().toString()
   const name = token.name()
   const txId =
@@ -45,11 +51,11 @@ export function handleTransfer(event: Transfer): void {
     '_' +
     event.params._value.toString()
 
+  const amount = convertTokenToDecimal(event.params._value, tokenInfo.decimals)
   if (!isBurn(event)) {
     let txData = new Stake(txId)
     txData.transactionId = event.transaction.hash.toHexString()
-    txData.amount = event.params._value
-    txData.decimals = decimals
+    txData.amount = amount
     txData.sender = event.params._from.toHexString()
     txData.stakedToken = name
     txData.timestamp = event.block.timestamp
@@ -60,7 +66,7 @@ export function handleTransfer(event: Transfer): void {
   if (!isMint(event)) {
     let txData = new Unstake(txId)
     txData.transactionId = event.transaction.hash.toHexString()
-    txData.amount = event.params._value
+    txData.amount = amount
     txData.decimals = decimals
     txData.sender = event.params._from.toHexString()
     txData.stakedToken = name
@@ -75,11 +81,9 @@ export function updateGaugeData(event: RewardDataUpdate): void {
   const stakingRewardsContract = LiquidityGauge.bind(event.address)
   const block = event.block
   const timestamp = block.timestamp
-
-  const token = event.params._token
-  const tokenContract = ERC20.bind(token)
+  const rewardInfo = getToken(event.params._token)
   const gaugeId = event.address.toHexString()
-  const id = gaugeId + '_' + token.toHexString()
+  const id = gaugeId + '_' + rewardInfo.id
   // we round to the closest hour
   const roundedTimestamp = historicalSlice(block)
   const idHistoricalHour = id + '_hour_' + roundedTimestamp.toString()
@@ -87,22 +91,22 @@ export function updateGaugeData(event: RewardDataUpdate): void {
   let data = GaugeRewardData.load(id)
   if (data == null) {
     data = new GaugeRewardData(id)
+    const decimalsStakedToken = stakingRewardsContract.decimals()
+    data.decimalsStakedToken = decimalsStakedToken
+    data.gauge = gaugeId
+    data.token = rewardInfo.id
+    data.decimals = rewardInfo.decimals
+    data.tokenSymbol = rewardInfo.symbol
   }
 
-  const decimalsStakedToken = stakingRewardsContract.decimals()
-  const rewardData = stakingRewardsContract.reward_data(token)
+  const rewardData = stakingRewardsContract.reward_data(event.params._token)
   const distributor = rewardData.value1.toHexString()
   const periodFinish = rewardData.value2
-  const rewardRate = rewardData.value3
+  const rewardRate = convertTokenToDecimal(rewardData.value3, rewardInfo.decimals)
   const lastUpdateTime = rewardData.value4
-  const totalSupply = stakingRewardsContract.totalSupply()
-  const workingSupply = stakingRewardsContract.working_supply()
+  const totalSupply = convertTokenToDecimal(stakingRewardsContract.totalSupply(), data.decimalsStakedToken)
+  const workingSupply = convertTokenToDecimal(stakingRewardsContract.working_supply(), data.decimalsStakedToken)
 
-  data.gauge = gaugeId
-  data.decimalsStakedToken = decimalsStakedToken
-  data.token = token.toHexString()
-  data.decimals = BigInt.fromI32(tokenContract.decimals())
-  data.tokenSymbol = tokenContract.symbol()
   data.distributor = distributor
   data.periodFinish = periodFinish
   data.rewardRate = rewardRate
@@ -116,10 +120,10 @@ export function updateGaugeData(event: RewardDataUpdate): void {
   if (dataHistorical == null) {
     dataHistorical = new GaugeRewardHistoricalData(idHistoricalHour)
     dataHistorical.gauge = gaugeId
-    dataHistorical.token = token.toHexString()
-    dataHistorical.decimals = BigInt.fromI32(tokenContract.decimals())
-    dataHistorical.decimalsStakedToken = decimalsStakedToken
-    dataHistorical.tokenSymbol = tokenContract.symbol()
+    dataHistorical.token = rewardInfo.id
+    dataHistorical.decimals = rewardInfo.decimals
+    dataHistorical.decimalsStakedToken = data.decimalsStakedToken
+    dataHistorical.tokenSymbol = rewardInfo.symbol
     dataHistorical.distributor = distributor
     dataHistorical.periodFinish = periodFinish
     dataHistorical.rewardRate = rewardRate
@@ -138,10 +142,10 @@ export function updateGaugeData(event: RewardDataUpdate): void {
     dataHistorical.blockNumber = block.number
     dataHistorical.timestamp = roundedTimestamp
     // token can change (cf uni migration)
-    dataHistorical.token = token.toHexString()
-    dataHistorical.decimals = BigInt.fromI32(tokenContract.decimals())
-    dataHistorical.decimalsStakedToken = decimalsStakedToken
-    dataHistorical.tokenSymbol = tokenContract.symbol()
+    dataHistorical.token = rewardInfo.id
+    dataHistorical.decimals = rewardInfo.decimals
+    dataHistorical.decimalsStakedToken = data.decimalsStakedToken
+    dataHistorical.tokenSymbol = rewardInfo.symbol
   }
 
   data.save()
@@ -154,7 +158,6 @@ export function updateGaugeSupplyData(event: ethereum.Event): void {
   const timestamp = block.timestamp
 
   // common values
-  const decimalsStakedToken = stakingRewardsContract.decimals()
   const gaugeId = event.address.toHexString()
   const totalSupply = stakingRewardsContract.totalSupply()
   const workingSupply = stakingRewardsContract.working_supply()
@@ -162,6 +165,7 @@ export function updateGaugeSupplyData(event: ethereum.Event): void {
   const rewardCount = parseInt(stakingRewardsContract.reward_count().toString())
   for (let i = 0; i < rewardCount; i++) {
     const token = stakingRewardsContract.reward_tokens(BigInt.fromString(i.toString()))
+    const rewardInfo = getToken(token)
     const id = gaugeId + '_' + token.toHexString()
     // we round to the closest hour
     const roundedTimestamp = historicalSlice(block)
@@ -170,13 +174,17 @@ export function updateGaugeSupplyData(event: ethereum.Event): void {
     let data = GaugeRewardData.load(id)
     if (data == null) {
       data = new GaugeRewardData(id)
+      const decimalsStakedToken = stakingRewardsContract.decimals()
+      data.decimalsStakedToken = decimalsStakedToken
+      data.gauge = gaugeId
+      data.token = rewardInfo.id
+      data.decimals = rewardInfo.decimals
+      data.tokenSymbol = rewardInfo.symbol
     }
 
     data.gauge = gaugeId
-    data.decimalsStakedToken = decimalsStakedToken
-    data.token = token.toHexString()
-    data.totalSupply = totalSupply
-    data.workingSupply = workingSupply
+    data.totalSupply = convertTokenToDecimal(totalSupply, data.decimalsStakedToken)
+    data.workingSupply = convertTokenToDecimal(workingSupply, data.decimalsStakedToken)
     data.blockNumber = block.number
     data.timestamp = timestamp
 
@@ -184,19 +192,18 @@ export function updateGaugeSupplyData(event: ethereum.Event): void {
     if (dataHistorical == null) {
       dataHistorical = new GaugeRewardHistoricalData(idHistoricalHour)
       dataHistorical.gauge = gaugeId
-      dataHistorical.decimalsStakedToken = decimalsStakedToken
-      dataHistorical.token = token.toHexString()
-      dataHistorical.totalSupply = totalSupply
-      dataHistorical.workingSupply = workingSupply
+      dataHistorical.decimalsStakedToken = data.decimalsStakedToken
+      dataHistorical.totalSupply = data.totalSupply
+      dataHistorical.workingSupply = data.workingSupply
       dataHistorical.blockNumber = block.number
       dataHistorical.timestamp = roundedTimestamp
     } else {
-      dataHistorical.totalSupply = totalSupply
-      dataHistorical.workingSupply = workingSupply
+      dataHistorical.totalSupply = data.totalSupply
+      dataHistorical.workingSupply = data.workingSupply
       dataHistorical.blockNumber = block.number
       dataHistorical.timestamp = roundedTimestamp
       // token can change (cf uni migration)
-      dataHistorical.decimalsStakedToken = decimalsStakedToken
+      dataHistorical.decimalsStakedToken = data.decimalsStakedToken
       dataHistorical.token = token.toHexString()
     }
 
@@ -215,10 +222,11 @@ export function handleUpdatePerpStaking(event: ethereum.Event): void {
   const roundedTimestamp = historicalSlice(block)
   const idHistoricalHour = id + '_hour_' + roundedTimestamp.toString()
 
-  const decimalsStakedToken = BigInt.fromI32(
-    ERC20.bind(PoolManager.bind(stakingRewardsContract.poolManager()).token()).decimals()
-  )
-  const token = stakingRewardsContract.rewardToken()
+  const perpetualManager = PerpetualManagerFront.bind(Address.fromString(event.address.toHexString()))
+  let inputPool = perpetualManager.poolManager().toHexString()
+  const poolData = PoolData.load(inputPool)!
+  const decimalsStakedToken = poolData.decimals
+
   const periodFinish = stakingRewardsContract.periodFinish()
   const rewardRate = stakingRewardsContract.rewardRate()
   const lastUpdateTime = stakingRewardsContract.lastUpdateTime()
@@ -227,20 +235,21 @@ export function handleUpdatePerpStaking(event: ethereum.Event): void {
 
   let data = GaugeRewardData.load(id)
   if (data == null) {
-    const tokenContract = ERC20.bind(token)
+    const token = stakingRewardsContract.rewardToken()
+    const rewardInfo = getToken(token)
     data = new GaugeRewardData(id)
-    data.decimals = BigInt.fromI32(tokenContract.decimals())
+    data.decimals = rewardInfo.decimals
     data.decimalsStakedToken = decimalsStakedToken
-    data.tokenSymbol = tokenContract.symbol()
+    data.tokenSymbol = rewardInfo.symbol
     data.gauge = id
     data.token = token.toHexString()
   }
 
   data.periodFinish = periodFinish
   data.distributor = rewardsDistributor
-  data.rewardRate = rewardRate
+  data.rewardRate = convertTokenToDecimal(rewardRate, data.decimals)
   data.lastUpdateTime = lastUpdateTime
-  data.totalSupply = totalSupply
+  data.totalSupply = convertTokenToDecimal(totalSupply, data.decimalsStakedToken)
   data.blockNumber = block.number
   data.timestamp = timestamp
 
@@ -249,19 +258,19 @@ export function handleUpdatePerpStaking(event: ethereum.Event): void {
     dataHistorical = new GaugeRewardHistoricalData(idHistoricalHour)
     dataHistorical.gauge = id
     dataHistorical.decimalsStakedToken = decimalsStakedToken
-    dataHistorical.token = token.toHexString()
+    dataHistorical.token = data.token
     dataHistorical.periodFinish = periodFinish
     dataHistorical.distributor = rewardsDistributor
-    dataHistorical.rewardRate = rewardRate
+    dataHistorical.rewardRate = data.rewardRate
     dataHistorical.lastUpdateTime = lastUpdateTime
-    dataHistorical.totalSupply = totalSupply
+    dataHistorical.totalSupply = data.totalSupply
     dataHistorical.blockNumber = block.number
     dataHistorical.timestamp = roundedTimestamp
   } else {
     dataHistorical.periodFinish = periodFinish
-    dataHistorical.rewardRate = rewardRate
+    dataHistorical.rewardRate = data.rewardRate
     dataHistorical.lastUpdateTime = lastUpdateTime
-    dataHistorical.totalSupply = totalSupply
+    dataHistorical.totalSupply = data.totalSupply
     dataHistorical.distributor = rewardsDistributor
     dataHistorical.blockNumber = block.number
     dataHistorical.timestamp = roundedTimestamp
@@ -280,21 +289,23 @@ export function handleStaked(token: Address, event: Transfer): void {
 
   const sanTokenContract = SanToken.bind(token)
   const result = sanTokenContract.try_poolManager()
-  let name = ERC20.bind(token).name()
+
+  let tokenInfo = getToken(token);
+  let valueDecimal = convertTokenToDecimal(event.params._value, tokenInfo.decimals)
 
   // In this case the staked token is a AgToken
   if (result.reverted) {
-    if (name.substr(0, 2) == 'ag') {
+    if (tokenInfo.name.substr(0, 2) == 'ag') {
       let data = agToken.load(tokenDataId)
       if (data == null) {
         data = new agToken(tokenDataId)
-        data.stableName = name
-        data.balance = BigInt.fromString('0')
+        data.stableName = tokenInfo.name
+        data.balance = ZERO_BD
         data.owner = event.params._to.toHexString()
         data.token = token.toHexString()
-        data.staked = event.params._value
+        data.staked = valueDecimal
       } else {
-        data.staked = data.staked.plus(event.params._value)
+        data.staked = data.staked.plus(valueDecimal)
       }
       data.save()
     } else {
@@ -318,22 +329,24 @@ export function handleStaked(token: Address, event: Transfer): void {
       } else {
         scalingFactor = resultScalingFactor.value
       }
+      let scalingFactorDecimal = convertTokenToDecimal(scalingFactor, DECIMAL_TOKENS)
 
       let data = externalToken.load(modifyTokenDataID)
       if (data == null) {
         data = new externalToken(modifyTokenDataID)
-        if (name.split(' ')[0] == 'SushiSwap' || name.split(' ')[0] == 'Uniswap V2') {
+        let name = tokenInfo.name
+        if (tokenInfo.name.split(' ')[0] == 'SushiSwap' || name.split(' ')[0] == 'Uniswap V2') {
           name = `${name} ${ERC20.bind(SushiLPToken.bind(token).token0()).symbol()}/${ERC20.bind(
             SushiLPToken.bind(token).token1()
           ).symbol()}`
         }
         data.name = name
-        data.balance = ERC20.bind(token).balanceOf(event.params._to)
+        data.balance = convertTokenToDecimal(ERC20.bind(token).balanceOf(event.params._to), tokenInfo.decimals)
         data.owner = event.params._to.toHexString()
         data.token = token.toHexString()
-        data.staked = event.params._value.times(BASE_TOKENS).div(scalingFactor)
+        data.staked = valueDecimal.div(scalingFactorDecimal)
       } else {
-        data.staked = data.staked.plus(event.params._value.times(BASE_TOKENS).div(scalingFactor))
+        data.staked = data.staked.plus(valueDecimal.div(scalingFactorDecimal))
       }
       data.save()
     }
@@ -353,37 +366,37 @@ export function handleStaked(token: Address, event: Transfer): void {
 
     const addressId = event.params._to.toHexString() + '_' + collatName + '_' + stableName.substr(2)
     // Balance of staked tokens before the call
-    const balance = data == null ? BigInt.fromString('0') : data.staked
+    const balance = data == null ? ZERO_BD : data.staked
+    let sanRateDecimal = convertTokenToDecimal(sanRate, DECIMAL_TOKENS)
     const lastStakedPosition = balance
-      .plus(event.params._value)
-      .times(sanRate)
-      .div(BASE_TOKENS)
+      .plus(valueDecimal)
+      .times(sanRateDecimal)
 
     let gainData = CapitalGain.load(addressId)
     if (gainData == null) {
       gainData = new CapitalGain(addressId)
-      gainData.gains = BigInt.fromString('0')
-      gainData.lastPosition = BigInt.fromString('0')
+      gainData.gains = ZERO_BD
+      gainData.lastPosition = ZERO_BD
     }
-    gainData.gains = gainData.gains.plus(balance.times(sanRate).div(BASE_TOKENS)).minus(gainData.lastStakedPosition)
+    gainData.gains = gainData.gains.plus(balance.times(sanRateDecimal)).minus(gainData.lastStakedPosition)
     gainData.lastStakedPosition = lastStakedPosition
 
     gainData.save()
 
     if (data == null) {
       gainData = new CapitalGain(addressId)
-      gainData.gains = BigInt.fromString('0')
-      gainData.lastPosition = BigInt.fromString('0')
+      gainData.gains = ZERO_BD
+      gainData.lastPosition = ZERO_BD
 
       data = new sanToken(tokenDataId)
       data.owner = event.params._to.toHexString()
       data.token = token.toHexString()
-      data.balance = BigInt.fromString('0')
+      data.balance = ZERO_BD
       data.collatName = collatName
       data.stableName = stableName
-      data.staked = event.params._value
+      data.staked = valueDecimal
     } else {
-      data.staked = data.staked.plus(event.params._value)
+      data.staked = data.staked.plus(valueDecimal)
     }
     data.save()
   }
@@ -395,13 +408,14 @@ export function handleUnstaked(token: Address, event: Transfer): void {
   const sanTokenContract = SanToken.bind(token)
   const result = sanTokenContract.try_poolManager()
 
-  const symbol = ERC20.bind(token).name()
+  let tokenInfo = getToken(token);
+  let valueDecimal = convertTokenToDecimal(event.params._value, tokenInfo.decimals)
 
   // In this case the staked token is a AgToken
   if (result.reverted) {
-    if (symbol.substr(0, 2) == 'ag') {
+    if (tokenInfo.symbol.substr(0, 2) == 'ag') {
       const data = agToken.load(tokenDataId)!
-      data.staked = data.staked.minus(event.params._value)
+      data.staked = data.staked.minus(valueDecimal)
       data.save()
     } else {
       let modifyTokenDataID = tokenDataId
@@ -425,8 +439,8 @@ export function handleUnstaked(token: Address, event: Transfer): void {
       const data = externalToken.load(modifyTokenDataID)!
       // For external tokens we don't want to track there actual balance but just what is going through on the protocol
       // Otherwise this would asks to track all the other tokens when entering/exiting/transferring
-      data.balance = data.balance.plus(event.params._value)
-      data.staked = data.staked.minus(event.params._value)
+      data.balance = data.balance.plus(valueDecimal)
+      data.staked = data.staked.minus(valueDecimal)
       data.save()
     }
   } else {
@@ -445,17 +459,17 @@ export function handleUnstaked(token: Address, event: Transfer): void {
     const addressId = event.params._from.toHexString() + '_' + collatName + '_' + stableName.substr(2)
     // Balance of staked tokens before the call
     const balance = data.staked
+    let sanRateDecimal = convertTokenToDecimal(sanRate, DECIMAL_TOKENS)
     const lastStakedPosition = balance
-      .minus(event.params._value)
-      .times(sanRate)
-      .div(BASE_TOKENS)
+      .minus(valueDecimal)
+      .times(sanRateDecimal)
 
     const gainData = CapitalGain.load(addressId)!
-    gainData.gains = gainData.gains.plus(balance.times(sanRate).div(BASE_TOKENS)).minus(gainData.lastStakedPosition)
+    gainData.gains = gainData.gains.plus(balance.times(sanRateDecimal)).minus(gainData.lastStakedPosition)
     gainData.lastStakedPosition = lastStakedPosition
     gainData.save()
 
-    data.staked = data.staked.minus(event.params._value)
+    data.staked = data.staked.minus(valueDecimal)
     data.save()
   }
 }

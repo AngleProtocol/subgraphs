@@ -3,6 +3,8 @@ import { GaugeData, GaugeHistoricalData } from '../../generated/schema'
 import { LiquidityGaugeTemplate, PerpetualStakingRewardsTemplate } from '../../generated/templates'
 import { GaugeController, NewGauge, VoteForGauge } from '../../generated/GaugeController/GaugeController'
 import { historicalSlice } from './utils'
+import { convertTokenToDecimal } from '../utils'
+import { DECIMAL_TOKENS } from '../../../constants'
 
 export function handleNewGauge(event: NewGauge): void {
   const block = event.block
@@ -47,7 +49,7 @@ export function handleGaugeVote(event: VoteForGauge): void {
     const idHistoricalHour = id + '_hour_' + roundedTimestamp.toString()
 
     let data = GaugeData.load(gauge.toHexString())!
-    const relWeigth = gaugeControllerContract.gauge_relative_weight(gauge)
+    const relWeigth = convertTokenToDecimal(gaugeControllerContract.gauge_relative_weight(gauge), DECIMAL_TOKENS)
     data.relWeigth = relWeigth
     data.blockNumber = block.number
     data.timestamp = timestamp

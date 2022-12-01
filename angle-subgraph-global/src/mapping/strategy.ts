@@ -1,13 +1,14 @@
-import { ethereum, BigInt, store } from '@graphprotocol/graph-ts'
+import { ethereum, BigInt, store, BigDecimal } from '@graphprotocol/graph-ts'
 import { PoolManager } from '../../generated/templates/StableMasterTemplate/PoolManager'
 import { Harvested, RemoveLender, Strategy } from '../../generated/templates/StrategyTemplate/Strategy'
 import { StableMaster } from '../../generated/templates/StrategyTemplate/StableMaster'
-import { _updateGainPoolData, _updatePoolData } from './utils'
-import { BASE_PARAMS } from '../../../constants'
+import { getToken, _updateGainPoolData, _updatePoolData } from './utils'
+import { BASE_PARAMS, DECIMAL_PARAMS, DECIMAL_TOKENS, ONE_BD, ZERO_BD } from '../../../constants'
 import { ERC20 } from '../../generated/templates/StrategyTemplate/ERC20'
 import { Lender } from '../../generated/templates/StrategyTemplate/Lender'
 import { StrategyData, StrategyHistoricalData, LenderData } from '../../generated/schema'
 import { historicalSlice } from './utils'
+import { convertTokenToDecimal } from '../utils'
 
 export function handleHarvest(event: Harvested): void {
   const strategy = Strategy.bind(event.address)
@@ -15,34 +16,32 @@ export function handleHarvest(event: Harvested): void {
   const stableMaster = StableMaster.bind(poolManager.stableMaster())
   const agToken = ERC20.bind(stableMaster.agToken())
   const token = ERC20.bind(poolManager.token())
+  const collateralInfo = getToken(token._address)
   const stableName = agToken.symbol()
   const collatName = token.symbol()
   const strat = poolManager.strategies(strategy._address)
   const managerAddress = strategy.poolManager().toHexString()
 
   const resultAPR = strategy.try_estimatedAPR()
-  const apr = resultAPR.reverted ? BigInt.fromString('0') : resultAPR.value
+  const apr = resultAPR.reverted ? ZERO_BD : convertTokenToDecimal(resultAPR.value, DECIMAL_TOKENS)
   const collatData = stableMaster.collateralMap(poolManager._address)
-  const percentInterestsForSLPs = collatData.value7.interestsForSLPs
+  const percentInterestsForSLPs = convertTokenToDecimal(collatData.value7.interestsForSLPs, DECIMAL_PARAMS)
 
-  let interestSLPs: BigInt
-  let interestProtocol: BigInt
+  let interestSLPs: BigDecimal
+  let interestProtocol: BigDecimal
+  const profit = convertTokenToDecimal(event.params.profit, collateralInfo.decimals)
   const result = poolManager.try_interestsForSurplus()
   if (result.reverted) {
-    interestSLPs = event.params.profit.times(percentInterestsForSLPs).div(BASE_PARAMS)
-    interestProtocol = event.params.profit.minus(interestSLPs)
+    interestSLPs = profit.times(percentInterestsForSLPs)
+    interestProtocol = profit.minus(interestSLPs)
   } else {
-    const interestForSurplus = result.value
-    interestSLPs = event.params.profit
-      .times(BASE_PARAMS.minus(interestForSurplus))
+    const interestForSurplus = convertTokenToDecimal(result.value, DECIMAL_PARAMS)
+    interestSLPs = profit
+      .times(ONE_BD.minus(interestForSurplus))
       .times(percentInterestsForSLPs)
-      .div(BASE_PARAMS)
-      .div(BASE_PARAMS)
-    interestProtocol = event.params.profit
-      .times(BASE_PARAMS.minus(interestForSurplus))
-      .times(BASE_PARAMS.minus(percentInterestsForSLPs))
-      .div(BASE_PARAMS)
-      .div(BASE_PARAMS)
+    interestProtocol = profit
+      .times(ONE_BD.minus(interestForSurplus))
+      .times(ONE_BD.minus(percentInterestsForSLPs))
   }
 
   const data = _updatePoolData(poolManager, event.block)
@@ -50,9 +49,9 @@ export function handleHarvest(event: Harvested): void {
   _updateGainPoolData(
     poolManager,
     event.block,
-    BigInt.fromString('0'),
-    BigInt.fromString('0'),
-    BigInt.fromString('0'),
+    ZERO_BD,
+    ZERO_BD,
+    ZERO_BD,
     interestProtocol,
     interestSLPs
   )
@@ -62,7 +61,10 @@ export function handleHarvest(event: Harvested): void {
   // we round to the closest hour
   const roundedTimestamp = historicalSlice(event.block)
   const idHistorical = event.address.toHexString() + '_' + roundedTimestamp.toHexString()
-  const estimatedTotalAssets = strategy.estimatedTotalAssets()
+  const estimatedTotalAssets = convertTokenToDecimal(strategy.estimatedTotalAssets(), collateralInfo.decimals)
+  const debtRatio = convertTokenToDecimal(strat.value2, DECIMAL_PARAMS)
+  const managerBalance = convertTokenToDecimal(poolManager.getBalance(), collateralInfo.decimals)
+  const totalAsset = convertTokenToDecimal(poolManager.getTotalAsset(), collateralInfo.decimals)
 
   let stratData = StrategyData.load(id)
   if (stratData == null) {
@@ -73,9 +75,9 @@ export function handleHarvest(event: Harvested): void {
   stratData.collatName = collatName
   stratData.estimatedTotalAssets = estimatedTotalAssets
   stratData.decimals = BigInt.fromI32(token.decimals())
-  stratData.debtRatio = strat.value2
-  stratData.managerBalance = poolManager.getBalance()
-  stratData.totalAsset = poolManager.getTotalAsset()
+  stratData.debtRatio = debtRatio
+  stratData.managerBalance = managerBalance
+  stratData.totalAsset = totalAsset
   stratData.apr = apr
   stratData.timestamp = strat.value0
 
@@ -87,9 +89,9 @@ export function handleHarvest(event: Harvested): void {
     stratDataHistorical.collatName = collatName
     stratDataHistorical.decimals = BigInt.fromI32(token.decimals())
     stratDataHistorical.estimatedTotalAssets = estimatedTotalAssets
-    stratDataHistorical.debtRatio = strat.value2
-    stratDataHistorical.managerBalance = poolManager.getBalance()
-    stratDataHistorical.totalAsset = poolManager.getTotalAsset()
+    stratDataHistorical.debtRatio = debtRatio
+    stratDataHistorical.managerBalance = managerBalance
+    stratDataHistorical.totalAsset = totalAsset
     stratDataHistorical.apr = apr
     stratDataHistorical.timestamp = strat.value0
   }
@@ -117,8 +119,8 @@ export function handleHarvest(event: Harvested): void {
       }
       lendData.strategy = event.address.toHexString()
       lendData.name = lender.lenderName()
-      lendData.nav = lender.nav()
-      lendData.apr = lender.apr()
+      lendData.nav = convertTokenToDecimal(lender.nav(), collateralInfo.decimals)
+      lendData.apr = convertTokenToDecimal(lender.apr(), DECIMAL_TOKENS)
       lendData.save()
     }
   }

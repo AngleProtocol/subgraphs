@@ -5,6 +5,8 @@ import { TreasuryUpdated, MinterToggled } from '../../generated/templates/AgToke
 import { agToken as AgToken, UtilisationData, UtilisationHistoricalData, FeeData, FeeHistoricalData, TreasuryData, VaultManagerList } from '../../generated/schema'
 import { _initTreasury } from './treasuryHelpers'
 import { historicalSlice } from './utils'
+import { convertTokenToDecimal } from '../utils'
+import { ZERO_BD } from '../../../constants'
 
 const ONE = BigInt.fromI32(1)
 
@@ -39,9 +41,6 @@ export function handleTransfer(event: Transfer): void {
   // Do nothing if the transfer is void
   if (event.params.value.equals(BigInt.fromString('0'))) return
 
-  // Bind contracts
-  const stableName = ERC20.bind(event.address).symbol()
-
   const toId = event.params.to.toHexString() + '_' + event.address.toHexString()
   const fromId = event.params.from.toHexString() + '_' + event.address.toHexString()
   const utilisationId = event.address.toHexString()
@@ -49,18 +48,20 @@ export function handleTransfer(event: Transfer): void {
   if (dataUtilisation == null) {
     dataUtilisation = new UtilisationData(utilisationId)
     dataUtilisation.stablecoin = event.address.toHexString()
-    dataUtilisation.stableName = stableName
+    dataUtilisation.stableName = ERC20.bind(event.address).symbol()
+    dataUtilisation.decimals = BigInt.fromI32(ERC20.bind(event.address).decimals())
   }
 
   let dataToken: AgToken | null
+  let decimalValue = convertTokenToDecimal(event.params.value, dataUtilisation.decimals)
 
   if (isMint(event)) {
-    dataUtilisation.circulationSupply = dataUtilisation.circulationSupply.plus(event.params.value)
+    dataUtilisation.circulationSupply = dataUtilisation.circulationSupply.plus(decimalValue)
   } else {
     dataToken = AgToken.load(fromId)
     if (dataToken != null) {
-      dataToken.balance = dataToken.balance.minus(event.params.value)
-      if (dataToken.balance.equals(BigInt.fromString('0')) && dataToken.staked.equals(BigInt.fromString('0'))) {
+      dataToken.balance = dataToken.balance.minus(decimalValue)
+      if (dataToken.balance.equals(ZERO_BD) && dataToken.staked.equals(ZERO_BD)) {
         store.remove('agToken', fromId)
         dataUtilisation.holderCount = dataUtilisation.holderCount.minus(ONE)
       } else {
@@ -70,24 +71,24 @@ export function handleTransfer(event: Transfer): void {
   }
 
   if (isBurn(event)) {
-    dataUtilisation.circulationSupply = dataUtilisation.circulationSupply.minus(event.params.value)
+    dataUtilisation.circulationSupply = dataUtilisation.circulationSupply.minus(decimalValue)
   } else {
     dataToken = AgToken.load(toId)
     if (dataToken == null) {
       dataToken = new AgToken(toId)
       dataToken.owner = event.params.to.toHexString()
       dataToken.token = event.address.toHexString()
-      dataToken.stableName = stableName
-      dataToken.balance = event.params.value
-      dataToken.staked = BigInt.fromString('0')
+      dataToken.stableName = dataUtilisation.stableName
+      dataToken.balance = decimalValue
+      dataToken.staked = ZERO_BD
       dataUtilisation.holderCount = dataUtilisation.holderCount.plus(ONE)
     } else {
-      dataToken.balance = dataToken.balance.plus(event.params.value)
+      dataToken.balance = dataToken.balance.plus(decimalValue)
     }
     dataToken.save()
   }
 
-  dataUtilisation.volume = dataUtilisation.volume.plus(event.params.value)
+  dataUtilisation.volume = dataUtilisation.volume.plus(decimalValue)
 
   const tx = event.transaction.hash.toHexString()
   if (tx != dataUtilisation._lastTx) {

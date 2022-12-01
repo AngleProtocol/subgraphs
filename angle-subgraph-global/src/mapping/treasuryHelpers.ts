@@ -2,9 +2,11 @@ import { ethereum, BigInt, Address } from '@graphprotocol/graph-ts'
 import { Treasury } from '../../generated/templates/TreasuryTemplate/Treasury'
 import { AgToken } from '../../generated/templates/TreasuryTemplate/AgToken'
 import { TreasuryData, TreasuryHistoricalData } from '../../generated/schema'
-import { historicalSlice } from './utils'
+import { getToken, historicalSlice } from './utils'
 
 import { log } from '@graphprotocol/graph-ts'
+import { convertTokenToDecimal } from '../utils'
+import { DECIMAL_PARAMS, ZERO_BD } from '../../../constants'
 
 export function extractArray(
   thisArg: Treasury,
@@ -24,6 +26,7 @@ export function extractArray(
 export function _initTreasury(address: Address, block: ethereum.Block): void {
   const treasury = Treasury.bind(address)
   const agToken = AgToken.bind(treasury.stablecoin())
+  const agTokenInfo = getToken(agToken._address)
   log.warning('+++++ Init Treasury {} for stablecoin {}', [address.toHexString(), treasury.stablecoin().toHexString()])
   // Start indexing and tracking new contract
   // TreasuryTemplate.create(address)
@@ -33,13 +36,14 @@ export function _initTreasury(address: Address, block: ethereum.Block): void {
 
   data.treasury = address.toHexString()
   data.agToken = treasury.stablecoin().toHexString()
-  data.badDebt = treasury.badDebt()
-  data.surplusBuffer = treasury.surplusBuffer()
-  data.surplusForGovernance = treasury.surplusForGovernance()
+
+  data.badDebt = convertTokenToDecimal(treasury.badDebt(), agTokenInfo.decimals)
+  data.surplusBuffer = convertTokenToDecimal(treasury.surplusBuffer(), agTokenInfo.decimals)
+  data.surplusForGovernance = convertTokenToDecimal(treasury.surplusForGovernance(), DECIMAL_PARAMS)
   data.surplusManager = treasury.surplusManager().toHexString()
 
-  data.surplus = BigInt.fromI32(0)
-  data.governanceProfits = BigInt.fromI32(0)
+  data.surplus = ZERO_BD
+  data.governanceProfits = ZERO_BD
 
   data.blockNumber = block.number
   data.timestamp = block.timestamp
