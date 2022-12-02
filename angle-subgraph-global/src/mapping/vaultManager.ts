@@ -125,15 +125,15 @@ export function handleInterestAccumulatorUpdated(event: InterestAccumulatorUpdat
   let data = VaultManagerData.load(event.address.toHexString())!
   const agTokenInfo = getToken(Address.fromString(data.agToken))
 
+  const newInterestAccumulator = convertTokenToDecimal(event.params.value, DECIMAL_INTEREST)
   // add new interests earned
   const interestEarned =
-    convertTokenToDecimal(event.params.value
+    newInterestAccumulator
       .minus(data.interestAccumulator)
-      , DECIMAL_INTEREST)
       .times(data.totalNormalizedDebt)
   data.surplusFromInterests = data.surplusFromInterests.plus(interestEarned)
 
-  data.interestAccumulator = event.params.value
+  data.interestAccumulator = newInterestAccumulator
   data.lastInterestAccumulatorUpdated = event.block.timestamp
 
   // Refresh surplus after interest accrual
@@ -402,7 +402,7 @@ export function handleFiledUint64(event: FiledUint64): void {
   } else if (paramName == 'RF') {
     data.repayFee = convertTokenToDecimal(paramValue, DECIMAL_PARAMS)
   } else if (paramName == 'IR') {
-    data.interestRate = paramValue
+    data.interestRate = convertTokenToDecimal(paramValue, DECIMAL_INTEREST)
   } else if (paramName == 'LS') {
     data.liquidationSurcharge = convertTokenToDecimal(paramValue, DECIMAL_PARAMS)
   } else if (paramName == 'MLD') {

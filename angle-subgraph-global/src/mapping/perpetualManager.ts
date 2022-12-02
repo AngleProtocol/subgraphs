@@ -47,11 +47,15 @@ export function handleOpeningPerpetual(event: PerpetualOpened): void {
   const poolData = PoolData.load(poolManager._address.toHexString())!
   const collateralInfo = getToken(Address.fromString(poolData.collateral))
 
-  const id = event.address.toHexString() + '_' + event.params._perpetualID.toHexString()
-  let data = Perpetual.load(id)!
   const margin = convertTokenToDecimal(event.params._margin, collateralInfo.decimals)
   const committedAmount = convertTokenToDecimal(event.params._committedAmount, collateralInfo.decimals)
   const entryRate = convertTokenToDecimal(event.params._entryRate, DECIMAL_TOKENS)
+
+  updatePoolData(poolManager, event.block, true, margin)
+  const fee = _getFeesOpenPerp(perpetualManager, poolManager, event)
+
+  const id = event.address.toHexString() + '_' + event.params._perpetualID.toHexString()
+  let data = Perpetual.load(id)!
   data.margin = margin
   data.committedAmount = committedAmount
   data.entryRate = entryRate
@@ -62,6 +66,7 @@ export function handleOpeningPerpetual(event: PerpetualOpened): void {
         committedAmount.times(ONE_BD.minus(poolData.maintenanceMargin))
       )
     )
+  data.fees = fee
   data.status = 'open'
   data.save()
 
@@ -79,15 +84,15 @@ export function handleOpeningPerpetual(event: PerpetualOpened): void {
   txData.entryRate = entryRate
   txData.margin = margin
   txData.committedAmount = committedAmount
+  txData.fees = fee
   txData.collatName = data.collatName
   txData.stableName = data.stableName
   txData.timestamp = event.block.timestamp
   txData.blockNumber = event.block.number
   txData.save()
 
-  updatePoolData(poolManager, event.block, true, margin)
-  const fee = _getFeesOpenPerp(perpetualManager, poolManager, event)
   _updateGainPoolData(poolManager, event.block, fee)
+
 }
 
 export function handleUpdatingPerpetual(event: PerpetualUpdated): void {
@@ -145,15 +150,17 @@ export function handleClosingPerpetual(event: PerpetualClosed): void {
   const data = Perpetual.load(id)!
   data.closeAmount = closeAmount
   data.status = 'close'
+  const fee = _getFeesClosePerp(perpetualManager, poolManager._address, data)
+  data.fees = data.fees.plus(fee)
   data.save()
 
   const txData = PerpetualClose.load(id)!
   txData.sender = event.transaction.from.toHexString()
   txData.closeAmount = closeAmount
   txData.status = 'close'
+  txData.fees = fee
   txData.save()
 
-  const fee = _getFeesClosePerp(perpetualManager, poolManager._address, data)
   _updateGainPoolData(poolManager, event.block, fee)
 }
 
@@ -292,7 +299,7 @@ export function handleTransfer(event: Transfer): void {
   // Case of a transfer or a mint
   else {
     const collateralInfo = getToken(Address.fromString(poolData.collateral))
-    const stablecoinInfo = getToken(Address.fromString(poolData.collateral))
+    const stablecoinInfo = getToken(Address.fromString(poolData.stablecoin))
 
     let data = Perpetual.load(id)
     if (data == null) {

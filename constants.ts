@@ -22,7 +22,7 @@ for (let i = 0; i < _max.length; i++) {
   _max[i] = 0xff
 }
 export const MAX_UINT256 = BigInt.fromUnsignedBytes(_max)
-export const MAX_DECIMAL = BigDecimal.fromString(MAX_UINT256.toString())
+export const MAX_DECIMAL = BigDecimal.fromString(BASE_INTEREST.toString())
 
 export const MAX_LOCK_TIME = BigInt.fromString('4')
   .times(BigInt.fromString('365'))

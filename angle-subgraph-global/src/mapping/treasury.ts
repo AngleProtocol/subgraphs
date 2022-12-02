@@ -84,10 +84,7 @@ export function handleVaultManagerToggled(event: VaultManagerToggled): void {
   dataTreasury.save()
   _addTreasuryDataToHistory(dataTreasury, event.block)
 
-  let data = VaultManagerData.load(event.params.vaultManager.toHexString())!
-  const oracle = Oracle.bind(Address.fromString(data.oracle))
-  _trackNewChainlinkOracle(oracle, event.block.timestamp)
-
+  let data = VaultManagerData.load(event.params.vaultManager.toHexString())
   if (data == null) {
     _initVaultManager(event.params.vaultManager, event.block)
 
@@ -98,6 +95,9 @@ export function handleVaultManagerToggled(event: VaultManagerToggled): void {
     listVM.vaultManagers = vaultManagers
     listVM.save()
   }
+  data = VaultManagerData.load(event.params.vaultManager.toHexString())!
+  const oracle = Oracle.bind(Address.fromString(data.oracle))
+  _trackNewChainlinkOracle(oracle, event.block.timestamp)
 }
 
 // We use this event only to update vaultManagers entities

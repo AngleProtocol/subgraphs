@@ -272,6 +272,8 @@ type Perpetual @entity {
   entryRate: BigDecimal!
   # rate at which the perp can be liquidated
   liquidationPrice: BigDecimal
+  # fees paid to the protocol
+  fees: BigDecimal!
   # BlockNumber at opening
   openingBlockNumber: BigInt!
   # Timestamp at opening
@@ -385,7 +387,7 @@ type VaultManagerData @entity {
   # Total amount of debt across vaults in agToken, normalized
   totalNormalizedDebt: BigDecimal!
   # Value of interestAccumulator
-  interestAccumulator: BigInt!
+  interestAccumulator: BigDecimal!
   # Timestamp when interestAccumulator was updated the last time
   lastInterestAccumulatorUpdated: BigInt!
 
@@ -493,7 +495,7 @@ type VaultManagerHistoricalData @entity {
   # Total amount of debt across vaults in agToken, normalized
   totalNormalizedDebt: BigDecimal!
   # Value of interestAccumulator
-  interestAccumulator: BigInt!
+  interestAccumulator: BigDecimal!
   # Timestamp when interestAccumulator was updated the last time
   lastInterestAccumulatorUpdated: BigInt!
 
@@ -1026,7 +1028,7 @@ type agToken @entity {
   # Address of the owner + address of the token
   id: ID!
   owner: String!
-  token: Token!
+  token: String!
   stableName: String
   balance: BigDecimal!
   staked: BigDecimal!
@@ -1047,7 +1049,7 @@ type externalToken @entity {
   # Address of the owner + address of the token
   id: ID!
   owner: String!
-  token: Token!
+  token: String!
   name: String
   balance: BigDecimal!
   staked: BigDecimal!
@@ -1064,7 +1066,7 @@ type CapitalGain @entity {
 type KeeperReward @entity {
   # Tx hash
   id: ID!
-  token: Token!
+  token: String!
   reward: BigDecimal
   address: String
   timestamp: BigInt
@@ -1165,6 +1167,7 @@ type PerpetualClose @entity {
   perpetualID: BigInt
   closeAmount: BigDecimal
   margin: BigDecimal
+  fees: BigDecimal
   collatName: String
   stableName: String
   timestamp: BigInt
@@ -1178,7 +1181,7 @@ type Stake @entity {
   transactionId: String!
   amount: BigDecimal
   sender: String
-  stakedToken: Token!
+  stakedToken: String!
   timestamp: BigInt
   blockNumber: BigInt
 }
@@ -1189,7 +1192,7 @@ type Unstake @entity {
   transactionId: String!
   amount: BigDecimal
   sender: String
-  stakedToken: String
+  stakedToken: String!
   decimals: String
   timestamp: BigInt
   blockNumber: BigInt

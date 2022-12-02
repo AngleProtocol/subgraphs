@@ -15,7 +15,7 @@ import {
   FeeData
 } from '../../generated/schema'
 import { getToken, historicalSlice, parseOracleDescription } from './utils'
-import { BASE_INTEREST, DECIMAL_PARAMS, DECIMAL_TOKENS, MAX_DECIMAL, ZERO_BD, ONE_BD } from '../../../constants'
+import { DECIMAL_PARAMS, DECIMAL_TOKENS, MAX_DECIMAL, ZERO_BD, ONE_BD, DECIMAL_INTEREST } from '../../../constants'
 import { VeBoostProxy } from '../../generated/templates/VaultManagerTemplate/VeBoostProxy'
 import { ActionCounter } from '../../generated/schema'
 import { convertTokenToDecimal } from '../utils'
@@ -65,29 +65,27 @@ export function computeLiquidationDiscount(
 
 export function computeDebt(
   normalizedDebt: BigDecimal,
-  ratePerSecond: BigInt,
-  interestAccumulator: BigInt,
+  ratePerSecond: BigDecimal,
+  interestAccumulator: BigDecimal,
   lastInterestAccumulatorUpdated: BigInt,
   timestamp: BigInt
 ): BigDecimal {
-  const exp = timestamp.minus(lastInterestAccumulatorUpdated)
+  const exp = convertTokenToDecimal(timestamp.minus(lastInterestAccumulatorUpdated), ZERO)
   let currentInterestAccumulator = interestAccumulator
-  if (!exp.isZero() && !ratePerSecond.isZero()) {
-    const ZERO = BigInt.fromI32(0)
-    const ONE = BigInt.fromI32(1)
-    const TWO = BigInt.fromI32(2)
-    const SIX = BigInt.fromI32(6)
-    const HALF_BASE_INTEREST = BASE_INTEREST.div(TWO)
+  if (!exp.equals(ZERO_BD) && !ratePerSecond.equals(ZERO_BD)) {
+    const ZERO = ZERO_BD
+    const ONE = ONE_BD
+    const TWO = BigDecimal.fromString('2')
+    const SIX = BigDecimal.fromString('6')
+    const HALF_BASE_INTEREST = ONE_BD.div(TWO)
     const expMinusOne = exp.minus(ONE)
     const expMinusTwo = exp.gt(TWO) ? exp.minus(TWO) : ZERO
     const basePowerTwo = ratePerSecond
       .times(ratePerSecond)
       .plus(HALF_BASE_INTEREST)
-      .div(BASE_INTEREST)
     const basePowerThree = basePowerTwo
       .times(ratePerSecond)
       .plus(HALF_BASE_INTEREST)
-      .div(BASE_INTEREST)
     const secondTerm = exp
       .times(expMinusOne)
       .times(basePowerTwo)
@@ -99,13 +97,12 @@ export function computeDebt(
       .div(SIX)
     currentInterestAccumulator = interestAccumulator
       .times(
-        BASE_INTEREST.plus(ratePerSecond.times(exp))
+        ONE_BD.plus(ratePerSecond.times(exp))
           .plus(secondTerm)
           .plus(thirdTerm)
       )
-      .div(BASE_INTEREST)
   }
-  return normalizedDebt.times(convertTokenToDecimal(currentInterestAccumulator, DECIMAL_PARAMS.plus(DECIMAL_TOKENS)))
+  return normalizedDebt.times(currentInterestAccumulator)
 }
 
 export function computeHealthFactor(
@@ -181,7 +178,7 @@ export function _initVaultManager(address: Address, block: ethereum.Block): void
   log.warning('=== collat {}, euro {}', [data.collateralTicker, data.agTokenTicker])
   data.treasury = vaultManager.treasury().toHexString()
   data.collateralAmount = convertTokenToDecimal(collateralContract.balanceOf(address), collateralInfo.decimals)
-  data.interestAccumulator = vaultManager.interestAccumulator()
+  data.interestAccumulator = convertTokenToDecimal(vaultManager.interestAccumulator(), DECIMAL_INTEREST)
   data.lastInterestAccumulatorUpdated = vaultManager.lastInterestAccumulatorUpdated()
   // values known at init
   data.totalDebt = ZERO_BD
@@ -215,7 +212,7 @@ export function _initVaultManager(address: Address, block: ethereum.Block): void
   data.targetHealthFactor = convertTokenToDecimal(vaultManager.targetHealthFactor(), DECIMAL_PARAMS)
   data.borrowFee = convertTokenToDecimal(vaultManager.borrowFee(), DECIMAL_PARAMS)
   data.repayFee = convertTokenToDecimal(vaultManager.repayFee(), DECIMAL_PARAMS)
-  data.interestRate = vaultManager.interestRate()
+  data.interestRate = convertTokenToDecimal(vaultManager.interestRate(), DECIMAL_INTEREST)
   data.liquidationSurcharge = convertTokenToDecimal(vaultManager.liquidationSurcharge(), DECIMAL_PARAMS)
   data.maxLiquidationDiscount = convertTokenToDecimal(vaultManager.maxLiquidationDiscount(), DECIMAL_PARAMS)
   data.blockNumber = block.number
@@ -283,6 +280,11 @@ export function _addVaultManagerDataToHistory(data: VaultManagerData, block: eth
     if (feeDataHistorical == null) {
       feeDataHistorical = new FeeHistoricalData(roundedTimestamp)
     }
+    feeDataHistorical.totalProtocolFees = feeData.totalProtocolFees
+    feeDataHistorical.totalKeeperFees = feeData.totalKeeperFees
+    feeDataHistorical.totalSLPFees = feeData.totalSLPFees
+    feeDataHistorical.totalProtocolInterests = feeData.totalProtocolInterests
+    feeDataHistorical.totalSLPInterests = feeData.totalSLPInterests
     feeDataHistorical.surplusFromInterests = feeData.surplusFromInterests
     feeDataHistorical.surplusFromBorrowFees = feeData.surplusFromBorrowFees
     feeDataHistorical.surplusFromRepayFees = feeData.surplusFromRepayFees

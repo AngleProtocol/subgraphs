@@ -178,6 +178,10 @@ export function _updateGainPoolData(
   feeDataHistorical.totalSLPFees = tmpTotalSLPFees
   feeDataHistorical.totalProtocolInterests = tmpTotalProtocolInterests
   feeDataHistorical.totalSLPInterests = tmpTotalSLPInterests
+  feeDataHistorical.surplusFromInterests = feeData.surplusFromInterests
+  feeDataHistorical.surplusFromBorrowFees = feeData.surplusFromBorrowFees
+  feeDataHistorical.surplusFromRepayFees = feeData.surplusFromRepayFees
+  feeDataHistorical.surplusFromLiquidationSurcharges = feeData.surplusFromLiquidationSurcharges
   feeDataHistorical.timestamp = block.timestamp
   feeDataHistorical.blockNumber = block.number
 
@@ -228,7 +232,7 @@ export function _updatePoolData(
     data.collateral = token._address.toHexString()
   } else {
     stablecoinInfo = getToken(Address.fromString(data.stablecoin))
-    collateralInfo = getToken(Address.fromString(data.stablecoin))
+    collateralInfo = getToken(Address.fromString(data.collateral))
     // just in case it changes but it can't happen
     data.perpetualManager = perpetualManager._address.toHexString()
   }
