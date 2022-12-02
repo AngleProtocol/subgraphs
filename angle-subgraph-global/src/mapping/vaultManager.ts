@@ -166,10 +166,10 @@ export function handleInternalDebtUpdated(event: InternalDebtUpdated): void {
   // Not null only when processing a debt transfer
   let dataOngoingDebtTransfer = OngoingDebtTransfer.load(idOngoingDebtTransfer)
 
-  const internalAmountDeciaml = convertTokenToDecimal(event.params.internalAmount, agTokenInfo.decimals)
+  const internalAmountDecimal = convertTokenToDecimal(event.params.internalAmount, agTokenInfo.decimals)
   // compute non-normalized debt variation
   const debtVariation = computeDebt(
-    internalAmountDeciaml,
+    internalAmountDecimal,
     dataVM.interestRate,
     dataVM.interestAccumulator,
     dataVM.lastInterestAccumulatorUpdated,
@@ -181,9 +181,9 @@ export function handleInternalDebtUpdated(event: InternalDebtUpdated): void {
   const agTokenPriceInUSD = OracleData.load(OracleByTicker.load(dataVM.agTokenTicker)!.oracle)!
 
   if (event.params.isIncrease) {
-    dataVM.totalNormalizedDebt = dataVM.totalNormalizedDebt.plus(internalAmountDeciaml)
+    dataVM.totalNormalizedDebt = dataVM.totalNormalizedDebt.plus(internalAmountDecimal)
     dataVM.totalDebt = dataVM.totalDebt.plus(debtVariation)
-    dataVault.normalizedDebt = dataVault.normalizedDebt.plus(internalAmountDeciaml)
+    dataVault.normalizedDebt = dataVault.normalizedDebt.plus(internalAmountDecimal)
 
     if (dataOngoingDebtTransfer == null) {
       // General case: compute borrow fee and add it to VM surplus and global surplus
@@ -230,9 +230,9 @@ export function handleInternalDebtUpdated(event: InternalDebtUpdated): void {
     }
   } else {
     // Debt decrease
-    dataVM.totalNormalizedDebt = dataVM.totalNormalizedDebt.minus(internalAmountDeciaml)
+    dataVM.totalNormalizedDebt = dataVM.totalNormalizedDebt.minus(internalAmountDecimal)
     dataVM.totalDebt = dataVM.totalDebt.minus(debtVariation)
-    dataVault.normalizedDebt = dataVault.normalizedDebt.minus(internalAmountDeciaml)
+    dataVault.normalizedDebt = dataVault.normalizedDebt.minus(internalAmountDecimal)
 
     if (dataOngoingDebtTransfer == null) {
       // Check if this debt decrease is caused by a liquidation
