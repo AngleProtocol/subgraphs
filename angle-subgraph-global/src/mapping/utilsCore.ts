@@ -5,7 +5,7 @@ import { SanToken } from '../../generated/templates/StableMasterTemplate/SanToke
 import { AgToken as AgTokenContract } from '../../generated/templates/StableMasterTemplate/AgToken'
 import { PoolManager } from '../../generated/templates/StableMasterTemplate/PoolManager'
 import { PerpetualManagerFront } from '../../generated/templates/StableMasterTemplate/PerpetualManagerFront'
-import { Oracle } from '../../generated/templates/StableMasterTemplate/Oracle'
+import { Oracle } from '../../generated/templates/AgTokenTemplate/Oracle'
 import { PoolData, StableData, StableHistoricalData, PoolHistoricalData, Perpetual, FeeData, OracleByTicker, FeeHistoricalData, OracleCoreData, OracleAPRCoreHistoricalData, Token } from '../../generated/schema'
 import { BLOCK_UPDATE_POOL_MANAGER_ESTIMATED_APR, DECIMAL_PARAMS, ZERO_BD, ONE_BD, DECIMAL_TOKENS } from '../../../constants'
 import { PerpetualOpened } from '../../generated/templates/PerpetualManagerFrontTemplate/PerpetualManagerFront'
