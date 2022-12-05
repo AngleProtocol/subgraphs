@@ -1,5 +1,5 @@
 specVersion: 0.0.2
-description: General pool, stable datas and all transactions on {{network}}.
+description: Angle subgraph on {{network}}.
 schema:
   file: ./schema.graphql
 dataSources:
@@ -8,8 +8,8 @@ dataSources:
     network: {{network}}
     source:
       address: '{{angle}}'
-      abi: ERC20Votes
-      startBlock: {{block}}
+      abi: ERC20
+      startBlock: {{block_angle}}
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.5
@@ -17,8 +17,8 @@ dataSources:
       entities:
         - ANGLE
       abis:
-        - name: ERC20Votes
-          file: ../abis/ERC20Votes.json
+        - name: ERC20
+          file: ../abis/ERC20.json
       eventHandlers:
         - event: Transfer(indexed address,indexed address,uint256)
           handler: handleTransfer
@@ -37,16 +37,17 @@ dataSources:
       entities:
         - VaultManagerData
         - VaultManagerHistoricalData
-        - AgToken
       abis:
         - name: AgToken
           file: ../abis/AgToken.json
-        - name: ERC20
-          file: ../abis/ERC20.json
         - name: Treasury
           file: ../abis/Treasury.json
+        - name: ERC20
+          file: ../abis/ERC20.json
         - name: Oracle
           file: ../abis/OracleMultiWithDesc.json
+        - name: ChainlinkProxy
+          file: ../abis/ChainlinkProxy.json
       eventHandlers:
         - event: Transfer(indexed address,indexed address,uint256)
           handler: handleTransfer
@@ -72,6 +73,8 @@ dataSources:
       abis:
         - name: ChainlinkFeed
           file: ../abis/Chainlink.json
+        - name: ChainlinkProxy
+          file: ../abis/ChainlinkProxy.json
       eventHandlers:
         - event: AnswerUpdated(indexed int256,indexed uint256,uint256)
           handler: handleAnswerUpdated
@@ -93,6 +96,8 @@ dataSources:
       abis:
         - name: ChainlinkFeed
           file: ../abis/Chainlink.json
+        - name: ChainlinkProxy
+          file: ../abis/ChainlinkProxy.json
       eventHandlers:
         - event: AnswerUpdated(indexed int256,indexed uint256,uint256)
           handler: handleAnswerUpdated
@@ -114,6 +119,8 @@ dataSources:
       abis:
         - name: ChainlinkFeed
           file: ../abis/Chainlink.json
+        - name: ChainlinkProxy
+          file: ../abis/ChainlinkProxy.json
       eventHandlers:
         - event: AnswerUpdated(indexed int256,indexed uint256,uint256)
           handler: handleAnswerUpdated
@@ -135,6 +142,8 @@ dataSources:
       abis:
         - name: ChainlinkFeed
           file: ../abis/Chainlink.json
+        - name: ChainlinkProxy
+          file: ../abis/ChainlinkProxy.json
       eventHandlers:
         - event: AnswerUpdated(indexed int256,indexed uint256,uint256)
           handler: handleAnswerUpdated
@@ -156,10 +165,34 @@ dataSources:
       abis:
         - name: ChainlinkFeed
           file: ../abis/Chainlink.json
+        - name: ChainlinkProxy
+          file: ../abis/ChainlinkProxy.json
       eventHandlers:
         - event: AnswerUpdated(indexed int256,indexed uint256,uint256)
           handler: handleAnswerUpdated
       file: ./src/mapping/chainlink.ts
+  - kind: ethereum/contract
+    name: FlashAngle
+    network: {{network}}
+    source:
+      address: '{{flashAngle}}'
+      abi: FlashAngle
+      startBlock: {{block_oracle}}
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - FlashLoanData
+      abis:
+        - name: FlashAngle
+          file: ../abis/FlashAngle.json
+        - name: ERC20
+          file: ../abis/ERC20.json
+      eventHandlers:
+        - event: FlashLoan(indexed address,uint256,indexed address)
+          handler: handleFlashLoan
+      file: ./src/mapping/flashAngle.ts
 templates:
   - kind: ethereum/contract
     name: AgTokenTemplate
@@ -189,9 +222,17 @@ templates:
           file: ../abis/PerpetualManagerFront.json
         - name: SanToken
           file: ../abis/SanToken.json
+        - name: stETH
+          file: ../abis/stETH.json
+        - name: Treasury
+          file: ../abis/Treasury.json
       eventHandlers:
         - event: Transfer(indexed address,indexed address,uint256)
           handler: handleTransfer
+        - event: TreasuryUpdated(indexed address)
+          handler: handleTreasuryUpdated
+        - event: MinterToggled(indexed address)
+          handler: handleMinterToggled
       file: ./src/mapping/agToken.ts
   - kind: ethereum/contract
     name: ChainlinkTemplate
@@ -210,74 +251,12 @@ templates:
           file: ../abis/Chainlink.json
         - name: ChainlinkProxy
           file: ../abis/ChainlinkProxy.json
+        - name: ERC20
+          file: ../abis/ERC20.json
       eventHandlers:
         - event: AnswerUpdated(indexed int256,indexed uint256,uint256)
           handler: handleAnswerUpdated
       file: ./src/mapping/chainlink.ts
-  - kind: ethereum/contract
-    name: SanTokenTemplate
-    network: {{network}}
-    source:
-      abi: SanToken
-    mapping:
-      kind: ethereum/events
-      apiVersion: 0.0.5
-      language: wasm/assemblyscript
-      entities:
-        - StableData
-        - StableHistoricalData
-        - StableHistoricalHourlyData
-      abis:
-        - name: SanToken
-          file: ../abis/SanToken.json
-        - name: PoolManager
-          file: ../abis/PoolManager.json
-        - name: ERC20
-          file: ../abis/ERC20.json
-        - name: StableMaster
-          file: ../abis/StableMasterFront.json
-        - name: Oracle
-          file: ../abis/OracleMultiWithDesc.json
-        - name: PerpetualManagerFront
-          file: ../abis/PerpetualManagerFront.json
-        - name: AgToken
-          file: ../abis/AgToken.json
-      eventHandlers:
-        - event: Transfer(indexed address,indexed address,uint256)
-          handler: handleTransfer
-      file: ./src/mapping/sanToken.ts
-  - kind: ethereum/contract
-    name: StableMasterTemplate
-    network: {{network}}
-    source:
-      abi: StableMaster
-    mapping:
-      kind: ethereum/events
-      apiVersion: 0.0.5
-      language: wasm/assemblyscript
-      entities:
-        - PauseData
-        - StableData
-        - StableHistoricalHourlyData
-      abis:
-        - name: StableMaster
-          file: ../abis/StableMasterFront.json
-        - name: PoolManager
-          file: ../abis/PoolManager.json
-        - name: ERC20
-          file: ../abis/ERC20.json
-        - name: Oracle
-          file: ../abis/OracleMultiWithDesc.json
-        - name: PerpetualManagerFront
-          file: ../abis/PerpetualManagerFront.json
-        - name: SanToken
-          file: ../abis/SanToken.json
-        - name: AgToken
-          file: ../abis/AgToken.json
-      eventHandlers:
-        - event: CollateralDeployed(indexed address,indexed address,indexed address,address)
-          handler: handleCollateralDeployed
-      file: ./src/mapping/stableMaster.ts
   - kind: ethereum/contract
     name: TreasuryTemplate
     network: {{network}}
@@ -301,6 +280,10 @@ templates:
           file: ../abis/ERC20.json
         - name: Oracle
           file: ../abis/OracleMultiWithDesc.json
+        - name: ChainlinkProxy
+          file: ../abis/ChainlinkProxy.json
+        - name: ChainlinkFeed
+          file: ../abis/Chainlink.json
       eventHandlers:
         - event: BadDebtUpdated(uint256)
           handler: handleBadDebtUpdated
@@ -336,6 +319,8 @@ templates:
           file: ../abis/ERC20.json
         - name: Oracle
           file: ../abis/OracleMultiWithDesc.json
+        - name: ChainlinkFeed
+          file: ../abis/Chainlink.json
       eventHandlers:
         - event: AccruedToTreasury(uint256,uint256)
           handler: handleAccruedToTreasury

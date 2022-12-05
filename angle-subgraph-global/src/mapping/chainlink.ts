@@ -9,8 +9,7 @@ import {
 } from '../../../constants'
 import { OracleByTicker, OracleData, VaultManagerData, VaultManagerList, VaultData } from '../../generated/schema'
 import { AnswerUpdated, ChainlinkFeed } from '../../generated/templates/ChainlinkTemplate/ChainlinkFeed'
-import { stETH } from '../../generated/Chainlink5/stETH'
-import { _initTreasury } from './treasuryHelpers'
+import { stETH } from '../../generated/templates/AgTokenTemplate/stETH'
 import {
   computeDebt,
   computeHealthFactor,
@@ -96,6 +95,8 @@ function updateVaults(block: ethereum.Block, newOracleValue: BigDecimal, dataVM:
     // let's skip burned vaults
     if (dataVault.isActive) {
       const previousDebt = dataVault.debt
+
+      // TODO uncomment when bug is found
       // update debt with interests
       dataVault.debt = computeDebt(
         dataVault.normalizedDebt,
@@ -113,6 +114,7 @@ function updateVaults(block: ethereum.Block, newOracleValue: BigDecimal, dataVM:
         dataVault.debt,
         dataVM.collateralFactor
       )
+
       dataVault.timestamp = block.timestamp
       dataVault.blockNumber = block.number
       dataVault.save()

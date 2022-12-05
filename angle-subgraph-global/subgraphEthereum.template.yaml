@@ -286,6 +286,8 @@ templates:
           file: ../abis/PerpetualManagerFront.json
         - name: SanToken
           file: ../abis/SanToken.json
+        - name: stETH
+          file: ../abis/stETH.json
         - name: Treasury
           file: ../abis/Treasury.json
       eventHandlers:

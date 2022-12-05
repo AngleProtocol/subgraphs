@@ -4,8 +4,9 @@ import { StableMasterTemplate } from '../../generated/templates'
 import { StableMasterDeployed } from '../../generated/Core/Core'
 import { StableMaster } from '../../generated/templates/StableMasterTemplate/StableMaster'
 
-import { historicalSlice, updateStableData } from './utils'
+import { updateStableData } from './utilsCore'
 import { FeeData, FeeHistoricalData } from '../../generated/schema'
+import { historicalSlice } from './utils'
 
 export function handleStableMasterDeployed(event: StableMasterDeployed): void {
   log.warning('+++++ core: {}, {}', [event.address.toHexString(), event.params._agToken.toHexString()])

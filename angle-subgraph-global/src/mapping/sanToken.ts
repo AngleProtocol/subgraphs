@@ -5,9 +5,10 @@ import { ERC20, Transfer } from '../../generated/templates/SanTokenTemplate/ERC2
 import { StableMaster } from '../../generated/templates/StableMasterTemplate/StableMaster'
 import { SanToken } from '../../generated/templates/SanTokenTemplate/SanToken'
 
-import { getToken, updateOracleData, updateStableData, _updatePoolData } from './utils'
+import { updateOracleData, updateStableData, _updatePoolData } from './utilsCore'
 import { DECIMAL_PARAMS, DECIMAL_TOKENS, ONE_BD, ZERO_BD } from '../../../constants'
 import { convertTokenToDecimal } from '../utils'
+import { getToken } from './utils'
 
 function isBurn(event: Transfer): boolean {
   return event.params.to.equals(Address.fromString('0x0000000000000000000000000000000000000000'))

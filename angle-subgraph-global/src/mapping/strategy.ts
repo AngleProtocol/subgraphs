@@ -1,11 +1,11 @@
 import { BigInt, store, BigDecimal, Address } from '@graphprotocol/graph-ts'
 import { PoolManager } from '../../generated/templates/StableMasterTemplate/PoolManager'
 import { Harvested, RemoveLender, Strategy } from '../../generated/templates/StrategyTemplate/Strategy'
-import { getToken, _updateGainPoolData, _updatePoolData } from './utils'
+import { _updateGainPoolData, _updatePoolData } from './utilsCore'
 import { DECIMAL_PARAMS, DECIMAL_TOKENS, ONE_BD, ZERO_BD } from '../../../constants'
 import { Lender } from '../../generated/templates/StrategyTemplate/Lender'
 import { StrategyData, StrategyHistoricalData, LenderData, PoolData } from '../../generated/schema'
-import { historicalSlice } from './utils'
+import { historicalSlice, getToken } from './utils'
 import { convertTokenToDecimal } from '../utils'
 
 export function handleHarvest(event: Harvested): void {

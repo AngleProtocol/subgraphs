@@ -1,5 +1,6 @@
 {
   "network": "matic",
+  "angle": "0x900F717EA076E1E7a484ad9DD2dB81CEEc60eBF1",
   "chainlink_ETH_USD": "0x4dd6655ad5ed7c06c882f496e3f42ace5766cb89",
   "chainlink_BTC_USD": "0x9b489F7Fffa89EA450E3121603e79d9093a9396E",
   "chainlink_MATIC_USD": "0x1278c74c3b2f8c3bca0089b4e128faf023615ecf",
@@ -8,5 +9,6 @@
   "ageur": "0xe0b52e49357fd4daf2c15e02058dce6bc0057db4",
   "flashAngle": "0x2878596427bfA6b52Fa6D93B519A0c610bbDf00a",
   "block_ageur": 30216427,
-  "block_oracle": 30126427
+  "block_oracle": 30126427,
+  "block_angle": 21711545
 }

@@ -14,11 +14,12 @@ import { PerpetualManagerFront } from '../../generated/templates/StableMasterTem
 import { FeeManagerTemplate, PerpetualManagerFrontTemplate, SanTokenTemplate } from '../../generated/templates'
 import { PauseData, PoolData, Contracts, Mint, Burn } from '../../generated/schema'
 
-import { getToken, updateOracleData, updateStableData, _getBurnFee, _getMintFee, _trackNewChainlinkOracle, _updateGainPoolData, _updatePoolData } from './utils'
+import { updateOracleData, updateStableData, _getBurnFee, _getMintFee, _updateGainPoolData, _updatePoolData } from './utilsCore'
 import { ERCManagerFrontTemplate } from '../../../angle-subgraph-transaction/generated/templates'
-import { Oracle } from '../../generated/templates/StableMasterTemplate/Oracle'
+import { Oracle } from '../../generated/templates/AgTokenTemplate/Oracle'
 import { convertTokenListToDecimal, convertTokenToDecimal } from '../utils'
 import { DECIMAL_PARAMS, ZERO_BD } from '../../../constants'
+import { getToken, _trackNewChainlinkOracle } from './utils'
 
 function updatePoolData(
   poolManager: PoolManager,

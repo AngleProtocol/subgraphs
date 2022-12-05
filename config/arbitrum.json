@@ -1,5 +1,6 @@
 {
   "network": "arbitrum-one",
+  "angle": "0x656B80B667a46869144047E6e6C0000C81610253",
   "chainlink_ETH_USD": "0x3607e46698d218b3a5cae44bf381475c0a5e2ca7",
   "chainlink_BTC_USD": "0x942d00008d658dbb40745bbec89a93c253f9b882",
   "chainlink_USDC_USD": "0x2946220288dbbf77df0030fcecc2a8348cbbe32c",
@@ -7,5 +8,6 @@
   "ageur": "0xFA5Ed56A203466CbBC2430a43c66b9D8723528E7",
   "flashAngle": "0x59153e939c5b4721543251ff3049Ea04c755373B",
   "block_ageur": 16962105,
-  "block_oracle": 16882105
+  "block_oracle": 16882105,
+  "block_angle": 16962105
 }

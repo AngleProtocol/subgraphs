@@ -90,6 +90,14 @@ export function handleCollateralAmountUpdated(event: CollateralAmountUpdated): v
   action.vaultID = dataVault.vaultID
   action.owner = dataVault.owner
   action.amountUpdate = collateralAmountDecimal
+
+  // TODO uncomment when bug is found
+  log.warning("failing debt {}, {}, {}, {} ", [dataVault.normalizedDebt.toString(),
+  dataVM.interestRate.toString(),
+  dataVM.interestAccumulator.toString(),
+  dataVM.lastInterestAccumulatorUpdated.toString(),
+  event.block.timestamp.toString()])
+
   // update debt with interests
   dataVault.debt = computeDebt(
     dataVault.normalizedDebt,
@@ -105,6 +113,7 @@ export function handleCollateralAmountUpdated(event: CollateralAmountUpdated): v
     dataVault.debt,
     dataVM.collateralFactor
   )
+
   dataVM.tvl = computeTVL(dataVM.collateralAmount, dataVM.collateralTicker)
   action.txOrigin = event.transaction.from.toHexString()
   action.txTarget = event.transaction.to!.toHexString()

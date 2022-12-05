@@ -31,10 +31,10 @@ import {
   _updateGainPoolData,
   _getFeesOpenPerp,
   updateOracleData,
-  getToken
-} from './utils'
+} from './utilsCore'
 import { DECIMAL_PARAMS, DECIMAL_TOKENS, ONE_BD, ZERO_BD } from '../../../constants'
 import { convertTokenListToDecimal, convertTokenToDecimal } from '../utils'
+import { getToken } from './utils'
 
 function updatePoolData(poolManager: PoolManager, block: ethereum.Block, add: boolean, margin: BigDecimal): void {
   const data = _updatePoolData(poolManager, block, add, margin)
