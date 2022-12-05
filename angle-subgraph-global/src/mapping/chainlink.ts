@@ -96,7 +96,6 @@ function updateVaults(block: ethereum.Block, newOracleValue: BigDecimal, dataVM:
     if (dataVault.isActive) {
       const previousDebt = dataVault.debt
 
-      // TODO uncomment when bug is found
       // update debt with interests
       dataVault.debt = computeDebt(
         dataVault.normalizedDebt,

@@ -49,7 +49,6 @@ export function computeLiquidationDiscount(
   }
 
   const collateralBeforeLiquidation = dataLiquidation.collateralBought.plus(dataVault.collateralAmount)
-  // log.warning(" === {} {} {} {} {}", [collateralBeforeLiquidation.toString(), dataVM.collateralBase.toString(), dataLiquidation.oraclePrice.toString(), dataVault.debt.toString(), dataVM.collateralFactor.toString()])
   const healthFactor = computeHealthFactor(
     collateralBeforeLiquidation,
     dataLiquidation.oraclePrice,
@@ -73,13 +72,11 @@ export function computeDebt(
   const exp = convertTokenToDecimal(timestamp.minus(lastInterestAccumulatorUpdated), ZERO)
   let currentInterestAccumulator = interestAccumulator
   if (!exp.equals(ZERO_BD) && !ratePerSecond.equals(ZERO_BD)) {
-    const ZERO = ZERO_BD
-    const ONE = ONE_BD
     const TWO = BigDecimal.fromString('2')
     const SIX = BigDecimal.fromString('6')
-    const HALF_BASE_INTEREST = ONE_BD.div(TWO)
-    const expMinusOne = exp.minus(ONE)
-    const expMinusTwo = exp.gt(TWO) ? exp.minus(TWO) : ZERO
+    const HALF_BASE_INTEREST = convertTokenToDecimal(ONE, DECIMAL_INTEREST).div(TWO)
+    const expMinusOne = exp.minus(ONE_BD)
+    const expMinusTwo = exp.gt(TWO) ? exp.minus(TWO) : ZERO_BD
     const basePowerTwo = ratePerSecond
       .times(ratePerSecond)
       .plus(HALF_BASE_INTEREST)
@@ -172,7 +169,7 @@ export function _initVaultManager(address: Address, block: ethereum.Block): void
   data.collateral = vaultManager.collateral().toHexString()
   data.oracle = oracle._address.toHexString()
   data.collateralBase = BigInt.fromI32(10).pow(collateralContract.decimals() as u8)
-  data.dust = convertTokenToDecimal(vaultManager.dust(), collateralInfo.decimals)
+  data.dust = convertTokenToDecimal(vaultManager.dust(), agTokenInfo.decimals)
   data.collateralTicker = tokens[0]
   data.agTokenTicker = tokens[1]
   log.warning('=== collat {}, euro {}', [data.collateralTicker, data.agTokenTicker])

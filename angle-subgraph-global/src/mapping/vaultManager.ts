@@ -1,4 +1,4 @@
-import { Address, BigInt, store } from '@graphprotocol/graph-ts'
+import { Address, BigDecimal, BigInt, store } from '@graphprotocol/graph-ts'
 import {
   VaultManager,
   AccruedToTreasury,
@@ -91,14 +91,8 @@ export function handleCollateralAmountUpdated(event: CollateralAmountUpdated): v
   action.owner = dataVault.owner
   action.amountUpdate = collateralAmountDecimal
 
-  // TODO uncomment when bug is found
-  log.warning("failing debt {}, {}, {}, {} ", [dataVault.normalizedDebt.toString(),
-  dataVM.interestRate.toString(),
-  dataVM.interestAccumulator.toString(),
-  dataVM.lastInterestAccumulatorUpdated.toString(),
-  event.block.timestamp.toString()])
 
-  // update debt with interests
+  // // update debt with interests
   dataVault.debt = computeDebt(
     dataVault.normalizedDebt,
     dataVM.interestRate,
