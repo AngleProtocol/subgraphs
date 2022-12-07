@@ -158,6 +158,8 @@ templates:
           file: ../abis/ERC20.json
         - name: Oracle
           file: ../abis/OracleBorrowingModule.json
+        - name: ChainlinkFeed
+          file: ../abis/Chainlink.json
         - name: ChainlinkProxy
           file: ../abis/ChainlinkProxy.json
       eventHandlers:
