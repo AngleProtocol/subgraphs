@@ -1,4 +1,4 @@
-import { Address, ethereum, crypto, Bytes, ByteArray, BigInt, BigDecimal } from '@graphprotocol/graph-ts'
+import { Address, ethereum, crypto, Bytes, ByteArray, BigInt, BigDecimal, log } from '@graphprotocol/graph-ts'
 import {
   Paused,
   Unpaused,
@@ -20,6 +20,7 @@ import { Oracle } from '../../generated/templates/AgTokenTemplate/Oracle'
 import { convertTokenListToDecimal, convertTokenToDecimal } from '../utils'
 import { DECIMAL_PARAMS, ZERO_BD } from '../../../constants'
 import { getToken, _trackNewChainlinkOracle } from './utils'
+import { StableData } from '../../generated/schema'
 
 function updatePoolData(
   poolManager: PoolManager,
@@ -57,6 +58,13 @@ export function handleCollateralDeployed(event: CollateralDeployed): void {
   const data = _updatePoolData(poolManager, block)
 
   const id = poolManager._address.toHexString()
+
+  const stableDataId = stableMaster._address.toHexString()
+  let stableData = StableData.load(stableDataId)!
+  let poolsList = stableData.poolsAddress
+  poolsList.push(id)
+  stableData.poolsAddress = poolsList
+  stableData.save()
 
   let pauseData = PauseData.load(id)
   if (pauseData == null) {
@@ -195,7 +203,7 @@ export function handleMint(event: MintedStablecoins): void {
   const amount = convertTokenToDecimal(event.params.amount, collateralInfo.decimals)
 
   updateOracleData(poolManager, event.block)
-  const fees = _getMintFee(stableMaster, poolManager, amount)
+  const fees = _getMintFee(poolManager, amount)
   updateStableData(stableMaster, event.block)
   updatePoolData(poolManager, event.block, fees[0], fees[1])
 
@@ -231,7 +239,7 @@ export function handleBurn(event: BurntStablecoins): void {
   const amount = convertTokenToDecimal(event.params.amount, stablecoinInfo.decimals)
 
   updateOracleData(poolManager, event.block)
-  const fees = _getBurnFee(stableMaster, poolManager, amount)
+  const fees = _getBurnFee(poolManager, amount)
   updateStableData(stableMaster, event.block)
   updatePoolData(poolManager, event.block, fees[0], fees[1])
 

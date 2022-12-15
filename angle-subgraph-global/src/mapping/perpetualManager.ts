@@ -196,7 +196,7 @@ export function handleForceClose(event: PerpetualsForceClosed): void {
       if (netCashOutAmount.gt(ZERO_BD)) {
         totalCloseFee = totalCloseFee.plus(_getFeesClosePerp(perpetualManager, poolManager._address, data))
       } else {
-        const fees = _getFeesLiquidationPerp(perpetualManager, poolManager._address, data, collateralInfo)
+        const fees = _getFeesLiquidationPerp(poolManager._address, data, collateralInfo)
         totalKeeperLiquidationFee = totalKeeperLiquidationFee.plus(fees[1])
         totalProtocolLiquidationFee = totalProtocolLiquidationFee.plus(fees[0])
       }

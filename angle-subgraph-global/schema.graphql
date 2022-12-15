@@ -10,12 +10,16 @@ type StableData @entity {
   id: ID!
   # Name of the stable asset
   name: String!
-  # Number of collaterals
-  collaterals: [PoolData!]! @derivedFrom(field: "stableMaster")
+  # Links to collateals
+  collaterals: [PoolData!] @derivedFrom(field: "stableMaster")
+  # Duplicate as you can't query the derived fields when syncing https://github.com/graphprotocol/graph-ts/issues/219
+  poolsAddress: [String!]!
   # Collateral Ratio
   collatRatio: BigDecimal!
   # Total assets minted
   totalMinted: BigDecimal!
+  # Total Value Locked
+  tvl: BigDecimal!
   # BlockNumber of last update
   blockNumber: BigInt!
   # Timestamp of last update
@@ -32,6 +36,8 @@ type StableHistoricalData @entity {
   # Total assets minted
   totalMinted: BigDecimal!
   # BlockNumber
+  # Total Value Locked
+  tvl: BigDecimal!
   blockNumber: BigInt!
   # Timestamp of last update
   timestamp: BigInt!

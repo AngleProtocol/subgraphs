@@ -50,11 +50,11 @@ export function handleAccruedToTreasury(event: AccruedToTreasury): void {
   log.warning('++++ AccruedToTreasury', [])
   const id = event.address.toHexString()
   let data = VaultManagerData.load(id)!
-  const collateralInfo = getToken(Address.fromString(data.collateral))
+  const stablecoinInfo = getToken(Address.fromString(data.agToken))
   data.pendingSurplus = ZERO_BD
   data.pendingBadDebt = ZERO_BD
-  data.surplus = data.surplus.plus(convertTokenToDecimal(event.params.surplusEndValue, collateralInfo.decimals))
-  data.badDebt = data.badDebt.plus(convertTokenToDecimal(event.params.badDebtEndValue, collateralInfo.decimals))
+  data.surplus = data.surplus.plus(convertTokenToDecimal(event.params.surplusEndValue, stablecoinInfo.decimals))
+  data.badDebt = data.badDebt.plus(convertTokenToDecimal(event.params.badDebtEndValue, stablecoinInfo.decimals))
   data.profits = data.surplus.minus(data.badDebt)
   data.timestamp = event.block.timestamp
   data.blockNumber = event.block.number

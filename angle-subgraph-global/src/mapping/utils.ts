@@ -94,7 +94,7 @@ export function _initAggregator(feed: ChainlinkFeed, timestamp: BigInt): void {
     if (tokens[0] == "STETH") {
         dataOracle.tokenTicker = "wSTETH"
         quoteAmount = stETH.bind(Address.fromString(STETH_ADDRESS)).getPooledEthByShares(BASE_TOKENS)
-    }
+    } else if (tokens[0] == "MIMATIC") dataOracle.tokenTicker = "MAI"
     dataOracle.price = convertTokenToDecimal(quoteAmount, DECIMAL_TOKENS).times(convertTokenToDecimal(feed.latestAnswer(), decimals))
     dataOracle.decimals = decimals
     dataOracle.timestamp = timestamp

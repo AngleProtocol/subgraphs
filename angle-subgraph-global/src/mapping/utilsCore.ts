@@ -24,6 +24,7 @@ export function updateStableData(stableMaster: StableMaster, block: ethereum.Blo
   let data = StableData.load(id)
   if (data == null) {
     data = new StableData(id)
+    data.poolsAddress = []
   }
 
   const name = stablecoinInfo.symbol
@@ -37,6 +38,14 @@ export function updateStableData(stableMaster: StableMaster, block: ethereum.Blo
   const totalMinted = agToken.totalSupply()
   const agTokenInfo = getToken(agToken._address)
   data.totalMinted = convertTokenToDecimal(totalMinted, agTokenInfo.decimals)
+  // compute the tvl
+  let tvl = ZERO_BD
+  for (let i = 0; i < data.poolsAddress.length; i++) {
+    const dataPool = PoolData.load(data.poolsAddress[i])!
+    tvl = tvl.plus(dataPool.totalAsset!.times(dataPool.rateUpper!))
+  }
+
+  data.tvl = tvl
   data.blockNumber = block.number
   data.timestamp = block.timestamp
 
@@ -50,6 +59,7 @@ export function updateStableData(stableMaster: StableMaster, block: ethereum.Blo
       dataHistoricalHour.collatRatio = data.collatRatio
     }
     dataHistoricalHour.totalMinted = convertTokenToDecimal(totalMinted, agTokenInfo.decimals)
+    dataHistoricalHour.tvl = tvl
     dataHistoricalHour.blockNumber = block.number
     dataHistoricalHour.timestamp = block.timestamp
   } else {
@@ -61,6 +71,7 @@ export function updateStableData(stableMaster: StableMaster, block: ethereum.Blo
       dataHistoricalHour.collatRatio = data.collatRatio
     }
     dataHistoricalHour.totalMinted = convertTokenToDecimal(totalMinted, agTokenInfo.decimals)
+    dataHistoricalHour.tvl = tvl
     dataHistoricalHour.timestamp = block.timestamp
   }
 
@@ -490,7 +501,7 @@ export function _getFeesClosePerp(perpetualManager: PerpetualManagerFront, poolM
   return feesPaid
 }
 
-export function _getFeesLiquidationPerp(perpetualManager: PerpetualManagerFront, poolManager: Address, perp: Perpetual, collateralInfo: Token): BigDecimal[] {
+export function _getFeesLiquidationPerp(poolManager: Address, perp: Perpetual, collateralInfo: Token): BigDecimal[] {
   const poolData = PoolData.load(poolManager.toHexString())!
   const oracle = Oracle.bind(Address.fromString(poolData.oracle))
   const currentRate = convertTokenToDecimal(oracle.readLower(), DECIMAL_TOKENS)
@@ -502,7 +513,7 @@ export function _getFeesLiquidationPerp(perpetualManager: PerpetualManagerFront,
   return [protocolFees, keeperFees]
 }
 
-export function _getMintFee(stableMaster: StableMaster, poolManager: PoolManager, amount: BigDecimal): BigDecimal[] {
+export function _getMintFee(poolManager: PoolManager, amount: BigDecimal): BigDecimal[] {
   const poolData = PoolData.load(poolManager._address.toHexString())!
   const stableData = StableData.load(poolData.stableMaster)!
   const oracle = Oracle.bind(Address.fromString(poolData.oracle))
@@ -518,7 +529,7 @@ export function _getMintFee(stableMaster: StableMaster, poolManager: PoolManager
   return [fee.minus(SLPFees), SLPFees]
 }
 
-export function _getBurnFee(stableMaster: StableMaster, poolManager: PoolManager, amount: BigDecimal): BigDecimal[] {
+export function _getBurnFee(poolManager: PoolManager, amount: BigDecimal): BigDecimal[] {
   const poolData = PoolData.load(poolManager._address.toHexString())!
   const stableData = StableData.load(poolData.stableMaster)!
   const oracle = Oracle.bind(Address.fromString(poolData.oracle))
