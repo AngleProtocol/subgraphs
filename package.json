@@ -10,7 +10,7 @@
     "deploy:token": "cd angle-subgraph-token && yarn deploy",
     "deploy:arbitrum:token": "cd angle-subgraph-token && yarn deploy:arbitrum",
     "deploy:optimism:token": "cd angle-subgraph-token && yarn deploy:optimism",
-    "deploy:polygon:token": "cd angle-subgraph-token && yarn deploy: polygon",
+    "deploy:polygon:token": "cd angle-subgraph-token && yarn deploy:polygon",
     "deploy:transaction": "cd angle-subgraph-transaction && yarn deploy",
     "deploy:all": "yarn deploy:periphery && yarn deploy:perpetual && yarn deploy:strategy && yarn deploy:token && yarn deploy:transaction && yarn deploy:borrow",
     "deploy:arbitrum:borrow": "cd angle-subgraph-borrow && yarn deploy:arbitrum",

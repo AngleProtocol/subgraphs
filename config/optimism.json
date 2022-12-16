@@ -1,5 +1,6 @@
 {
   "network": "optimism",
+  "angle": "0x58441E37255b09F9f545e9Dc957F1C41658ff665",
   "chainlink_ETH_USD": "0x02f5e9e9dcc66ba6392f6904d5fcf8625d9b19c9",
   "chainlink_BTC_USD": "0x0C1272d2aC652D10d03bb4dEB0D31F15ea3EAb2b",
   "chainlink_OP_USD": "0x4F6dFDFd4d68F68b2692E79f9e94796fC8015770",
@@ -8,5 +9,6 @@
   "ageur": "0x9485aca5bbBE1667AD97c7fE7C4531a624C8b1ED",
   "flashAngle": "0xf1dDcACA7D17f8030Ab2eb54f2D9811365EFe123",
   "block_ageur": 13801600,
-  "block_oracle": 13711600
+  "block_oracle": 13711600,
+  "block_angle": 36415676
 }

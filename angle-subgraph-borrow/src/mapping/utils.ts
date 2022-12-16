@@ -63,7 +63,7 @@ export function _initAggregator(feed: ChainlinkFeed, event: ethereum.Event): voi
   if (tokens[0] == "STETH") {
     dataOracle.tokenTicker = "wSTETH"
     quoteAmount = stETH.bind(Address.fromString(STETH_ADDRESS)).getPooledEthByShares(BASE_TOKENS)
-  }
+  } else if (tokens[0] == "MIMATIC") dataOracle.tokenTicker = "MAI"
   dataOracle.price = quoteAmount.times(feed.latestAnswer()).div(BASE_TOKENS)
   dataOracle.decimals = decimals
   dataOracle.timestamp = event.block.timestamp
