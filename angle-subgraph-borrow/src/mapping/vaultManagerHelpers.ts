@@ -153,6 +153,7 @@ export function isMint(event: Transfer): boolean {
   return event.params.from.equals(Address.fromString('0x0000000000000000000000000000000000000000'))
 }
 
+// TODO currently an oracle address update is not supported
 export function _initVaultManager(address: Address, block: ethereum.Block): void {
   const vaultManager = VaultManager.bind(address)
   const collateralContract = ERC20.bind(vaultManager.collateral())
@@ -172,10 +173,11 @@ export function _initVaultManager(address: Address, block: ethereum.Block): void
   data.agToken = vaultManager.stablecoin().toHexString()
   data.collateral = vaultManager.collateral().toHexString()
   data.collateralBase = BigInt.fromI32(10).pow(collateralContract.decimals() as u8)
+  data.oracle = oracle._address.toHexString()
   data.dust = vaultManager.dust()
   data.collateralTicker = tokens[0]
   data.agTokenTicker = tokens[1]
-  log.warning('=== collat {}, euro {}', [data.collateralTicker, data.agTokenTicker])
+  log.warning('=== collat {}, stable {}', [data.collateralTicker, data.agTokenTicker])
   data.treasury = vaultManager.treasury().toHexString()
   data.collateralAmount = collateralContract.balanceOf(address)
   data.interestAccumulator = vaultManager.interestAccumulator()

@@ -1,4 +1,4 @@
-import { BigDecimal, BigInt, Bytes } from '@graphprotocol/graph-ts'
+import { Address, BigDecimal, BigInt, Bytes } from '@graphprotocol/graph-ts'
 
 
 export const DECIMAL_PARAMS = BigInt.fromString('9')
@@ -40,3 +40,4 @@ export const ORACLE_SYNC_TIME_INTERVAL = BigInt.fromString('3600')
 export const BLOCK_UPDATE_POOL_MANAGER_ESTIMATED_APR = BigInt.fromString('14665999')
 
 export const STETH_ADDRESS = "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84"
+export const ZERO_ADDRESS = Address.fromHexString("0x0000000000000000000000000000000000000000")

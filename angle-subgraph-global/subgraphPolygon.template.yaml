@@ -75,6 +75,10 @@ dataSources:
           file: ../abis/Chainlink.json
         - name: ChainlinkProxy
           file: ../abis/ChainlinkProxy.json
+        - name: BorrowStaker
+          file: ../abis/BorrowStaker.json
+        - name: OracleMulti
+          file: ../abis/OracleMulti.json
       eventHandlers:
         - event: AnswerUpdated(indexed int256,indexed uint256,uint256)
           handler: handleAnswerUpdated
@@ -98,6 +102,10 @@ dataSources:
           file: ../abis/Chainlink.json
         - name: ChainlinkProxy
           file: ../abis/ChainlinkProxy.json
+        - name: BorrowStaker
+          file: ../abis/BorrowStaker.json
+        - name: OracleMulti
+          file: ../abis/OracleMulti.json
       eventHandlers:
         - event: AnswerUpdated(indexed int256,indexed uint256,uint256)
           handler: handleAnswerUpdated
@@ -121,6 +129,10 @@ dataSources:
           file: ../abis/Chainlink.json
         - name: ChainlinkProxy
           file: ../abis/ChainlinkProxy.json
+        - name: BorrowStaker
+          file: ../abis/BorrowStaker.json
+        - name: OracleMulti
+          file: ../abis/OracleMulti.json
       eventHandlers:
         - event: AnswerUpdated(indexed int256,indexed uint256,uint256)
           handler: handleAnswerUpdated
@@ -144,6 +156,10 @@ dataSources:
           file: ../abis/Chainlink.json
         - name: ChainlinkProxy
           file: ../abis/ChainlinkProxy.json
+        - name: BorrowStaker
+          file: ../abis/BorrowStaker.json
+        - name: OracleMulti
+          file: ../abis/OracleMulti.json
       eventHandlers:
         - event: AnswerUpdated(indexed int256,indexed uint256,uint256)
           handler: handleAnswerUpdated
@@ -167,6 +183,10 @@ dataSources:
           file: ../abis/Chainlink.json
         - name: ChainlinkProxy
           file: ../abis/ChainlinkProxy.json
+        - name: BorrowStaker
+          file: ../abis/BorrowStaker.json
+        - name: OracleMulti
+          file: ../abis/OracleMulti.json
       eventHandlers:
         - event: AnswerUpdated(indexed int256,indexed uint256,uint256)
           handler: handleAnswerUpdated
@@ -190,6 +210,10 @@ dataSources:
           file: ../abis/Chainlink.json
         - name: ChainlinkProxy
           file: ../abis/ChainlinkProxy.json
+        - name: BorrowStaker
+          file: ../abis/BorrowStaker.json
+        - name: OracleMulti
+          file: ../abis/OracleMulti.json
       eventHandlers:
         - event: AnswerUpdated(indexed int256,indexed uint256,uint256)
           handler: handleAnswerUpdated
@@ -276,6 +300,10 @@ templates:
           file: ../abis/ChainlinkProxy.json
         - name: ERC20
           file: ../abis/ERC20.json
+        - name: BorrowStaker
+          file: ../abis/BorrowStaker.json
+        - name: OracleMulti
+          file: ../abis/OracleMulti.json
       eventHandlers:
         - event: AnswerUpdated(indexed int256,indexed uint256,uint256)
           handler: handleAnswerUpdated
@@ -307,6 +335,8 @@ templates:
           file: ../abis/ChainlinkProxy.json
         - name: ChainlinkFeed
           file: ../abis/Chainlink.json
+        - name: BorrowStaker
+          file: ../abis/BorrowStaker.json
       eventHandlers:
         - event: BadDebtUpdated(uint256)
           handler: handleBadDebtUpdated

@@ -798,6 +798,8 @@ type OracleData @entity {
   tokenTicker: String!
   # Price reported by oracle
   price: BigDecimal!
+  # Linked Chainlink oracle (if any)
+  linkedOracles: [String!]
   # Decimal used by the Chainlink oracle
   decimals: BigInt!
   # Timestamp of current block

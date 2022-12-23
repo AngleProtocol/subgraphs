@@ -1,6 +1,6 @@
 import { ethereum, BigInt, log, Address } from '@graphprotocol/graph-ts'
 import { BASE_TOKENS, ROUND_COEFF, STETH_ADDRESS } from '../../../constants'
-import { stETH } from '../../generated/Chainlink8/stETH'
+import { stETH } from '../../generated/templates/ChainlinkTemplate/stETH'
 import { OracleByTicker, OracleData } from '../../generated/schema'
 import { ChainlinkTemplate } from '../../generated/templates'
 import { ChainlinkFeed } from '../../generated/templates/ChainlinkTemplate/ChainlinkFeed'
@@ -34,22 +34,32 @@ export function parseOracleDescription(description: string, hasExtra: boolean): 
 }
 
 
-export function _trackNewChainlinkOracle(oracle: Oracle, event: ethereum.Event): void {
-  // check all 
+export function _trackNewChainlinkOracle(oracle: Oracle, event: ethereum.Event, trackFullOracle: boolean): void {
+  const linkedOracles: string[] = []
+  // check all
   const result = oracle.try_circuitChainlink()
   if (!result.reverted) {
+    log.warning('===  circuit chainlink : {} {}', [oracle._address.toHexString(), result.value.length.toString()])
     for (let i = 0; i < result.value.length; i++) {
       const oracleProxyAddress = result.value[i]
       const proxy = ChainlinkProxy.bind(oracleProxyAddress)
       const aggregator = proxy.aggregator()
-      ChainlinkTemplate.create(aggregator)
-      // init the oracle value
-      _initAggregator(ChainlinkFeed.bind(aggregator), event);
+
+      const existentOracle = OracleData.load(aggregator.toHexString())
+      if (existentOracle == null) {
+        ChainlinkTemplate.create(aggregator)
+        // init the oracle value
+        const tokenTicker = _initAggregator(ChainlinkFeed.bind(aggregator), event);
+        linkedOracles.push(tokenTicker)
+      } else linkedOracles.push(existentOracle.tokenTicker)
     }
   }
+  // the agToken will always be tracked at this point
+  if (trackFullOracle) _initOracle(oracle, linkedOracles, event)
+
 }
 
-export function _initAggregator(feed: ChainlinkFeed, event: ethereum.Event): void {
+export function _initAggregator(feed: ChainlinkFeed, event: ethereum.Event): string {
   const tokens = parseOracleDescription(feed.description(), false)
   const decimals = BigInt.fromI32(feed.decimals())
 
@@ -64,12 +74,38 @@ export function _initAggregator(feed: ChainlinkFeed, event: ethereum.Event): voi
     dataOracle.tokenTicker = "wSTETH"
     quoteAmount = stETH.bind(Address.fromString(STETH_ADDRESS)).getPooledEthByShares(BASE_TOKENS)
   } else if (tokens[0] == "MIMATIC") dataOracle.tokenTicker = "MAI"
+  dataOracle.linkedOracles = []
   dataOracle.price = quoteAmount.times(feed.latestAnswer()).div(BASE_TOKENS)
   dataOracle.decimals = decimals
   dataOracle.timestamp = event.block.timestamp
   dataOracle.save()
 
   log.warning('=== new Oracle: {} {}', [tokens[0], tokens[1]])
+
+  // OracleByTicker will point to OracleData and be indexed by token address, which will help us retrieve the second oracle in `getCollateralPriceInAgToken`
+  const dataOracleByTicker = new OracleByTicker(dataOracle.tokenTicker)
+  dataOracleByTicker.oracle = dataOracle.id
+  dataOracleByTicker.save()
+
+  return dataOracle.tokenTicker
+}
+
+export function _initOracle(oracle: Oracle, linkedOracles: string[], event: ethereum.Event): void {
+  const tokens = parseOracleDescription(oracle.DESCRIPTION(), true)
+  // We need it to put the price back in USD
+  const agTokenOracleByTicker = OracleByTicker.load(tokens[1])!
+  const agTokenPriceInUSD = OracleData.load(agTokenOracleByTicker.oracle)!.price
+
+  const decimals = BigInt.fromString("18")
+  const dataOracle = new OracleData(oracle._address.toHexString())
+  dataOracle.tokenTicker = tokens[0]
+  dataOracle.linkedOracles = linkedOracles
+  dataOracle.price = oracle.read().times(agTokenPriceInUSD).div(BigInt.fromString('10').pow(8))
+  dataOracle.decimals = decimals
+  dataOracle.timestamp = event.block.timestamp
+  dataOracle.save()
+
+  log.warning('=== new Oracle: {}', [dataOracle.tokenTicker])
 
   // OracleByTicker will point to OracleData and be indexed by token address, which will help us retrieve the second oracle in `getCollateralPriceInAgToken`
   const dataOracleByTicker = new OracleByTicker(dataOracle.tokenTicker)

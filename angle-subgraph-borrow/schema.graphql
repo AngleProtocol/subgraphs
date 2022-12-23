@@ -121,6 +121,8 @@ type VaultManagerData @entity {
   pendingSurplus: BigInt!
   # pending bad debt accumulated since last accrual to treasury
   pendingBadDebt: BigInt!
+  # Vault Manager oracle address
+  oracle: String!
   # Current value of the oracle
   oracleValue: BigInt!
   # sum of debt repayed by liquidators on the vaults of this manager
@@ -368,6 +370,8 @@ type OracleData @entity {
   tokenTicker: String!
   # Price reported by oracle
   price: BigInt!
+  # Linked Chainlink oracle (if any)
+  linkedOracles: [String!]
   # Decimal used by the Chainlink oracle
   decimals: BigInt!
   # Timestamp of current block

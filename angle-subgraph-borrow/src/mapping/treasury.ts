@@ -1,4 +1,4 @@
-import { store, BigInt, Address, ethereum } from '@graphprotocol/graph-ts'
+import { BigInt, Address } from '@graphprotocol/graph-ts'
 import {
   Treasury,
   BadDebtUpdated,
@@ -15,6 +15,7 @@ import { _initVaultManager, _addVaultManagerDataToHistory, _addVaultDataToHistor
 import { log } from '@graphprotocol/graph-ts'
 import { VaultManager } from '../../generated/templates/TreasuryTemplate/VaultManager'
 import { Oracle } from '../../generated/templates/TreasuryTemplate/Oracle'
+import { BorrowStaker } from '../../generated/templates/TreasuryTemplate/BorrowStaker'
 import { _trackNewChainlinkOracle } from './utils'
 
 export function handleBadDebtUpdated(event: BadDebtUpdated): void {
@@ -83,7 +84,9 @@ export function handleVaultManagerToggled(event: VaultManagerToggled): void {
 
   const vaultManager = VaultManager.bind(event.params.vaultManager)
   const oracle = Oracle.bind(vaultManager.oracle())
-  _trackNewChainlinkOracle(oracle, event)
+  const collateral = BorrowStaker.bind(vaultManager.collateral())
+  const call = collateral.try_getVaultManagers()
+  _trackNewChainlinkOracle(oracle, event, !call.reverted)
 
   let data = VaultManagerData.load(event.params.vaultManager.toHexString())
   if (data == null) {

@@ -19,6 +19,8 @@ import {
 } from './vaultManagerHelpers'
 import { _initAggregator } from './utils'
 import { convertTokenToDecimal } from '../utils'
+import { BorrowStaker } from '../../generated/templates/ChainlinkTemplate/BorrowStaker'
+import { OracleMulti } from '../../generated/templates/ChainlinkTemplate/OracleMulti'
 
 // Handler used to periodically refresh Oracles
 export function handleAnswerUpdated(event: AnswerUpdated): void {
@@ -45,19 +47,33 @@ export function handleAnswerUpdated(event: AnswerUpdated): void {
     if (listVM == null) return
     for (let i = 0; i < listVM.vaultManagers.length; i++) {
       const dataVM = VaultManagerData.load(listVM.vaultManagers[i])!
+      // Check if this Chainlink oracle is part of the global oracle for this collateral
+      // Currently only used with lp tokens
+      let isLinkedOracle = false;
+      let dataGlobalOracle = OracleData.load(dataVM.oracle)
+      if (!(dataGlobalOracle == null)) {
+        for (let k = 0; k < dataGlobalOracle.linkedOracles!.length; k++) {
+          if (dataGlobalOracle.linkedOracles![k] == dataOracle.tokenTicker) {
+            isLinkedOracle = true
+            break
+          }
+        }
+      }
       // Check if fast sync is applicable at this block and if this VM is concerned by price change
       // The following call is computing intensive when there is a large amount of vaults
       if (
         FAST_SYNC_THRESHOLD.lt(event.block.timestamp) &&
         event.block.timestamp.minus(dataVM.timestamp).gt(FAST_SYNC_TIME_INTERVAL) &&
-        (dataVM.collateralTicker == dataOracle.tokenTicker || dataVM.agTokenTicker == dataOracle.tokenTicker)
+        (dataVM.collateralTicker == dataOracle.tokenTicker || dataVM.agTokenTicker == dataOracle.tokenTicker || isLinkedOracle)
       ) {
         const collateralOracle = OracleByTicker.load(dataVM.collateralTicker)
         const agTokenOracle = OracleByTicker.load(dataVM.agTokenTicker)
         if (collateralOracle == null || agTokenOracle == null) {
           continue
         }
-        const currentOracleValue = getCollateralPriceInAgToken(collateralOracle, agTokenOracle)
+        const collateral = BorrowStaker.bind(Address.fromString(dataVM.collateral))
+        const call = collateral.try_getVaultManagers()
+        const currentOracleValue = call.reverted ? getCollateralClassicPriceInAgToken(collateralOracle, agTokenOracle) : getCollateralLpTokenPriceInAgToken(Address.fromString(dataVM.oracle))
         // update vaults only if the oracle value has actually moved
         if (currentOracleValue.notEqual(dataVM.oracleValue)) {
           updateVaults(event.block, currentOracleValue, dataVM)
@@ -74,7 +90,7 @@ export function getCollateralPrice(
   return collateralPriceInUSD
 }
 
-function getCollateralPriceInAgToken(
+function getCollateralClassicPriceInAgToken(
   collateralOracleByTicker: OracleByTicker,
   agTokenOracleByTicker: OracleByTicker
 ): BigDecimal {
@@ -85,6 +101,14 @@ function getCollateralPriceInAgToken(
   const collateralPriceInAgToken = collateralPriceInUSD.div(agTokenPriceInUSD)
   // log.warning('=== collateral value in agToken {}', [collateralPriceInAgToken.toString()])
   return collateralPriceInAgToken
+}
+
+function getCollateralLpTokenPriceInAgToken(
+  oracleAddress: Address
+): BigDecimal {
+  const oracle = OracleMulti.bind(oracleAddress)
+  const oracleValue = convertTokenToDecimal(oracle.read(), DECIMAL_TOKENS)
+  return oracleValue
 }
 
 // Update every vault of a vaultManager with new oracle value

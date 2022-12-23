@@ -12,7 +12,7 @@
     "build:optimism": "yarn clean && yarn codegen:optimism && graph build",
     "build:polygon": "yarn clean && yarn codegen:polygon && graph build",
     "lint": "eslint --ignore-path .gitignore --fix --max-warnings 10 'src/**/*.ts'",
-    "deploy:decentralized": "yarn build && graph deploy --studio angle-ethereum",
+    "deploy:decentralized": "yarn build && graph deploy --studio angle-tokens",
     "deploy:arbitrum": "yarn build:arbitrum && graph deploy --node https://api.thegraph.com/deploy/ --ipfs https://api.thegraph.com/ipfs/ guillaumenervoxs/angle-arbitrum",
     "deploy:optimism": "yarn build:optimism && graph deploy --node https://api.thegraph.com/deploy/ --ipfs https://api.thegraph.com/ipfs/ guillaumenervoxs/angle-optimism",
     "deploy:polygon": "yarn build:polygon && graph deploy --node https://api.thegraph.com/deploy/ --ipfs https://api.thegraph.com/ipfs/ guillaumenervoxs/angle-polygon",

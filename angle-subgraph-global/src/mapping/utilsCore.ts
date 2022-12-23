@@ -195,7 +195,7 @@ export function _updatePoolData(
   if (data == null) {
     data = new PoolData(id)
     totalMargin = ZERO_BD
-    _trackNewChainlinkOracle(oracle, block.timestamp);
+    _trackNewChainlinkOracle(oracle, block.timestamp, true);
 
     const token = ERC20.bind(poolManager.token())
     const agToken = AgTokenContract.bind(stableMaster.agToken())
