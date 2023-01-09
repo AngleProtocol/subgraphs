@@ -60,27 +60,33 @@ export function _piecewiseLinear(value: BigDecimal, xArray: BigDecimal[], yArray
 
 // Change back to angle-subgraph-borrow implementation when circuitChainlink() is implemented 
 // in all oracles
-export function _trackNewChainlinkOracle(oracle: Oracle, timestamp: BigInt): void {
-    // check all 
-    let i = 0
-    let find = true
-    while (find) {
-        const result = oracle.try_circuitChainlink(BigInt.fromString(i.toString()))
-        if (result.reverted) {
-            find = false
-        } else {
-            i = i + 1
-            const oracleProxyAddress = result.value
+export function _trackNewChainlinkOracle(oracle: Oracle, timestamp: BigInt, trackFullOracle: boolean): void {
+    const linkedOracles: string[] = []
+
+    // check all
+    const result = oracle.try_circuitChainlink()
+    if (!result.reverted) {
+        log.warning('===  circuit chainlink : {} {}', [oracle._address.toHexString(), result.value.length.toString()])
+        for (let i = 0; i < result.value.length; i++) {
+            const oracleProxyAddress = result.value[i]
             const proxy = ChainlinkProxy.bind(oracleProxyAddress)
             const aggregator = proxy.aggregator()
-            ChainlinkTemplate.create(aggregator)
-            // init the oracle value
-            _initAggregator(ChainlinkFeed.bind(aggregator), timestamp);
+
+            const existentOracle = OracleData.load(aggregator.toHexString())
+            if (existentOracle == null) {
+                ChainlinkTemplate.create(aggregator)
+                // init the oracle value
+                const tokenTicker = _initAggregator(ChainlinkFeed.bind(aggregator), timestamp);
+                linkedOracles.push(tokenTicker)
+            } else linkedOracles.push(existentOracle.tokenTicker)
         }
     }
+
+    // the agToken will always be tracked at this point
+    if (trackFullOracle) _initOracle(oracle, linkedOracles, timestamp)
 }
 
-export function _initAggregator(feed: ChainlinkFeed, timestamp: BigInt): void {
+export function _initAggregator(feed: ChainlinkFeed, timestamp: BigInt): string {
     const tokens = parseOracleDescription(feed.description(), false)
     const decimals = BigInt.fromI32(feed.decimals())
 
@@ -95,12 +101,40 @@ export function _initAggregator(feed: ChainlinkFeed, timestamp: BigInt): void {
         dataOracle.tokenTicker = "wSTETH"
         quoteAmount = stETH.bind(Address.fromString(STETH_ADDRESS)).getPooledEthByShares(BASE_TOKENS)
     } else if (tokens[0] == "MIMATIC") dataOracle.tokenTicker = "MAI"
+    dataOracle.linkedOracles = []
     dataOracle.price = convertTokenToDecimal(quoteAmount, DECIMAL_TOKENS).times(convertTokenToDecimal(feed.latestAnswer(), decimals))
     dataOracle.decimals = decimals
     dataOracle.timestamp = timestamp
     dataOracle.save()
 
     log.warning('=== new Oracle: {} {}', [tokens[0], tokens[1]])
+
+    // OracleByTicker will point to OracleData and be indexed by token address, which will help us retrieve the second oracle in `getCollateralPriceInAgToken`
+    const dataOracleByTicker = new OracleByTicker(dataOracle.tokenTicker)
+    dataOracleByTicker.oracle = dataOracle.id
+    dataOracleByTicker.save()
+
+    return dataOracle.tokenTicker
+}
+
+export function _initOracle(oracle: Oracle, linkedOracles: string[], timestamp: BigInt): void {
+    const call = oracle.try_DESCRIPTION()
+    if (call.reverted) return;
+    const tokens = parseOracleDescription(call.value, true)
+    // We need it to put the price back in USD
+    const agTokenOracleByTicker = OracleByTicker.load(tokens[1])!
+    const agTokenPriceInUSD = OracleData.load(agTokenOracleByTicker.oracle)!.price
+
+    const decimals = BigInt.fromString("18")
+    const dataOracle = new OracleData(oracle._address.toHexString())
+    dataOracle.tokenTicker = tokens[0]
+    dataOracle.linkedOracles = linkedOracles
+    dataOracle.price = convertTokenToDecimal(oracle.read(), DECIMAL_TOKENS).times(agTokenPriceInUSD)
+    dataOracle.decimals = decimals
+    dataOracle.timestamp = timestamp
+    dataOracle.save()
+
+    log.warning('=== new Oracle: {}', [dataOracle.tokenTicker])
 
     // OracleByTicker will point to OracleData and be indexed by token address, which will help us retrieve the second oracle in `getCollateralPriceInAgToken`
     const dataOracleByTicker = new OracleByTicker(dataOracle.tokenTicker)

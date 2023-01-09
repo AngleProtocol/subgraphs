@@ -278,7 +278,7 @@ export function handleUserFeeUpdate(event: FeeArrayUpdated): void {
 
 export function handleSetOracle(event: OracleUpdated): void {
   const oracle = Oracle.bind(event.params._oracle)
-  _trackNewChainlinkOracle(oracle, event.block.timestamp)
+  _trackNewChainlinkOracle(oracle, event.block.timestamp, true)
 
   const poolData = PoolData.load(event.params._poolManager.toHexString())!
   poolData.oracle = event.params._oracle.toHexString()

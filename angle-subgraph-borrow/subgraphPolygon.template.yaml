@@ -22,6 +22,10 @@ dataSources:
           file: ../abis/Chainlink.json
         - name: ChainlinkProxy
           file: ../abis/ChainlinkProxy.json
+        - name: BorrowStaker
+          file: ../abis/BorrowStaker.json
+        - name: OracleMulti
+          file: ../abis/OracleMulti.json
       eventHandlers:
         - event: AnswerUpdated(indexed int256,indexed uint256,uint256)
           handler: handleAnswerUpdated
@@ -45,6 +49,10 @@ dataSources:
           file: ../abis/Chainlink.json
         - name: ChainlinkProxy
           file: ../abis/ChainlinkProxy.json
+        - name: BorrowStaker
+          file: ../abis/BorrowStaker.json
+        - name: OracleMulti
+          file: ../abis/OracleMulti.json
       eventHandlers:
         - event: AnswerUpdated(indexed int256,indexed uint256,uint256)
           handler: handleAnswerUpdated
@@ -68,6 +76,10 @@ dataSources:
           file: ../abis/Chainlink.json
         - name: ChainlinkProxy
           file: ../abis/ChainlinkProxy.json
+        - name: BorrowStaker
+          file: ../abis/BorrowStaker.json
+        - name: OracleMulti
+          file: ../abis/OracleMulti.json
       eventHandlers:
         - event: AnswerUpdated(indexed int256,indexed uint256,uint256)
           handler: handleAnswerUpdated
@@ -91,6 +103,10 @@ dataSources:
           file: ../abis/Chainlink.json
         - name: ChainlinkProxy
           file: ../abis/ChainlinkProxy.json
+        - name: BorrowStaker
+          file: ../abis/BorrowStaker.json
+        - name: OracleMulti
+          file: ../abis/OracleMulti.json
       eventHandlers:
         - event: AnswerUpdated(indexed int256,indexed uint256,uint256)
           handler: handleAnswerUpdated
@@ -114,6 +130,10 @@ dataSources:
           file: ../abis/Chainlink.json
         - name: ChainlinkProxy
           file: ../abis/ChainlinkProxy.json
+        - name: BorrowStaker
+          file: ../abis/BorrowStaker.json
+        - name: OracleMulti
+          file: ../abis/OracleMulti.json
       eventHandlers:
         - event: AnswerUpdated(indexed int256,indexed uint256,uint256)
           handler: handleAnswerUpdated
@@ -137,6 +157,10 @@ dataSources:
           file: ../abis/Chainlink.json
         - name: ChainlinkProxy
           file: ../abis/ChainlinkProxy.json
+        - name: BorrowStaker
+          file: ../abis/BorrowStaker.json
+        - name: OracleMulti
+          file: ../abis/OracleMulti.json
       eventHandlers:
         - event: AnswerUpdated(indexed int256,indexed uint256,uint256)
           handler: handleAnswerUpdated
@@ -218,6 +242,8 @@ templates:
           file: ../abis/Chainlink.json
         - name: ChainlinkProxy
           file: ../abis/ChainlinkProxy.json
+        - name: BorrowStaker
+          file: ../abis/BorrowStaker.json
       eventHandlers:
         - event: BadDebtUpdated(uint256)
           handler: handleBadDebtUpdated
@@ -292,7 +318,38 @@ templates:
           file: ../abis/Chainlink.json
         - name: ChainlinkProxy
           file: ../abis/ChainlinkProxy.json
+        - name: stETH
+          file: ../abis/stETH.json
+        - name: BorrowStaker
+          file: ../abis/BorrowStaker.json
+        - name: OracleMulti
+          file: ../abis/OracleMulti.json
       eventHandlers:
         - event: AnswerUpdated(indexed int256,indexed uint256,uint256)
           handler: handleAnswerUpdated
       file: ./src/mapping/chainlink.ts
+  - kind: ethereum/contract
+    name: AgTokenTemplate
+    network: {{network}}
+    source:
+      abi: AgToken
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - VaultManagerData
+        - VaultManagerHistoricalData
+      abis:
+        - name: AgToken
+          file: ../abis/AgToken.json
+        - name: Treasury
+          file: ../abis/Treasury.json
+        - name: Oracle
+          file: ../abis/OracleBorrowingModule.json
+      eventHandlers:
+        - event: TreasuryUpdated(indexed address)
+          handler: handleTreasuryUpdated
+        - event: MinterToggled(indexed address)
+          handler: handleMinterToggled
+      file: ./src/mapping/agToken.ts

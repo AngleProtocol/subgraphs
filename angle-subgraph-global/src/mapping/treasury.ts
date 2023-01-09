@@ -9,11 +9,13 @@ import {
   NewTreasurySet
 } from '../../generated/templates/TreasuryTemplate/Treasury'
 import { AgToken } from '../../generated/templates/TreasuryTemplate/AgToken'
+import { VaultManager } from '../../generated/templates/TreasuryTemplate/VaultManager'
 import { TreasuryData, VaultManagerData, VaultManagerList } from '../../generated/schema'
 import { _addTreasuryDataToHistory, extractArray } from './treasuryHelpers'
 import { _initVaultManager, _addVaultManagerDataToHistory, _addVaultDataToHistory } from './vaultManagerHelpers'
 import { log } from '@graphprotocol/graph-ts'
 import { Oracle } from '../../generated/templates/AgTokenTemplate/Oracle'
+import { BorrowStaker } from '../../generated/templates/TreasuryTemplate/BorrowStaker'
 import { getToken, _trackNewChainlinkOracle } from './utils'
 import { convertTokenToDecimal } from '../utils'
 import { DECIMAL_PARAMS } from '../../../constants'
@@ -97,7 +99,10 @@ export function handleVaultManagerToggled(event: VaultManagerToggled): void {
   }
   data = VaultManagerData.load(event.params.vaultManager.toHexString())!
   const oracle = Oracle.bind(Address.fromString(data.oracle))
-  _trackNewChainlinkOracle(oracle, event.block.timestamp)
+  const vaultManager = VaultManager.bind(event.params.vaultManager)
+  const collateral = BorrowStaker.bind(vaultManager.collateral())
+  const call = collateral.try_getVaultManagers()
+  _trackNewChainlinkOracle(oracle, event.block.timestamp, !call.reverted)
 }
 
 // We use this event only to update vaultManagers entities

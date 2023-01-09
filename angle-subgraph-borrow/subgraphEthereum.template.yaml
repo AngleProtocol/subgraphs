@@ -40,6 +40,10 @@ dataSources:
       abis:
         - name: ChainlinkFeed
           file: ../abis/Chainlink.json
+        - name: BorrowStaker
+          file: ../abis/BorrowStaker.json
+        - name: OracleMulti
+          file: ../abis/OracleMulti.json
       eventHandlers:
         - event: AnswerUpdated(indexed int256,indexed uint256,uint256)
           handler: handleAnswerUpdated
@@ -61,6 +65,10 @@ dataSources:
       abis:
         - name: ChainlinkFeed
           file: ../abis/Chainlink.json
+        - name: BorrowStaker
+          file: ../abis/BorrowStaker.json
+        - name: OracleMulti
+          file: ../abis/OracleMulti.json
       eventHandlers:
         - event: AnswerUpdated(indexed int256,indexed uint256,uint256)
           handler: handleAnswerUpdated
@@ -82,6 +90,10 @@ dataSources:
       abis:
         - name: ChainlinkFeed
           file: ../abis/Chainlink.json
+        - name: BorrowStaker
+          file: ../abis/BorrowStaker.json
+        - name: OracleMulti
+          file: ../abis/OracleMulti.json
       eventHandlers:
         - event: AnswerUpdated(indexed int256,indexed uint256,uint256)
           handler: handleAnswerUpdated
@@ -103,6 +115,10 @@ dataSources:
       abis:
         - name: ChainlinkFeed
           file: ../abis/Chainlink.json
+        - name: BorrowStaker
+          file: ../abis/BorrowStaker.json
+        - name: OracleMulti
+          file: ../abis/OracleMulti.json
       eventHandlers:
         - event: AnswerUpdated(indexed int256,indexed uint256,uint256)
           handler: handleAnswerUpdated
@@ -126,6 +142,10 @@ dataSources:
           file: ../abis/Chainlink.json
         - name: stETH
           file: ../abis/stETH.json
+        - name: BorrowStaker
+          file: ../abis/BorrowStaker.json
+        - name: OracleMulti
+          file: ../abis/OracleMulti.json
       eventHandlers:
         - event: AnswerUpdated(indexed int256,indexed uint256,uint256)
           handler: handleAnswerUpdated
@@ -149,6 +169,10 @@ dataSources:
           file: ../abis/Chainlink.json
         - name: stETH
           file: ../abis/stETH.json
+        - name: BorrowStaker
+          file: ../abis/BorrowStaker.json
+        - name: OracleMulti
+          file: ../abis/OracleMulti.json
       eventHandlers:
         - event: AnswerUpdated(indexed int256,indexed uint256,uint256)
           handler: handleAnswerUpdated
@@ -226,6 +250,8 @@ templates:
           file: ../abis/Chainlink.json
         - name: ChainlinkProxy
           file: ../abis/ChainlinkProxy.json
+        - name: BorrowStaker
+          file: ../abis/BorrowStaker.json
       eventHandlers:
         - event: BadDebtUpdated(uint256)
           handler: handleBadDebtUpdated
@@ -300,6 +326,12 @@ templates:
           file: ../abis/Chainlink.json
         - name: ChainlinkProxy
           file: ../abis/ChainlinkProxy.json
+        - name: stETH
+          file: ../abis/stETH.json
+        - name: BorrowStaker
+          file: ../abis/BorrowStaker.json
+        - name: OracleMulti
+          file: ../abis/OracleMulti.json
       eventHandlers:
         - event: AnswerUpdated(indexed int256,indexed uint256,uint256)
           handler: handleAnswerUpdated
