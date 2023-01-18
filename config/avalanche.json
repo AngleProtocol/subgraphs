@@ -1,0 +1,12 @@
+{
+  "network": "avalanche",
+  "angle": "0x5EE94c25e3d5113CD055537340B9d19CFA4D9217",
+  "chainlink_AVAX_USD": "0x0A77230d17318075983913bC2145DB16C7366156",
+  "chainlink_USDC_USD": "0xF096872672F44d6EBA71458D74fe67F9a77a23B9",
+  "chainlink_EUR_USD": "0x192f2DBA961Bb0277520C082d6bfa87D5961333E",
+  "ageur": "0xAEC8318a9a59bAEb39861d10ff6C7f7bf1F96C57",
+  "flashAngle": "0x9C215206Da4bf108aE5aEEf9dA7caD3352A36Dad",
+  "block_ageur": 20878158,
+  "block_oracle": 23576000,
+  "block_angle": 22164069
+}
