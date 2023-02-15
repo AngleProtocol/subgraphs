@@ -95,6 +95,40 @@ dataSources:
         - event: VoteForGauge(uint256,address,address,uint256)
           handler: handleGaugeVote
       file: ./src/mapping/gaugeController.ts
+  # agEUR has been deployed in a standalone fashion on arbitrum, so we have to hardcode it here
+  - kind: ethereum/contract
+    name: AgTokenTemplate
+    network: {{network}}
+    source:
+      abi: AgToken
+      address: '{{aggold}}'
+      startBlock: {{block_aggold}}
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - VaultManagerData
+        - VaultManagerHistoricalData
+      abis:
+        - name: AgToken
+          file: ../abis/AgToken.json
+        - name: Treasury
+          file: ../abis/Treasury.json
+        - name: ERC20
+          file: ../abis/ERC20.json
+        - name: Oracle
+          file: ../abis/OracleMultiWithDesc.json
+        - name: ChainlinkProxy
+          file: ../abis/ChainlinkProxy.json
+      eventHandlers:
+        - event: Transfer(indexed address,indexed address,uint256)
+          handler: handleTransfer
+        - event: TreasuryUpdated(indexed address)
+          handler: handleTreasuryUpdated
+        - event: MinterToggled(indexed address)
+          handler: handleMinterToggled
+      file: ./src/mapping/agToken.ts
   - kind: ethereum/contract
     name: Chainlink1
     network: {{network}}
