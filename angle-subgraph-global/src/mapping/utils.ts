@@ -13,6 +13,7 @@ import { convertTokenToDecimal } from '../utils'
 let wrappedTokens = new Map<string, string>()
 wrappedTokens.set('WBTC', 'BTC')
 wrappedTokens.set('wETH', 'ETH')
+wrappedTokens.set('wAVAX', 'AVAX')
 
 export function historicalSlice(block: ethereum.Block): BigInt {
     const timestamp = block.timestamp

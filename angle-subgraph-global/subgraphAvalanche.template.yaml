@@ -1,0 +1,320 @@
+specVersion: 0.0.2
+description: General pool, stable datas and all transactions on {{network}}.
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum/contract
+    name: Angle
+    network: {{network}}
+    source:
+      address: '{{angle}}'
+      abi: ERC20
+      startBlock: {{block_angle}}
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - ANGLE
+      abis:
+        - name: ERC20
+          file: ../abis/ERC20.json
+      eventHandlers:
+        - event: Transfer(indexed address,indexed address,uint256)
+          handler: handleTransfer
+      file: ./src/mapping/angle.ts
+  # agEUR has been deployed in a standalone fashion on arbitrum, so we have to hardcode it here
+  - kind: ethereum/contract
+    name: AgTokenTemplate
+    network: {{network}}
+    source:
+      abi: AgToken
+      address: '{{ageur}}'
+      startBlock: {{block_ageur}}
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - VaultManagerData
+        - VaultManagerHistoricalData
+      abis:
+        - name: AgToken
+          file: ../abis/AgToken.json
+        - name: Treasury
+          file: ../abis/Treasury.json
+        - name: ERC20
+          file: ../abis/ERC20.json
+        - name: Oracle
+          file: ../abis/OracleMultiWithDesc.json
+        - name: ChainlinkProxy
+          file: ../abis/ChainlinkProxy.json
+      eventHandlers:
+        - event: Transfer(indexed address,indexed address,uint256)
+          handler: handleTransfer
+        - event: TreasuryUpdated(indexed address)
+          handler: handleTreasuryUpdated
+        - event: MinterToggled(indexed address)
+          handler: handleMinterToggled
+      file: ./src/mapping/agToken.ts
+  - kind: ethereum/contract
+    name: Chainlink1
+    network: {{network}}
+    source:
+      address: '{{chainlink_EUR_USD}}'
+      abi: ChainlinkFeed
+      startBlock: {{block_oracle}}
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - TokenPrice
+        - OracleData
+      abis:
+        - name: ChainlinkFeed
+          file: ../abis/Chainlink.json
+        - name: ChainlinkProxy
+          file: ../abis/ChainlinkProxy.json
+        - name: BorrowStaker
+          file: ../abis/BorrowStaker.json
+        - name: OracleMulti
+          file: ../abis/OracleMulti.json
+      eventHandlers:
+        - event: AnswerUpdated(indexed int256,indexed uint256,uint256)
+          handler: handleAnswerUpdated
+      file: ./src/mapping/chainlink.ts
+  - kind: ethereum/contract
+    name: Chainlink2
+    network: {{network}}
+    source:
+      address: '{{chainlink_AVAX_USD}}'
+      abi: ChainlinkFeed
+      startBlock: {{block_oracle}}
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - TokenPrice
+        - OracleData
+      abis:
+        - name: ChainlinkFeed
+          file: ../abis/Chainlink.json
+        - name: ChainlinkProxy
+          file: ../abis/ChainlinkProxy.json
+        - name: BorrowStaker
+          file: ../abis/BorrowStaker.json
+        - name: OracleMulti
+          file: ../abis/OracleMulti.json
+      eventHandlers:
+        - event: AnswerUpdated(indexed int256,indexed uint256,uint256)
+          handler: handleAnswerUpdated
+      file: ./src/mapping/chainlink.ts
+  - kind: ethereum/contract
+    name: Chainlink3
+    network: {{network}}
+    source:
+      address: '{{chainlink_USDC_USD}}'
+      abi: ChainlinkFeed
+      startBlock: {{block_oracle}}
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - TokenPrice
+        - OracleData
+      abis:
+        - name: ChainlinkFeed
+          file: ../abis/Chainlink.json
+        - name: ChainlinkProxy
+          file: ../abis/ChainlinkProxy.json
+        - name: BorrowStaker
+          file: ../abis/BorrowStaker.json
+        - name: OracleMulti
+          file: ../abis/OracleMulti.json
+      eventHandlers:
+        - event: AnswerUpdated(indexed int256,indexed uint256,uint256)
+          handler: handleAnswerUpdated
+      file: ./src/mapping/chainlink.ts
+  - kind: ethereum/contract
+    name: FlashAngle
+    network: {{network}}
+    source:
+      address: '{{flashAngle}}'
+      abi: FlashAngle
+      startBlock: {{block_oracle}}
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - FlashLoanData
+      abis:
+        - name: FlashAngle
+          file: ../abis/FlashAngle.json
+        - name: ERC20
+          file: ../abis/ERC20.json
+        - name: BorrowStaker
+          file: ../abis/BorrowStaker.json
+      eventHandlers:
+        - event: FlashLoan(indexed address,uint256,indexed address)
+          handler: handleFlashLoan
+      file: ./src/mapping/flashAngle.ts
+templates:
+  - kind: ethereum/contract
+    name: AgTokenTemplate
+    network: {{network}}
+    source:
+      abi: AgToken
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - StableData
+        - StableHistoricalData
+        - StableHistoricalHourlyData
+      abis:
+        - name: AgToken
+          file: ../abis/AgToken.json
+        - name: PoolManager
+          file: ../abis/PoolManager.json
+        - name: ERC20
+          file: ../abis/ERC20.json
+        - name: Oracle
+          file: ../abis/OracleMultiWithDesc.json
+        - name: StableMaster
+          file: ../abis/StableMasterFront.json
+        - name: PerpetualManagerFront
+          file: ../abis/PerpetualManagerFront.json
+        - name: SanToken
+          file: ../abis/SanToken.json
+        - name: stETH
+          file: ../abis/stETH.json
+        - name: Treasury
+          file: ../abis/Treasury.json
+      eventHandlers:
+        - event: Transfer(indexed address,indexed address,uint256)
+          handler: handleTransfer
+        - event: TreasuryUpdated(indexed address)
+          handler: handleTreasuryUpdated
+        - event: MinterToggled(indexed address)
+          handler: handleMinterToggled
+      file: ./src/mapping/agToken.ts
+  - kind: ethereum/contract
+    name: ChainlinkTemplate
+    network: {{network}}
+    source:
+      abi: ChainlinkFeed
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - TokenPrice
+        - OracleData
+      abis:
+        - name: ChainlinkFeed
+          file: ../abis/Chainlink.json
+        - name: ChainlinkProxy
+          file: ../abis/ChainlinkProxy.json
+        - name: ERC20
+          file: ../abis/ERC20.json
+        - name: BorrowStaker
+          file: ../abis/BorrowStaker.json
+        - name: OracleMulti
+          file: ../abis/OracleMulti.json
+      eventHandlers:
+        - event: AnswerUpdated(indexed int256,indexed uint256,uint256)
+          handler: handleAnswerUpdated
+      file: ./src/mapping/chainlink.ts
+  - kind: ethereum/contract
+    name: TreasuryTemplate
+    network: {{network}}
+    source:
+      abi: Treasury
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - TreasuryData
+        - TreasuryHistoricalData
+      abis:
+        - name: Treasury
+          file: ../abis/Treasury.json
+        - name: AgToken
+          file: ../abis/AgToken.json
+        - name: VaultManager
+          file: ../abis/VaultManager.json
+        - name: ERC20
+          file: ../abis/ERC20.json
+        - name: Oracle
+          file: ../abis/OracleMultiWithDesc.json
+        - name: ChainlinkProxy
+          file: ../abis/ChainlinkProxy.json
+        - name: ChainlinkFeed
+          file: ../abis/Chainlink.json
+        - name: BorrowStaker
+          file: ../abis/BorrowStaker.json
+      eventHandlers:
+        - event: BadDebtUpdated(uint256)
+          handler: handleBadDebtUpdated
+        - event: SurplusBufferUpdated(uint256)
+          handler: handleSurplusBufferUpdated
+        - event: SurplusForGovernanceUpdated(uint64)
+          handler: handleSurplusForGovernanceUpdated
+        - event: SurplusManagerUpdated(indexed address)
+          handler: handleSurplusManagerUpdated
+        - event: VaultManagerToggled(indexed address)
+          handler: handleVaultManagerToggled
+        - event: NewTreasurySet(indexed address)
+          handler: handleNewTreasurySet
+      file: ./src/mapping/treasury.ts
+  - kind: ethereum/contract
+    name: VaultManagerTemplate
+    network: {{network}}
+    source:
+      abi: VaultManager
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - VaultManagerData
+        - VaultManagerHistoricalData
+      abis:
+        - name: VaultManager
+          file: ../abis/VaultManager.json
+        - name: VeBoostProxy
+          file: ../abis/veBoostProxy.json
+        - name: ERC20
+          file: ../abis/ERC20.json
+        - name: Oracle
+          file: ../abis/OracleMultiWithDesc.json
+        - name: ChainlinkFeed
+          file: ../abis/Chainlink.json
+      eventHandlers:
+        - event: AccruedToTreasury(uint256,uint256)
+          handler: handleAccruedToTreasury
+        - event: CollateralAmountUpdated(uint256,uint256,uint8)
+          handler: handleCollateralAmountUpdated
+        - event: InterestAccumulatorUpdated(uint256,uint256)
+          handler: handleInterestAccumulatorUpdated
+        - event: InternalDebtUpdated(uint256,uint256,uint8)
+          handler: handleInternalDebtUpdated
+        - event: FiledUint64(uint64,bytes32)
+          handler: handleFiledUint64
+        - event: DebtCeilingUpdated(uint256)
+          handler: handleDebtCeilingUpdated
+        - event: LiquidationBoostParametersUpdated(indexed address,uint256[],uint256[])
+          handler: handleLiquidationBoostParametersUpdated
+        - event: Transfer(indexed address,indexed address,indexed uint256)
+          handler: handleTransfer
+        - event: LiquidatedVaults(uint256[])
+          handler: handleLiquidatedVaults
+        - event: DebtTransferred(uint256,uint256,address,uint256)
+          handler: handleDebtTransferred
+      file: ./src/mapping/vaultManager.ts
