@@ -10,6 +10,8 @@ type StableData @entity {
   id: ID!
   # Name of the stable asset
   name: String!
+  # Stablecoin address
+  stablecoin: String!
   # Links to collateals
   collaterals: [PoolData!] @derivedFrom(field: "stableMaster")
   # Duplicate as you can't query the derived fields when syncing https://github.com/graphprotocol/graph-ts/issues/219

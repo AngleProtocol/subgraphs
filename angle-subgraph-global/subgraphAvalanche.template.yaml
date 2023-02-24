@@ -23,7 +23,7 @@ dataSources:
         - event: Transfer(indexed address,indexed address,uint256)
           handler: handleTransfer
       file: ./src/mapping/angle.ts
-  # agEUR has been deployed in a standalone fashion on arbitrum, so we have to hardcode it here
+  # agEUR has been deployed in a standalone fashion on avalanche, so we have to hardcode it here
   - kind: ethereum/contract
     name: AgTokenTemplate
     network: {{network}}

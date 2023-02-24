@@ -24,6 +24,7 @@ export function updateStableData(stableMaster: StableMaster, block: ethereum.Blo
   let data = StableData.load(id)
   if (data == null) {
     data = new StableData(id)
+    data.stablecoin = agToken._address.toHexString()
     data.poolsAddress = []
   }
 
