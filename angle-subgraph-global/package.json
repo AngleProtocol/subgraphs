@@ -17,6 +17,7 @@
     "deploy:decentralized": "yarn build && graph deploy --studio angle-ethereum",
     "deploy:arbitrum": "yarn build:arbitrum && graph deploy --node https://api.thegraph.com/deploy/ --ipfs https://api.thegraph.com/ipfs/ guillaumenervoxs/angle-arbitrum",
     "deploy:avalanche": "yarn build:avalanche && graph deploy --node https://api.thegraph.com/deploy/ --ipfs https://api.thegraph.com/ipfs/ guillaumenervoxs/angle-avalanche",
+    "deploy:ethereum": "yarn build && graph deploy --node https://api.thegraph.com/deploy/ --ipfs https://api.thegraph.com/ipfs/ guillaumenervoxs/angle-ethereum",
     "deploy:optimism": "yarn build:optimism && graph deploy --node https://api.thegraph.com/deploy/ --ipfs https://api.thegraph.com/ipfs/ guillaumenervoxs/angle-optimism",
     "deploy:polygon": "yarn build:polygon && graph deploy --node https://api.thegraph.com/deploy/ --ipfs https://api.thegraph.com/ipfs/ guillaumenervoxs/angle-polygon",
     "deploy:dev": "yarn build && graph deploy --node https://api.thegraph.com/deploy/ --ipfs https://api.thegraph.com/ipfs/ picodes/token-dev",
