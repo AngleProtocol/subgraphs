@@ -71,7 +71,16 @@ export function _trackNewChainlinkOracle(oracle: Oracle, timestamp: BigInt, trac
         for (let i = 0; i < result.value.length; i++) {
             const oracleProxyAddress = result.value[i]
             const proxy = ChainlinkProxy.bind(oracleProxyAddress)
-            const aggregator = proxy.aggregator()
+            const resultAggregator = proxy.try_aggregator()
+
+            // if this is a classic Chainlink oracle
+            // otherwise - currently only Backed oracle - that doesn't have the proxy pattern
+            let aggregator: Address
+            if (!resultAggregator.reverted) {
+                aggregator = resultAggregator.value
+            } else {
+                aggregator = oracleProxyAddress
+            }
 
             const existentOracle = OracleData.load(aggregator.toHexString())
             if (existentOracle == null) {
