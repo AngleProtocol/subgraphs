@@ -27,7 +27,7 @@ export function handleAnswerUpdated(event: AnswerUpdated): void {
   let dataOracle = OracleData.load(event.address.toHexString())
   if (dataOracle == null) {
     const feed = ChainlinkFeed.bind(event.address)
-    _initAggregator(feed, event.block.timestamp);
+    _initAggregator(feed, false, event.block.timestamp);
     // mostly used for high frequency block blockchain
   } else if (event.block.timestamp.minus(dataOracle.timestamp).lt(ORACLE_SYNC_TIME_INTERVAL)) {
     return
