@@ -23,7 +23,9 @@ export function handleUpdateSurplusConverter(event: SurplusConverterUpdated): vo
 
   // create directly the FeeDistributor linked at contract creation
   const surplusConverter = BaseSurplusConverter.bind(event.params.newSurplusConverter)
-  const originalFeeDistributorAddress = surplusConverter.feeDistributor()
+  const result = surplusConverter.try_feeDistributor()
+  if (result.reverted) return
+  const originalFeeDistributorAddress = result.value
   const feeDistributor = FeeDistributor.bind(originalFeeDistributorAddress)
   // if this is actually a surplusConverter revert
   const call = feeDistributor.try_last_token_time()

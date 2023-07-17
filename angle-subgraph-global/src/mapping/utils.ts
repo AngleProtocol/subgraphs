@@ -14,6 +14,9 @@ let wrappedTokens = new Map<string, string>()
 wrappedTokens.set('WBTC', 'BTC')
 wrappedTokens.set('wETH', 'ETH')
 wrappedTokens.set('wAVAX', 'AVAX')
+wrappedTokens.set('bIB01', 'IB01')
+wrappedTokens.set('bHIGH', 'HIGH')
+
 
 export function historicalSlice(block: ethereum.Block): BigInt {
     const timestamp = block.timestamp
@@ -34,6 +37,17 @@ export function parseOracleDescription(description: string, hasExtra: boolean): 
     if (wrappedTokens.has(tokens[0])) {
         tokens[0] = wrappedTokens.get(tokens[0])
     }
+    return tokens
+}
+
+// Whitespaces are stripped first. Then, `description` must be in the format "TOKEN1 Price Feed".
+export function parseOracleBackedDescription(description: string, hasExtra: boolean): string[] {
+    let desc = description.split(' ')
+    // if token is wrapped, we're looking for underlying token
+    if (wrappedTokens.has(desc[0])) {
+        desc[0] = wrappedTokens.get(desc[0])
+    }
+    let tokens: string[] = [desc[0], "USD"]
     return tokens
 }
 
@@ -71,13 +85,23 @@ export function _trackNewChainlinkOracle(oracle: Oracle, timestamp: BigInt, trac
         for (let i = 0; i < result.value.length; i++) {
             const oracleProxyAddress = result.value[i]
             const proxy = ChainlinkProxy.bind(oracleProxyAddress)
-            const aggregator = proxy.aggregator()
+            const resultAggregator = proxy.try_aggregator()
+            let isBacked = false;
+            // if this is a classic Chainlink oracle
+            // otherwise - currently only Backed oracle - that doesn't have the proxy pattern
+            let aggregator: Address
+            if (!resultAggregator.reverted) {
+                aggregator = resultAggregator.value
+            } else {
+                aggregator = oracleProxyAddress
+                isBacked = true
+            }
 
             const existentOracle = OracleData.load(aggregator.toHexString())
             if (existentOracle == null) {
                 ChainlinkTemplate.create(aggregator)
                 // init the oracle value
-                const tokenTicker = _initAggregator(ChainlinkFeed.bind(aggregator), timestamp);
+                const tokenTicker = _initAggregator(ChainlinkFeed.bind(aggregator), isBacked, timestamp);
                 linkedOracles.push(tokenTicker)
             } else linkedOracles.push(existentOracle.tokenTicker)
         }
@@ -87,8 +111,8 @@ export function _trackNewChainlinkOracle(oracle: Oracle, timestamp: BigInt, trac
     if (trackFullOracle) _initOracle(oracle, linkedOracles, timestamp)
 }
 
-export function _initAggregator(feed: ChainlinkFeed, timestamp: BigInt): string {
-    const tokens = parseOracleDescription(feed.description(), false)
+export function _initAggregator(feed: ChainlinkFeed, isBacked: boolean, timestamp: BigInt): string {
+    const tokens = !isBacked ? parseOracleDescription(feed.description(), false) : parseOracleBackedDescription(feed.description(), false);
     const decimals = BigInt.fromI32(feed.decimals())
 
     const dataOracle = new OracleData(feed._address.toHexString())
