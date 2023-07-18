@@ -1,4 +1,4 @@
-import { ethereum, BigInt, Address } from '@graphprotocol/graph-ts'
+import { ethereum, BigInt, Address, BigDecimal } from '@graphprotocol/graph-ts'
 import { ERC20 } from '../../generated/templates/VaultManagerTemplate/ERC20'
 import { VaultManager, Transfer } from '../../generated/templates/VaultManagerTemplate/VaultManager'
 import { Oracle } from '../../generated/templates/VaultManagerTemplate/Oracle'
@@ -14,10 +14,11 @@ import {
   FeeHistoricalData,
   FeeData
 } from '../../generated/schema'
-import { historicalSlice, parseOracleDescription } from './utils'
-import { BASE_PARAMS, BASE_TOKENS, BASE_INTEREST, MAX_UINT256 } from '../../../constants'
+import { getToken, historicalSlice, parseOracleDescription } from './utils'
+import { DECIMAL_PARAMS, DECIMAL_TOKENS, MAX_DECIMAL, ZERO_BD, ONE_BD, DECIMAL_INTEREST } from '../../../constants'
 import { VeBoostProxy } from '../../generated/templates/VaultManagerTemplate/VeBoostProxy'
 import { ActionCounter } from '../../generated/schema'
+import { convertTokenToDecimal } from '../utils'
 
 import { log } from '@graphprotocol/graph-ts'
 
@@ -28,15 +29,15 @@ export function computeLiquidationDiscount(
   dataLiquidation: VaultLiquidation,
   dataVault: VaultData,
   dataVM: VaultManagerData
-): BigInt {
-  let liquidationBoost: BigInt
+): BigDecimal {
+  let liquidationBoost: BigDecimal
   const x = dataVM.xLiquidationBoost
   const y = dataVM.yLiquidationBoost
   if (dataVM.veBoostProxy == '0x0000000000000000000000000000000000000000') {
     liquidationBoost = y[0]
   } else {
     const veBoostProxy = VeBoostProxy.bind(Address.fromString(dataVM.veBoostProxy))
-    const adjustedBalance = veBoostProxy.adjusted_balance_of(Address.fromString(dataLiquidation.txOrigin))
+    const adjustedBalance = convertTokenToDecimal(veBoostProxy.adjusted_balance_of(Address.fromString(dataLiquidation.txOrigin)), DECIMAL_TOKENS)
 
     if (adjustedBalance >= x[1]) {
       liquidationBoost = y[1]
@@ -48,15 +49,13 @@ export function computeLiquidationDiscount(
   }
 
   const collateralBeforeLiquidation = dataLiquidation.collateralBought.plus(dataVault.collateralAmount)
-  // log.warning(" === {} {} {} {} {}", [collateralBeforeLiquidation.toString(), dataVM.collateralBase.toString(), dataLiquidation.oraclePrice.toString(), dataVault.debt.toString(), dataVM.collateralFactor.toString()])
   const healthFactor = computeHealthFactor(
     collateralBeforeLiquidation,
-    dataVM.collateralBase,
     dataLiquidation.oraclePrice,
     dataVault.debt,
     dataVM.collateralFactor
   )
-  let liquidationDiscount = liquidationBoost.times(BASE_PARAMS.minus(healthFactor)).div(BASE_PARAMS)
+  let liquidationDiscount = liquidationBoost.times(ONE_BD.minus(healthFactor))
   if (liquidationDiscount.gt(dataVM.maxLiquidationDiscount)) {
     liquidationDiscount = dataVM.maxLiquidationDiscount
   }
@@ -64,30 +63,26 @@ export function computeLiquidationDiscount(
 }
 
 export function computeDebt(
-  normalizedDebt: BigInt,
-  ratePerSecond: BigInt,
-  interestAccumulator: BigInt,
+  normalizedDebt: BigDecimal,
+  ratePerSecond: BigDecimal,
+  interestAccumulator: BigDecimal,
   lastInterestAccumulatorUpdated: BigInt,
   timestamp: BigInt
-): BigInt {
-  const exp = timestamp.minus(lastInterestAccumulatorUpdated)
+): BigDecimal {
+  const exp = convertTokenToDecimal(timestamp.minus(lastInterestAccumulatorUpdated), ZERO)
   let currentInterestAccumulator = interestAccumulator
-  if (!exp.isZero() && !ratePerSecond.isZero()) {
-    const ZERO = BigInt.fromI32(0)
-    const ONE = BigInt.fromI32(1)
-    const TWO = BigInt.fromI32(2)
-    const SIX = BigInt.fromI32(6)
-    const HALF_BASE_INTEREST = BASE_INTEREST.div(TWO)
-    const expMinusOne = exp.minus(ONE)
-    const expMinusTwo = exp.gt(TWO) ? exp.minus(TWO) : ZERO
+  if (!exp.equals(ZERO_BD) && !ratePerSecond.equals(ZERO_BD)) {
+    const TWO = BigDecimal.fromString('2')
+    const SIX = BigDecimal.fromString('6')
+    const HALF_BASE_INTEREST = convertTokenToDecimal(ONE, DECIMAL_INTEREST).div(TWO)
+    const expMinusOne = exp.minus(ONE_BD)
+    const expMinusTwo = exp.gt(TWO) ? exp.minus(TWO) : ZERO_BD
     const basePowerTwo = ratePerSecond
       .times(ratePerSecond)
       .plus(HALF_BASE_INTEREST)
-      .div(BASE_INTEREST)
     const basePowerThree = basePowerTwo
       .times(ratePerSecond)
       .plus(HALF_BASE_INTEREST)
-      .div(BASE_INTEREST)
     const secondTerm = exp
       .times(expMinusOne)
       .times(basePowerTwo)
@@ -99,48 +94,46 @@ export function computeDebt(
       .div(SIX)
     currentInterestAccumulator = interestAccumulator
       .times(
-        BASE_INTEREST.plus(ratePerSecond.times(exp))
+        ONE_BD.plus(ratePerSecond.times(exp))
           .plus(secondTerm)
           .plus(thirdTerm)
       )
-      .div(BASE_INTEREST)
   }
-  return normalizedDebt.times(currentInterestAccumulator).div(BASE_PARAMS.times(BASE_TOKENS))
+  return normalizedDebt.times(currentInterestAccumulator)
 }
 
 export function computeHealthFactor(
-  collateral: BigInt,
-  collateralBase: BigInt,
-  oracleValue: BigInt,
-  debt: BigInt,
-  collateralFactor: BigInt
-): BigInt {
-  if (debt.isZero()) {
+  collateral: BigDecimal,
+  oracleValue: BigDecimal,
+  debt: BigDecimal,
+  collateralFactor: BigDecimal
+): BigDecimal {
+  if (debt.equals(ZERO_BD)) {
     // avoid division by zero
-    return MAX_UINT256
+    return MAX_DECIMAL
   }
-  return collateral.times(collateralFactor.times(oracleValue)).div(debt.times(collateralBase))
+  return collateral.times(collateralFactor.times(oracleValue)).div(debt)
 }
 
 // Computes USD value of a collateral amount
-export function computeTVL(collateralAmount: BigInt, collateralBase: BigInt, collateralTicker: string): BigInt {
+export function computeTVL(collateralAmount: BigDecimal, collateralTicker: string): BigDecimal {
   log.warning('=== computeTVL: ticker {}', [collateralTicker.toString()])
   log.warning('=== computeTVL: oracle {}', [OracleByTicker.load(collateralTicker)!.oracle.toString()])
   const collateralPriceUSD = OracleData.load(OracleByTicker.load(collateralTicker)!.oracle)!.price
-  return collateralAmount.times(collateralPriceUSD).div(collateralBase)
+  return collateralAmount.times(collateralPriceUSD)
 }
 
 export function extractArray(
   thisArg: VaultManager,
   getter: (this: VaultManager, param0: BigInt) => ethereum.CallResult<BigInt>
-): BigInt[] {
-  let array = new Array<BigInt>()
+): BigDecimal[] {
+  let array = new Array<BigDecimal>()
   for (let i = 0; i < getter.length; i++) {
     let result = getter.call(thisArg, BigInt.fromI32(i))
     if (result.reverted) {
       break
     }
-    array.push(result.value)
+    array.push(convertTokenToDecimal(result.value, DECIMAL_PARAMS))
   }
   return array
 }
@@ -159,6 +152,9 @@ export function _initVaultManager(address: Address, block: ethereum.Block): void
   const collateralContract = ERC20.bind(vaultManager.collateral())
   const oracle = Oracle.bind(vaultManager.oracle())
   const tokens = parseOracleDescription(oracle.DESCRIPTION(), true)
+  const agTokenAddress = vaultManager.stablecoin()
+  const collateralInfo = getToken(collateralContract._address)
+  const agTokenInfo = getToken(agTokenAddress)
 
   log.warning('+++++ New VaultManager: {}', [address.toHexString()])
   // Start indexing and tracking new contracts
@@ -172,30 +168,31 @@ export function _initVaultManager(address: Address, block: ethereum.Block): void
   data.vaultManager = address.toHexString()
   data.agToken = vaultManager.stablecoin().toHexString()
   data.collateral = vaultManager.collateral().toHexString()
+  data.oracle = oracle._address.toHexString()
   data.collateralBase = BigInt.fromI32(10).pow(collateralContract.decimals() as u8)
   data.oracle = oracle._address.toHexString()
-  data.dust = vaultManager.dust()
+  data.dust = convertTokenToDecimal(vaultManager.dust(), agTokenInfo.decimals)
   data.collateralTicker = tokens[0]
   data.agTokenTicker = tokens[1]
   log.warning('=== collat {}, stable {}', [data.collateralTicker, data.agTokenTicker])
   data.treasury = vaultManager.treasury().toHexString()
-  data.collateralAmount = collateralContract.balanceOf(address)
-  data.interestAccumulator = vaultManager.interestAccumulator()
+  data.collateralAmount = convertTokenToDecimal(collateralContract.balanceOf(address), collateralInfo.decimals)
+  data.interestAccumulator = convertTokenToDecimal(vaultManager.interestAccumulator(), DECIMAL_INTEREST)
   data.lastInterestAccumulatorUpdated = vaultManager.lastInterestAccumulatorUpdated()
   // values known at init
-  data.totalDebt = BigInt.fromI32(0)
-  data.tvl = BigInt.fromI32(0)
+  data.totalDebt = ZERO_BD
+  data.tvl = ZERO_BD
   data.activeVaultsCount = BigInt.fromI32(0)
-  data.surplus = BigInt.fromI32(0)
-  data.surplusFromInterests = BigInt.fromI32(0)
-  data.surplusFromBorrowFees = BigInt.fromI32(0)
-  data.surplusFromRepayFees = BigInt.fromI32(0)
-  data.surplusFromLiquidationSurcharges = BigInt.fromI32(0)
-  data.badDebt = BigInt.fromI32(0)
-  data.profits = BigInt.fromI32(0)
-  data.pendingSurplus = BigInt.fromI32(0)
-  data.pendingBadDebt = BigInt.fromI32(0)
-  data.liquidationRepayments = BigInt.fromI32(0)
+  data.surplus = ZERO_BD
+  data.surplusFromInterests = ZERO_BD
+  data.surplusFromBorrowFees = ZERO_BD
+  data.surplusFromRepayFees = ZERO_BD
+  data.surplusFromLiquidationSurcharges = ZERO_BD
+  data.badDebt = ZERO_BD
+  data.profits = ZERO_BD
+  data.pendingSurplus = ZERO_BD
+  data.pendingBadDebt = ZERO_BD
+  data.liquidationRepayments = ZERO_BD
   // liquidations
   data.liquidationDebtsRepayed = []
   data.liquidationDebtsRemoved = []
@@ -204,19 +201,19 @@ export function _initVaultManager(address: Address, block: ethereum.Block): void
   data.liquidationCollateralsRemaining = []
   data.liquidationTimestamps = []
 
-  data.oracleValue = oracle.read()
-  data.totalNormalizedDebt = vaultManager.totalNormalizedDebt()
-  data.debtCeiling = vaultManager.debtCeiling()
+  data.oracleValue = convertTokenToDecimal(oracle.read(), DECIMAL_TOKENS)
+  data.totalNormalizedDebt = convertTokenToDecimal(vaultManager.totalNormalizedDebt(), agTokenInfo.decimals)
+  data.debtCeiling = convertTokenToDecimal(vaultManager.debtCeiling(), agTokenInfo.decimals)
   data.veBoostProxy = vaultManager.veBoostProxy().toHexString()
   data.xLiquidationBoost = extractArray(vaultManager, vaultManager.try_xLiquidationBoost)
   data.yLiquidationBoost = extractArray(vaultManager, vaultManager.try_yLiquidationBoost)
-  data.collateralFactor = vaultManager.collateralFactor()
-  data.targetHealthFactor = vaultManager.targetHealthFactor()
-  data.borrowFee = vaultManager.borrowFee()
-  data.repayFee = vaultManager.repayFee()
-  data.interestRate = vaultManager.interestRate()
-  data.liquidationSurcharge = vaultManager.liquidationSurcharge()
-  data.maxLiquidationDiscount = vaultManager.maxLiquidationDiscount()
+  data.collateralFactor = convertTokenToDecimal(vaultManager.collateralFactor(), DECIMAL_PARAMS)
+  data.targetHealthFactor = convertTokenToDecimal(vaultManager.targetHealthFactor(), DECIMAL_PARAMS)
+  data.borrowFee = convertTokenToDecimal(vaultManager.borrowFee(), DECIMAL_PARAMS)
+  data.repayFee = convertTokenToDecimal(vaultManager.repayFee(), DECIMAL_PARAMS)
+  data.interestRate = convertTokenToDecimal(vaultManager.interestRate(), DECIMAL_INTEREST)
+  data.liquidationSurcharge = convertTokenToDecimal(vaultManager.liquidationSurcharge(), DECIMAL_PARAMS)
+  data.maxLiquidationDiscount = convertTokenToDecimal(vaultManager.maxLiquidationDiscount(), DECIMAL_PARAMS)
   data.blockNumber = block.number
   data.timestamp = block.timestamp
   data.save()
