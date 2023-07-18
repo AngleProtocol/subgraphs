@@ -1,25 +1,128 @@
 specVersion: 0.0.2
-description: General pool, stable datas and all transactions on {{network}}.
+description: Angle subgraph on {{network}}.
 schema:
   file: ./schema.graphql
 dataSources:
+  - kind: ethereum/contract
+    name: veAngle
+    network: {{network}}
+    source:
+      address: '{{veAngle}}'
+      abi: veANGLE
+      startBlock: {{block}}
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - veANGLE
+      abis:
+        - name: veANGLE
+          file: ../abis/veANGLE.json
+        - name: ERC20
+          file: ../abis/ERC20.json
+      eventHandlers:
+        - event: Deposit(indexed address,uint256,indexed uint256,int128,uint256)
+          handler: handleDeposit
+      file: ./src/mapping/veAngle.ts
+  - kind: ethereum/contract
+    name: Angle
+    network: {{network}}
+    source:
+      address: '{{angle}}'
+      abi: ERC20
+      startBlock: {{block}}
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - ANGLE
+      abis:
+        - name: ERC20
+          file: ../abis/ERC20.json
+      eventHandlers:
+        - event: Transfer(indexed address,indexed address,uint256)
+          handler: handleTransfer
+      file: ./src/mapping/angle.ts
+  - kind: ethereum/contract
+    name: GaugeController
+    network: {{network}}
+    source:
+      address: '{{gaugeController}}'
+      abi: GaugeController
+      startBlock: {{block}}
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - GaugeControllerData
+      abis:
+        - name: GaugeController
+          file: ../abis/GaugeController.json
+        - name: ERC20
+          file: ../abis/ERC20.json
+      eventHandlers:
+        - event: NewGauge(address,int128,uint256)
+          handler: handleNewGauge
+        - event: VoteForGauge(uint256,address,address,uint256)
+          handler: handleGaugeVote
+      file: ./src/mapping/gaugeController.ts
+  # agEUR has been deployed in a standalone fashion on arbitrum, so we have to hardcode it here
+  - kind: ethereum/contract
+    name: AgTokenTemplate
+    network: {{network}}
+    source:
+      abi: AgToken
+      address: '{{aggold}}'
+      startBlock: {{block_aggold}}
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - VaultManagerData
+        - VaultManagerHistoricalData
+      abis:
+        - name: AgToken
+          file: ../abis/AgToken.json
+        - name: Treasury
+          file: ../abis/Treasury.json
+        - name: ERC20
+          file: ../abis/ERC20.json
+        - name: Oracle
+          file: ../abis/OracleMultiWithDesc.json
+        - name: ChainlinkProxy
+          file: ../abis/ChainlinkProxy.json
+      eventHandlers:
+        - event: Transfer(indexed address,indexed address,uint256)
+          handler: handleTransfer
+        - event: TreasuryUpdated(indexed address)
+          handler: handleTreasuryUpdated
+        - event: MinterToggled(indexed address)
+          handler: handleMinterToggled
+      file: ./src/mapping/agToken.ts
   - kind: ethereum/contract
     name: Chainlink1
     network: {{network}}
     source:
       address: '{{chainlink_EUR_USD}}'
       abi: ChainlinkFeed
-      startBlock: {{block_oracle}}
+      startBlock: {{block}}
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.5
       language: wasm/assemblyscript
       entities:
-        - TokenPrice
-        - OracleData
+        - Oracle
       abis:
         - name: ChainlinkFeed
           file: ../abis/Chainlink.json
+        - name: ERC20
+          file: ../abis/ERC20.json
+        - name: BorrowStaker
+          file: ../abis/BorrowStaker.json
         - name: OracleMulti
           file: ../abis/OracleMulti.json
       eventHandlers:
@@ -32,17 +135,20 @@ dataSources:
     source:
       address: '{{chainlink_ETH_USD}}'
       abi: ChainlinkFeed
-      startBlock: {{block_oracle}}
+      startBlock: {{block}}
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.5
       language: wasm/assemblyscript
       entities:
-        - TokenPrice
-        - OracleData
+        - Oracle
       abis:
         - name: ChainlinkFeed
           file: ../abis/Chainlink.json
+        - name: ERC20
+          file: ../abis/ERC20.json
+        - name: BorrowStaker
+          file: ../abis/BorrowStaker.json
         - name: OracleMulti
           file: ../abis/OracleMulti.json
       eventHandlers:
@@ -51,29 +157,6 @@ dataSources:
       file: ./src/mapping/chainlink.ts
   - kind: ethereum/contract
     name: Chainlink3
-    network: {{network}}
-    source:
-      address: '{{chainlink_USDC_USD}}'
-      abi: ChainlinkFeed
-      startBlock: {{block_oracle}}
-    mapping:
-      kind: ethereum/events
-      apiVersion: 0.0.5
-      language: wasm/assemblyscript
-      entities:
-        - TokenPrice
-        - OracleData
-      abis:
-        - name: ChainlinkFeed
-          file: ../abis/Chainlink.json
-        - name: OracleMulti
-          file: ../abis/OracleMulti.json
-      eventHandlers:
-        - event: AnswerUpdated(indexed int256,indexed uint256,uint256)
-          handler: handleAnswerUpdated
-      file: ./src/mapping/chainlink.ts
-  - kind: ethereum/contract
-    name: Chainlink4
     network: {{network}}
     source:
       address: '{{chainlink_BTC_USD}}'
@@ -89,6 +172,10 @@ dataSources:
       abis:
         - name: ChainlinkFeed
           file: ../abis/Chainlink.json
+        - name: ERC20
+          file: ../abis/ERC20.json
+        - name: BorrowStaker
+          file: ../abis/BorrowStaker.json
         - name: OracleMulti
           file: ../abis/OracleMulti.json
       eventHandlers:
@@ -96,10 +183,10 @@ dataSources:
           handler: handleAnswerUpdated
       file: ./src/mapping/chainlink.ts
   - kind: ethereum/contract
-    name: Chainlink5
+    name: Chainlink4
     network: {{network}}
     source:
-      address: '{{chainlink_OP_USD}}'
+      address: '{{chainlink_USDC_USD}}'
       abi: ChainlinkFeed
       startBlock: {{block_oracle}}
     mapping:
@@ -112,6 +199,10 @@ dataSources:
       abis:
         - name: ChainlinkFeed
           file: ../abis/Chainlink.json
+        - name: ERC20
+          file: ../abis/ERC20.json
+        - name: BorrowStaker
+          file: ../abis/BorrowStaker.json
         - name: OracleMulti
           file: ../abis/OracleMulti.json
       eventHandlers:
@@ -119,39 +210,70 @@ dataSources:
           handler: handleAnswerUpdated
       file: ./src/mapping/chainlink.ts
   - kind: ethereum/contract
-    name: AgTokenTemplate
+    name: Chainlink5
     network: {{network}}
     source:
-      abi: AgToken
-      address: '{{ageur}}'
-      startBlock: {{block_ageur}}
+      address: '{{chainlink_stETH_USD}}'
+      abi: ChainlinkFeed
+      startBlock: {{block_oracle}}
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.5
       language: wasm/assemblyscript
       entities:
-        - VaultManagerData
-        - VaultManagerHistoricalData
+        - TokenPrice
+        - OracleData
       abis:
-        - name: AgToken
-          file: ../abis/AgToken.json
-        - name: Treasury
-          file: ../abis/Treasury.json
-        - name: Oracle
-          file: ../abis/OracleBorrowingModule.json
+        - name: ChainlinkFeed
+          file: ../abis/Chainlink.json
+        - name: stETH
+          file: ../abis/stETH.json
+        - name: ERC20
+          file: ../abis/ERC20.json
+        - name: BorrowStaker
+          file: ../abis/BorrowStaker.json
+        - name: OracleMulti
+          file: ../abis/OracleMulti.json
       eventHandlers:
-        - event: TreasuryUpdated(indexed address)
-          handler: handleTreasuryUpdated
-        - event: MinterToggled(indexed address)
-          handler: handleMinterToggled
-      file: ./src/mapping/agToken.ts
+        - event: AnswerUpdated(indexed int256,indexed uint256,uint256)
+          handler: handleAnswerUpdated
+      file: ./src/mapping/chainlink.ts
+  - kind: ethereum/contract
+    name: Chainlink6
+    network: {{network}}
+    source:
+      address: '{{chainlink_LUSD_USD}}'
+      abi: ChainlinkFeed
+      startBlock: {{block_oracle}}
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - TokenPrice
+        - OracleData
+      abis:
+        - name: ChainlinkFeed
+          file: ../abis/Chainlink.json
+        - name: stETH
+          file: ../abis/stETH.json
+        - name: ERC20
+          file: ../abis/ERC20.json
+        - name: BorrowStaker
+          file: ../abis/BorrowStaker.json
+        - name: OracleMulti
+          file: ../abis/OracleMulti.json
+      eventHandlers:
+        - event: AnswerUpdated(indexed int256,indexed uint256,uint256)
+          handler: handleAnswerUpdated
+      file: ./src/mapping/chainlink.ts
   - kind: ethereum/contract
     name: FlashAngle
     network: {{network}}
     source:
       address: '{{flashAngle}}'
       abi: FlashAngle
-      startBlock: {{block_ageur}}
+      startBlock: {{block_oracle}}
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.5
@@ -161,11 +283,80 @@ dataSources:
       abis:
         - name: FlashAngle
           file: ../abis/FlashAngle.json
+        - name: ERC20
+          file: ../abis/ERC20.json
       eventHandlers:
         - event: FlashLoan(indexed address,uint256,indexed address)
           handler: handleFlashLoan
       file: ./src/mapping/flashAngle.ts
 templates:
+  - kind: ethereum/contract
+    name: AgTokenTemplate
+    network: {{network}}
+    source:
+      abi: AgToken
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - StableData
+        - StableHistoricalData
+        - StableHistoricalHourlyData
+      abis:
+        - name: AgToken
+          file: ../abis/AgToken.json
+        - name: PoolManager
+          file: ../abis/PoolManager.json
+        - name: ERC20
+          file: ../abis/ERC20.json
+        - name: Oracle
+          file: ../abis/OracleMultiWithDesc.json
+        - name: StableMaster
+          file: ../abis/StableMasterFront.json
+        - name: PerpetualManagerFront
+          file: ../abis/PerpetualManagerFront.json
+        - name: SanToken
+          file: ../abis/SanToken.json
+        - name: stETH
+          file: ../abis/stETH.json
+        - name: Treasury
+          file: ../abis/Treasury.json
+      eventHandlers:
+        - event: Transfer(indexed address,indexed address,uint256)
+          handler: handleTransfer
+        - event: TreasuryUpdated(indexed address)
+          handler: handleTreasuryUpdated
+        - event: MinterToggled(indexed address)
+          handler: handleMinterToggled
+      file: ./src/mapping/agToken.ts
+  - kind: ethereum/contract
+    name: ChainlinkTemplate
+    network: {{network}}
+    source:
+      abi: ChainlinkFeed
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - TokenPrice
+        - OracleData
+      abis:
+        - name: ChainlinkFeed
+          file: ../abis/Chainlink.json
+        - name: ChainlinkProxy
+          file: ../abis/ChainlinkProxy.json
+        - name: ERC20
+          file: ../abis/ERC20.json
+        - name: BorrowStaker
+          file: ../abis/BorrowStaker.json
+        - name: OracleMulti
+          file: ../abis/OracleMulti.json
+      eventHandlers:
+        - event: AnswerUpdated(indexed int256,indexed uint256,uint256)
+          handler: handleAnswerUpdated
+      file: ./src/mapping/chainlink.ts
   - kind: ethereum/contract
     name: TreasuryTemplate
     network: {{network}}
@@ -188,11 +379,13 @@ templates:
         - name: ERC20
           file: ../abis/ERC20.json
         - name: Oracle
-          file: ../abis/OracleBorrowingModule.json
-        - name: ChainlinkFeed
-          file: ../abis/Chainlink.json
+          file: ../abis/OracleMultiWithDesc.json
         - name: ChainlinkProxy
           file: ../abis/ChainlinkProxy.json
+        - name: ChainlinkFeed
+          file: ../abis/Chainlink.json
+        - name: BorrowStaker
+          file: ../abis/BorrowStaker.json
       eventHandlers:
         - event: BadDebtUpdated(uint256)
           handler: handleBadDebtUpdated
@@ -227,7 +420,9 @@ templates:
         - name: ERC20
           file: ../abis/ERC20.json
         - name: Oracle
-          file: ../abis/OracleBorrowingModule.json
+          file: ../abis/OracleMultiWithDesc.json
+        - name: ChainlinkFeed
+          file: ../abis/Chainlink.json
       eventHandlers:
         - event: AccruedToTreasury(uint256,uint256)
           handler: handleAccruedToTreasury
@@ -250,24 +445,3 @@ templates:
         - event: DebtTransferred(uint256,uint256,address,uint256)
           handler: handleDebtTransferred
       file: ./src/mapping/vaultManager.ts
-  - kind: ethereum/contract
-    name: ChainlinkTemplate
-    network: {{network}}
-    source:
-      abi: ChainlinkFeed
-    mapping:
-      kind: ethereum/events
-      apiVersion: 0.0.5
-      language: wasm/assemblyscript
-      entities:
-        - TokenPrice
-        - OracleData
-      abis:
-        - name: ChainlinkFeed
-          file: ../abis/Chainlink.json
-        - name: ChainlinkProxy
-          file: ../abis/ChainlinkProxy.json
-      eventHandlers:
-        - event: AnswerUpdated(indexed int256,indexed uint256,uint256)
-          handler: handleAnswerUpdated
-      file: ./src/mapping/chainlink.ts
